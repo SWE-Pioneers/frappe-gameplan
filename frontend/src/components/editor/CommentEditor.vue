@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { computed, useTemplateRef } from 'vue'
 import { Button } from 'frappe-ui'
-import { CommentKit, EditorFixedMenu } from 'frappe-ui/editor'
-import GPEditor from './editor/GPEditor.vue'
-import { gameplanToolbar } from './editor/toolbars'
-import { suggestionConfig, richQuoteExtensions } from './editor/config'
+import { EditorFixedMenu } from 'frappe-ui/editor'
+import GPEditor from './GPEditor.vue'
+import { gameplanToolbar } from './toolbars'
+import { commentExtensions } from './commentExtensions'
 
 // gameplan's comment box: the lighter CommentKit (no table / toc / slash / iframe)
 // + @-mentions + #-tags + RichQuote. The shared `gameplanToolbar` self-prunes to
@@ -26,16 +26,10 @@ const emit = defineEmits<{
   'rich-quote-click': [payload: { quoteId: string; author: string; content: string }]
 }>()
 
-const extensions = computed(() => [
-  CommentKit.configure({
-    heading: { levels: [2, 3, 4, 5, 6] },
-    ...suggestionConfig(true),
-  }),
-  ...richQuoteExtensions({
-    onQuote: (html) => emit('rich-quote', html),
-    onQuoteClick: (payload) => emit('rich-quote-click', payload),
-  }),
-])
+const extensions = commentExtensions({
+  onQuote: (html) => emit('rich-quote', html),
+  onQuoteClick: (payload) => emit('rich-quote-click', payload),
+})
 
 const gp = useTemplateRef<InstanceType<typeof GPEditor>>('gp')
 const editor = computed(() => gp.value?.editor ?? null)

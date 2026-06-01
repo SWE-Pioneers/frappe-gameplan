@@ -370,11 +370,7 @@ export default {
           },
         },
       ]
-      if (
-        ['ProjectDiscussions', 'ProjectDiscussion', 'ProjectDiscussionNew'].includes(
-          this.$route.name,
-        )
-      ) {
+      if (['ProjectDiscussions', 'ProjectDiscussion'].includes(this.$route.name)) {
         items.push({
           label: 'Discussions',
           route: {
@@ -400,19 +396,6 @@ export default {
           },
         })
       }
-      if (this.$route.name === 'ProjectDiscussionNew') {
-        items.push({
-          label: 'New Discussion',
-          route: {
-            name: 'ProjectDiscussionNew',
-            params: {
-              teamId: this.team.doc.name,
-              projectId: this.project.doc.name,
-            },
-          },
-        })
-      }
-
       if (['ProjectTasks', 'ProjectTaskDetail'].includes(this.$route.name)) {
         items.push({
           label: 'Tasks',

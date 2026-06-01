@@ -84,7 +84,7 @@
             placeholder="Title"
           />
         </div>
-        <TextEditor
+        <PageEditor
           editor-class="rounded-b-lg max-w-[unset] prose-v3 pb-[50vh] md:px-[70px]"
           :content="content"
           @change="
@@ -94,8 +94,6 @@
             }
           "
           placeholder="Start writing here..."
-          :bubbleMenu="true"
-          :suggestions="false"
           ref="textEditor"
         />
       </div>
@@ -107,7 +105,7 @@
 import { ref, computed, onMounted, onBeforeUnmount, useTemplateRef } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Breadcrumbs, usePageMeta, debounce, dayjsLocal } from 'frappe-ui'
-import TextEditor from '@/components/TextEditor.vue'
+import PageEditor from '@/components/editor/PageEditor.vue'
 import PageHeader from '@/components/PageHeader.vue'
 import { useDoc, dialog } from 'frappe-ui'
 import { useSpace } from '@/data/spaces'

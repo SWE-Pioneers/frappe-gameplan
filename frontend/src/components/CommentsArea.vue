@@ -150,7 +150,7 @@ import { ref, computed, nextTick, onMounted, onUnmounted, watch, useTemplateRef 
 import { useRouter, useRoute } from 'vue-router'
 import { useList } from 'frappe-ui'
 import { TabButtons, ErrorMessage } from 'frappe-ui'
-import CommentEditor from '@/components/CommentEditor.vue'
+import CommentEditor from '@/components/editor/CommentEditor.vue'
 import Comment from './Comment.vue'
 import Activity from './Activity.vue'
 import PollEditor from './PollEditor.vue'

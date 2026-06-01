@@ -15,7 +15,7 @@
   </div>
 </template>
 <script>
-import ReadmeEditor from '@/components/ReadmeEditor.vue'
+import ReadmeEditor from '@/components/editor/ReadmeEditor.vue'
 export default {
   name: 'PersonProfileAboutMe',
   props: ['profile'],

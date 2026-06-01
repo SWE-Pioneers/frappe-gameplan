@@ -29,13 +29,11 @@
             ]"
           />
         </div>
-        <TextEditor
+        <TaskDescriptionEditor
           ref="description"
           editor-class="prose-v3 max-w-none focus-within:ring-2 focus-within:ring-outline-gray-3 rounded-sm p-0.5 -ml-0.5 min-h-[4rem]"
           placeholder="Description"
           :content="task.doc.description"
-          :bubbleMenu="true"
-          :floatingMenu="true"
           @blur="
             !$refs.description.editor.isEmpty
               ? task.setValue.submit({
@@ -155,7 +153,7 @@
 <script setup lang="ts">
 import { h, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import TextEditor from '@/components/TextEditor.vue'
+import TaskDescriptionEditor from '@/components/editor/TaskDescriptionEditor.vue'
 import CommentsList from '@/components/CommentsList.vue'
 import TaskStatusIcon from '@/components/NewTaskDialog/TaskStatusIcon.vue'
 import TaskPriorityIcon from '@/components/icons/TaskPriorityIcon.vue'

@@ -24,6 +24,12 @@ function tagItems() {
 }
 
 /**
+ * gameplan drops H1 everywhere — kits are configured with these heading levels.
+ * Kept here (kit-free) so both extension stacks share one source of truth.
+ */
+export const gameplanHeadingLevels = [2, 3, 4, 5, 6] as const
+
+/**
  * Kit-member config for @-mentions + #-tags, applied via `kit.configure(...)`
  * (spec §3 — data-driven members configured, never proxied through props). Passing
  * getters keeps the live user/tag lists reactive. `suggestions: false` keeps the
@@ -40,22 +46,28 @@ export function suggestionConfig(suggestions = true) {
   }
 }
 
+export interface RichQuoteClickPayload {
+  quoteId: string
+  author: string
+  content: string
+}
+
+export interface RichQuoteHandlers {
+  onQuote?: (html: string) => void
+  onQuoteClick?: (payload: RichQuoteClickPayload) => void
+}
+
+const noop = () => {}
+
 /**
  * gameplan-local RichQuote extensions, appended after the kit (spec §6). The
  * handlers re-emit so the host component can surface `@rich-quote` /
  * `@rich-quote-click`, exactly as the old wrapper did.
  */
-export function richQuoteExtensions(handlers: {
-  onQuote: (html: string) => void
-  onQuoteClick: (payload: {
-    quoteId: string
-    author: string
-    content: string
-  }) => void
-}) {
+export function richQuoteExtensions(handlers: RichQuoteHandlers = {}) {
   return [
-    FloatingQuoteButton.configure({ onClick: handlers.onQuote }),
-    RichQuoteNodeExtension.configure({ onClick: handlers.onQuoteClick }),
+    FloatingQuoteButton.configure({ onClick: handlers.onQuote ?? noop }),
+    RichQuoteNodeExtension.configure({ onClick: handlers.onQuoteClick ?? noop }),
   ]
 }
 

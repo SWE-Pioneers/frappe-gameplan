@@ -2,7 +2,7 @@
 import { computed, useTemplateRef, type CSSProperties } from 'vue'
 import type { Extension } from '@tiptap/core'
 import {
-  TextEditor as FTextEditor,
+  Editor,
   EditorContent,
   EditorFixedMenu,
   EditorBubbleMenu,
@@ -11,7 +11,7 @@ import {
 } from 'frappe-ui/editor'
 import { uploadFile } from './config'
 
-// Shared gameplan editor layout, built on the v1 <TextEditor> via its #default
+// Shared gameplan editor layout, built on the v1 <Editor> via its #default
 // (L3) slot so gameplan keeps full control of editor-class, the scroll container,
 // and menu placement. Kit-free on purpose: callers pass `extensions` (kit +
 // mentions + RichQuote), which keeps CommentKit and RichTextKit in separate route
@@ -46,7 +46,7 @@ const emit = defineEmits<{
   focus: [event: FocusEvent]
 }>()
 
-const ft = useTemplateRef<InstanceType<typeof FTextEditor>>('ft')
+const ft = useTemplateRef<InstanceType<typeof Editor>>('ft')
 const editor = computed(() => ft.value?.editor ?? null)
 
 const scrollStyle = computed<CSSProperties>(() => ({
@@ -58,7 +58,7 @@ defineExpose({ editor })
 </script>
 
 <template>
-  <FTextEditor
+  <Editor
     ref="ft"
     :extensions="extensions"
     :model-value="content ?? ''"
@@ -91,5 +91,5 @@ defineExpose({ editor })
       />
       <slot name="bottom" :editor="e" :is-empty="isEmpty" />
     </template>
-  </FTextEditor>
+  </Editor>
 </template>

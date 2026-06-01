@@ -1,5 +1,5 @@
 <template>
-  <TextEditor
+  <DiscussionEditor
     ref="textEditorRef"
     class="pb-40"
     editor-class="max-w-[unset] min-h-[calc(100vh-350px)] prose-v3 overflow-auto px-2 -mx-2"
@@ -26,23 +26,23 @@
         </div>
 
         <DiscussionMetadata />
-        <DiscussionEditor :editor="editor" :editor-class="editorClass" />
+        <DiscussionBody :editor="editor" :editor-class="editorClass" />
       </div>
     </template>
-  </TextEditor>
+  </DiscussionEditor>
 </template>
 
 <script setup lang="ts">
 import { useTemplateRef } from 'vue'
 import { EditorFixedMenu } from 'frappe-ui/editor'
 import { gameplanToolbar } from '@/components/editor/toolbars'
-import TextEditor from '@/components/TextEditor.vue'
+import DiscussionEditor from '@/components/editor/DiscussionEditor.vue'
 import DiscussionHeader from './DiscussionHeader.vue'
 import DiscussionMetadata from './DiscussionMetadata.vue'
-import DiscussionEditor from './DiscussionEditor.vue'
+import DiscussionBody from './DiscussionBody.vue'
 import { provideNewDiscussion } from './useNewDiscussion'
 
-const textEditorRef = useTemplateRef<InstanceType<typeof TextEditor>>('textEditorRef')
+const textEditorRef = useTemplateRef<InstanceType<typeof DiscussionEditor>>('textEditorRef')
 
 const { draftData, sessionUser, author, initialize } = provideNewDiscussion(textEditorRef)
 

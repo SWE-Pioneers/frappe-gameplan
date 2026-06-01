@@ -7,7 +7,7 @@
           variant="solid"
           icon-left="lucide-plus"
           v-if="!$readOnlyMode && !project.doc.archived_at"
-          :route="{ name: 'ProjectDiscussionNew' }"
+          :route="{ name: 'NewDiscussion' }"
         >
           Add new
         </Button>
