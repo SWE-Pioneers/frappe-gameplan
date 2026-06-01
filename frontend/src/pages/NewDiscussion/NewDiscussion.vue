@@ -8,7 +8,7 @@
     :editable="author.name === sessionUser.name"
     placeholder="Type '/' for commands or select text to format"
   >
-    <template #editor="{ editor }">
+    <template #editor="{ editor, editorClass }">
       <DiscussionHeader />
 
       <div class="discussion-container isolate">
@@ -26,7 +26,7 @@
         </div>
 
         <DiscussionMetadata />
-        <DiscussionEditor :editor="editor" />
+        <DiscussionEditor :editor="editor" :editor-class="editorClass" />
       </div>
     </template>
   </TextEditor>

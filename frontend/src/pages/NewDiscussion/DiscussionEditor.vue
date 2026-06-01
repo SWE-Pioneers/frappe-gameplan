@@ -15,7 +15,7 @@
       :disabled="sessionUser.name != author.name"
       @input="handleTitleInput"
     />
-    <EditorContent :editor="editor" />
+    <EditorContent :editor="editor" :class="editorClass" />
   </div>
 </template>
 
@@ -28,6 +28,9 @@ import type { TextEditorInstance } from './types'
 
 interface Props {
   editor: TextEditorInstance['editor']
+  // Editor-content classes (e.g. `prose-v3`) forwarded from the GPEditor
+  // `#editor` slot scope — the renderless <TextEditor> applies no classes itself.
+  editorClass?: unknown
 }
 
 defineProps<Props>()

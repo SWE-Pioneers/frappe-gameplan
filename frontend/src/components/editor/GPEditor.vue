@@ -80,7 +80,7 @@ defineExpose({ editor })
         :items="fixedMenu"
         class="overflow-x-auto"
       />
-      <slot name="editor" :editor="e">
+      <slot name="editor" :editor="e" :editor-class="editorClass" :scroll-style="scrollStyle">
         <EditorContent :editor="e" :class="editorClass" :style="scrollStyle" />
       </slot>
       <EditorFixedMenu
