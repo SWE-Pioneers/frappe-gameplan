@@ -4,6 +4,7 @@ import type { Extension } from '@tiptap/core'
 import {
   Editor as FrappeEditor,
   EditorContent,
+  EditorDropZone,
   EditorFixedMenu,
   EditorBubbleMenu,
   EditorFloatingMenu,
@@ -81,7 +82,9 @@ defineExpose({ editor })
         class="overflow-x-auto"
       />
       <slot name="editor" :editor="e" :editor-class="editorClass" :scroll-style="scrollStyle">
-        <EditorContent :editor="e" :class="editorClass" :style="scrollStyle" />
+        <EditorDropZone :editor="e" :disabled="!editable">
+          <EditorContent :editor="e" :class="editorClass" :style="scrollStyle" />
+        </EditorDropZone>
       </slot>
       <EditorFixedMenu
         v-if="fixedMenu && fixedMenuPosition === 'bottom'"
