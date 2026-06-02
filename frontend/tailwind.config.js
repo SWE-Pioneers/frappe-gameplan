@@ -6,14 +6,12 @@ export default {
   content: [
     './index.html',
     './src/**/*.{vue,js,ts,jsx,tsx}',
-    './node_modules/frappe-ui/src/components/**/*.{vue,js,ts,jsx,tsx}',
-    '../node_modules/frappe-ui/src/components/**/*.{vue,js,ts,jsx,tsx}',
-    '../frappe-ui/src/components/**/*.{vue,js,ts,jsx,tsx}',
-    // The editor (and its string-based lucide-* icon classes) lives under
-    // molecules; scan it so the icon mask utilities are emitted.
-    './node_modules/frappe-ui/src/molecules/**/*.{vue,js,ts,jsx,tsx}',
-    '../node_modules/frappe-ui/src/molecules/**/*.{vue,js,ts,jsx,tsx}',
-    '../frappe-ui/src/molecules/**/*.{vue,js,ts,jsx,tsx}',
+    // Tailwind v3 ignores `content` declared in presets, so frappe-ui's source
+    // must be scanned here for its components' utilities (notably the editor's
+    // string-based lucide-* icon classes). One path covers both modes:
+    // node_modules/frappe-ui is the published package, or a symlink to the
+    // ../frappe-ui checkout under `yarn dev:local`.
+    './node_modules/frappe-ui/src/**/*.{vue,js,ts,jsx,tsx}',
   ],
   theme: {
     container: {

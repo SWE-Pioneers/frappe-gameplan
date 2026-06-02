@@ -2,7 +2,7 @@
 import { computed, useTemplateRef, type CSSProperties } from 'vue'
 import type { Extension } from '@tiptap/core'
 import {
-  Editor,
+  Editor as FrappeEditor,
   EditorContent,
   EditorFixedMenu,
   EditorBubbleMenu,
@@ -46,7 +46,7 @@ const emit = defineEmits<{
   focus: [event: FocusEvent]
 }>()
 
-const ft = useTemplateRef<InstanceType<typeof Editor>>('ft')
+const ft = useTemplateRef<InstanceType<typeof FrappeEditor>>('ft')
 const editor = computed(() => ft.value?.editor ?? null)
 
 const scrollStyle = computed<CSSProperties>(() => ({
@@ -58,7 +58,7 @@ defineExpose({ editor })
 </script>
 
 <template>
-  <Editor
+  <FrappeEditor
     ref="ft"
     :extensions="extensions"
     :model-value="content ?? ''"
@@ -91,5 +91,5 @@ defineExpose({ editor })
       />
       <slot name="bottom" :editor="e" :is-empty="isEmpty" />
     </template>
-  </Editor>
+  </FrappeEditor>
 </template>
