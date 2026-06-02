@@ -7,6 +7,7 @@ import {
   EditorDropZone,
   EditorFixedMenu,
   EditorBubbleMenu,
+  EditorTableMenu,
   EditorFloatingMenu,
   type MenuItem,
 } from 'frappe-ui/editor'
@@ -74,6 +75,7 @@ defineExpose({ editor })
     <template #default="{ editor: e, isEmpty }">
       <slot name="top" :editor="e" />
       <EditorBubbleMenu v-if="bubbleMenu" :editor="e" :items="bubbleMenu" />
+      <EditorTableMenu :editor="e" />
       <EditorFloatingMenu v-if="floatingMenu" :editor="e" :items="floatingMenu" />
       <EditorFixedMenu
         v-if="fixedMenu && fixedMenuPosition === 'top'"
