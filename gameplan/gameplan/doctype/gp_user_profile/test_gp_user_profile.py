@@ -5,24 +5,7 @@ import frappe
 from frappe.tests.utils import FrappeTestCase
 
 from gameplan.gameplan.doctype.gp_user_profile.gp_user_profile import has_permission
-
-
-def create_member(email, first_name):
-	if not frappe.db.exists("User", email):
-		user = frappe.get_doc(
-			{
-				"doctype": "User",
-				"email": email,
-				"first_name": first_name,
-				"send_welcome_email": 0,
-				"roles": [{"role": "Gameplan Member"}],
-			}
-		).insert(ignore_permissions=True)
-	else:
-		user = frappe.get_doc("User", email)
-		if not user.has_role("Gameplan Member"):
-			user.add_roles("Gameplan Member")
-	return user
+from gameplan.tests.utils import create_member
 
 
 def get_profile(user):
@@ -33,11 +16,9 @@ class TestGPUserProfile(FrappeTestCase):
 	def setUp(self):
 		self.alice = create_member("test_alice@example.com", "Alice")
 		self.bob = create_member("test_bob@example.com", "Bob")
-		frappe.db.commit()
 
 	def tearDown(self):
 		frappe.set_user("Administrator")
-		frappe.db.rollback()
 
 	def test_owner_can_edit_own_bio(self):
 		profile = get_profile(self.alice.name)

@@ -5,6 +5,8 @@ import frappe
 from frappe.tests.utils import FrappeTestCase
 
 from gameplan.gameplan.doctype.gp_discussion.api import clause_discussions_commented_by_user
+from gameplan.gameplan.doctype.gp_discussion.gp_discussion import has_permission
+from gameplan.tests.utils import create_guest, create_member, create_project, create_team, grant_guest_access
 
 
 class TestGPDiscussion(FrappeTestCase):
@@ -35,7 +37,35 @@ class TestGPDiscussion(FrappeTestCase):
 
 		# This should execute without error
 		result = query.run()
-		self.assertIsInstance(result, list)
+		self.assertIsInstance(result, (list, tuple))
 
 		# Cleanup
 		frappe.db.rollback()
+
+
+class TestGPDiscussionPermissions(FrappeTestCase):
+	def setUp(self):
+		self.member = create_member("test_disc_member@example.com")
+		self.guest = create_guest("test_disc_guest@example.com")
+		self.team = create_team("Discussion Perm Team")
+		self.project = create_project("Discussion Perm Project", self.team.name)
+
+	def tearDown(self):
+		frappe.set_user("Administrator")
+
+	def _discussion(self):
+		doc = frappe.new_doc("GP Discussion")
+		doc.title = "Sample discussion"
+		doc.project = self.project.name
+		return doc
+
+	def test_member_can_access(self):
+		self.assertTrue(has_permission(self._discussion(), "read", self.member.name))
+		self.assertTrue(has_permission(self._discussion(), "write", self.member.name))
+
+	def test_guest_without_access_denied(self):
+		self.assertFalse(has_permission(self._discussion(), "read", self.guest.name))
+
+	def test_guest_with_access_allowed(self):
+		grant_guest_access(self.guest.name, self.project.name)
+		self.assertTrue(has_permission(self._discussion(), "read", self.guest.name))
