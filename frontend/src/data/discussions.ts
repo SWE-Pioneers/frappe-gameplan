@@ -22,6 +22,9 @@ export type UseDiscussionOptions = Pick<
 >
 
 export function useDiscussions(options: UseDiscussionOptions) {
+  // Track when the list was last fetched so we only reload a stale feed.
+  let lastLoadedAt = Date.now()
+
   const discussions = useList<Discussion>({
     url: '/api/v2/method/gameplan.gameplan.doctype.gp_discussion.api.get_discussions',
     doctype: 'GP Discussion',
@@ -30,16 +33,10 @@ export function useDiscussions(options: UseDiscussionOptions) {
     limit: options.limit || 50,
     orderBy: options.orderBy,
     immediate: options.immediate ?? true,
-  })
-
-  // Track when the list was last fetched so we only reload a stale feed.
-  let lastLoadedAt = Date.now()
-  watch(
-    () => discussions.loading,
-    (loading) => {
-      if (!loading) lastLoadedAt = Date.now()
+    onSuccess() {
+      lastLoadedAt = Date.now()
     },
-  )
+  })
 
   const visibility = useDocumentVisibility()
   watch(visibility, (state) => {
