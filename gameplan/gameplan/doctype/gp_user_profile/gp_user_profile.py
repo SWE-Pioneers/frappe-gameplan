@@ -76,6 +76,23 @@ class GPUserProfile(Document):
 		return is_rembg_available()
 
 
+def has_permission(doc, ptype="read", user=None):
+	user = user or frappe.session.user
+
+	# Everyone is allowed to read profiles.
+	if ptype in ("read", "select", "print", "email", "export", "share"):
+		return True
+
+	# Administrators and Gameplan Admins can manage any profile.
+	if user == "Administrator":
+		return True
+	if "Gameplan Admin" in frappe.get_roles(user) or "System Manager" in frappe.get_roles(user):
+		return True
+
+	# Otherwise a user may only modify their own profile.
+	return doc.user == user
+
+
 def create_user_profile(doc, method=None):
 	if not frappe.db.exists("GP User Profile", {"user": doc.name}):
 		frappe.get_doc(doctype="GP User Profile", user=doc.name).insert(ignore_permissions=True)

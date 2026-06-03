@@ -40,8 +40,11 @@ describe('Discussion', () => {
 
     // cy.button('View all').click()
     cy.button('Add new').click()
-    cy.get('textarea').type('Starting a new discussion')
-    cy.get('div[contenteditable=true]').click().type('This is content for new discussion{enter}')
+    cy.get('textarea').should('be.visible').type('Starting a new discussion')
+    cy.get('div[contenteditable=true]')
+      .should('be.visible')
+      .click()
+      .type('This is content for new discussion{enter}')
     cy.get('button').contains('Publish').click()
     cy.wait('@discussionId')
       .its('response.body.data')
@@ -52,7 +55,10 @@ describe('Discussion', () => {
     // add comment
     cy.intercept('POST', '/api/v2/document/GP%20Comment').as('comment')
     cy.button('Add a comment').click()
-    cy.focused().type('This is the first comment{enter}')
+    // Wait for the comment editor to mount and receive focus before typing,
+    // and submit via the explicit button instead of {enter} to avoid a
+    // double-submit race in the rich-text editor.
+    cy.focused().should('be.visible').type('This is the first comment')
     cy.button('Submit').click()
     cy.wait('@comment')
       .its('response.body.data')
@@ -63,6 +69,7 @@ describe('Discussion', () => {
     // edit title
     cy.selectDropdownOption('Discussion Options', 'Edit')
     cy.get('input[placeholder="Title"]')
+      .should('be.visible')
       .type(' {selectall}', { delay: 200 })
       .type('Edited Discussion Title')
     cy.button('Submit').click()
@@ -72,6 +79,7 @@ describe('Discussion', () => {
     // edit content
     cy.selectDropdownOption('Discussion Options', 'Edit')
     cy.get('[contenteditable=true]')
+      .should('be.visible')
       .type('{enter}{enter}', { delay: 200 })
       .type('adding more content')
     cy.button('Submit').click()
