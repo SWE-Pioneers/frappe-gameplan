@@ -45,3 +45,62 @@ body {
 .debug {
   border: 1px solid red;
 }
+
+/*
+  Print styles
+  The app is a single-page layout built around fixed-height scroll containers
+  and sticky headers, which makes the default print output unusable (only the
+  visible viewport prints, headers overlap, app chrome bleeds in). These rules
+  unwind that layout so a discussion prints as a clean, paginated document.
+*/
+@media print {
+  html,
+  body,
+  #app {
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  /* Let the scroll viewport expand to its full content height */
+  #scrollContainer,
+  [data-reka-scroll-area-viewport] {
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  /* Drop sticky positioning so author/title rows flow inline instead of
+     overlapping the content below them */
+  .discussion-container .sticky {
+    position: static !important;
+  }
+
+  /* The large top padding clears the fixed app header on screen; collapse it
+     so printed comments aren't separated by big empty gaps */
+  .discussion-container .pt-14 {
+    padding-top: 0.75rem !important;
+  }
+
+  .discussion-container {
+    max-width: none !important;
+  }
+
+  /* The timeline reserves space at the bottom for the fixed comment box (set
+     via an inline style); reclaim it so printed output doesn't end with a big
+     blank gap */
+  .comments-timeline {
+    padding-bottom: 0 !important;
+  }
+
+  /* Keep an author block and its message from splitting across pages */
+  .discussion-container > div > div,
+  [data-id] {
+    break-inside: avoid;
+  }
+
+  /* Avoid orphaned link underlines / colors that don't read well on paper */
+  a {
+    color: inherit !important;
+    text-decoration: none !important;
+  }
+}

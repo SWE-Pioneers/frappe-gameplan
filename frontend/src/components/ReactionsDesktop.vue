@@ -6,7 +6,7 @@
           aria-label="Add a reaction"
           :disabled="isLoading"
           @click="togglePopover()"
-          class="flex h-full items-center justify-center rounded-full bg-surface-gray-2 px-2 py-1 text-ink-gray-6 transition hover:bg-surface-gray-3"
+          class="flex h-full items-center justify-center rounded-full bg-surface-gray-2 px-2 py-1 text-ink-gray-6 transition hover:bg-surface-gray-3 print:hidden"
           :class="{ 'bg-surface-gray-3': isOpen }"
         >
           <ReactionFaceIcon />

@@ -95,7 +95,12 @@ Cypress.Commands.add('scope', (scope: ScopeKey) => {
 
 Cypress.Commands.add('button', { prevSubject: 'optional' }, (subject, text: string) => {
   const root = subject ? cy.wrap(subject) : cy
-  return root.contains('button:visible', text)
+  // frappe-ui's Button renders as a router-link/anchor (not a <button>) when
+  // given a `route` or `link` prop, so match button-styled anchors as well.
+  return root.contains(
+    'button:visible, a.inline-flex.items-center.justify-center:visible',
+    text,
+  )
 })
 
 Cypress.Commands.add('combobox', { prevSubject: 'optional' }, (subject, placeholder: string) => {

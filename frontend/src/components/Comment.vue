@@ -39,7 +39,7 @@
         </div>
         <Dropdown
           v-show="!isEditing"
-          class="ml-auto"
+          class="ml-auto print:hidden"
           align="end"
           :button="{
             icon: 'more-horizontal',
