@@ -71,6 +71,10 @@ describe('Task', () => {
         task.due_date = date.toISOString().split('T')[0]
       })
 
+    // Dismiss the date picker calendar, which otherwise stays open and overlays
+    // the Status control below it (covering its dropdown trigger).
+    cy.get('body').type('{esc}')
+
     cy.contains('div', 'Status').next('div').find('button').click()
     cy.get('[role="menuitem"]:contains("Done"):visible').click()
   })
