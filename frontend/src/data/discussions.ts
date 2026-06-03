@@ -1,7 +1,12 @@
-import { MaybeRefOrGetter, toValue } from 'vue'
+import { MaybeRefOrGetter, toValue, watch } from 'vue'
 import { useDoc, useList } from 'frappe-ui'
 import { UseListOptions } from 'frappe-ui'
+import { useDocumentVisibility } from '@vueuse/core'
 import { GPDiscussion } from '@/types/doctypes'
+
+// Reload the feed when the tab is re-activated after sitting in the background
+// for at least this long, so new posts show up without a manual refresh.
+const STALE_RELOAD_THRESHOLD = 2 * 60 * 1000
 
 export interface Discussion extends GPDiscussion {
   project_title: string
@@ -17,6 +22,9 @@ export type UseDiscussionOptions = Pick<
 >
 
 export function useDiscussions(options: UseDiscussionOptions) {
+  // Track when the list was last fetched so we only reload a stale feed.
+  let lastLoadedAt = Date.now()
+
   const discussions = useList<Discussion>({
     url: '/api/v2/method/gameplan.gameplan.doctype.gp_discussion.api.get_discussions',
     doctype: 'GP Discussion',
@@ -25,7 +33,20 @@ export function useDiscussions(options: UseDiscussionOptions) {
     limit: options.limit || 50,
     orderBy: options.orderBy,
     immediate: options.immediate ?? true,
+    onSuccess() {
+      lastLoadedAt = Date.now()
+    },
   })
+
+  const visibility = useDocumentVisibility()
+  watch(visibility, (state) => {
+    if (state !== 'visible') return
+    // Skip if it never loaded, is mid-fetch, or was refreshed recently.
+    if (discussions.loading || !discussions.data) return
+    if (Date.now() - lastLoadedAt < STALE_RELOAD_THRESHOLD) return
+    discussions.reload()
+  })
+
   return discussions
 }
 
