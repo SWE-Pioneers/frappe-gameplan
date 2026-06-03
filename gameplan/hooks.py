@@ -124,6 +124,7 @@ has_permission = {
 	"GP Task": "gameplan.gameplan.doctype.gp_task.gp_task.has_permission",
 	"GP Comment": "gameplan.gameplan.doctype.gp_comment.gp_comment.has_permission",
 	"GP Page": "gameplan.gameplan.doctype.gp_page.gp_page.has_permission",
+	"GP User Profile": "gameplan.gameplan.doctype.gp_user_profile.gp_user_profile.has_permission",
 }
 
 # DocType Class
