@@ -19,7 +19,7 @@
         </div>
       </div>
     </div>
-    <div :style="{ paddingBottom: `${addCommentHeight + 80}px` }">
+    <div class="comments-timeline" :style="{ paddingBottom: `${addCommentHeight + 80}px` }">
       <template v-for="(item, i) in timelineItems" :key="item.doctype + item.name">
         <div
           v-if="newMessagesFrom && newMessagesFrom == item.name"
@@ -72,7 +72,7 @@
     <!-- Comment Box -->
     <div
       v-if="!readOnlyMode && !disableNewComment"
-      class="fixed z-[2] left-0 right-0 mt-2 w-full"
+      class="fixed z-[2] left-0 right-0 mt-2 w-full print:hidden"
       :class="[
         isNewCommentOpen
           ? 'bottom-0'

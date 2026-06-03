@@ -2,7 +2,7 @@
   <div class="relative flex h-full flex-col" v-if="users.isFinished">
     <div class="h-full flex-1 standalone:border-t">
       <div class="flex h-full">
-        <ScrollAreaRoot class="relative block min-h-0 flex-shrink-0">
+        <ScrollAreaRoot class="relative block min-h-0 flex-shrink-0 print:hidden">
           <slot name="sidebar" />
           <AppSidebar />
         </ScrollAreaRoot>

@@ -45,7 +45,7 @@
                 </time>
               </Tooltip>
             </div>
-            <div class="ml-auto flex space-x-2">
+            <div class="ml-auto flex space-x-2 print:hidden">
               <Dropdown
                 v-if="!readOnlyMode"
                 class="ml-auto"
@@ -234,7 +234,7 @@
         />
       </template>
     </div>
-    <div v-if="!isMobile" class="fixed bottom-3 h-9 grid place-content-center right-3 z-[2]">
+    <div v-if="!isMobile" class="fixed bottom-3 h-9 grid place-content-center right-3 z-[2] print:hidden">
       <Button variant="ghost" v-show="isScrolled" @click="scrollToTop">
         <template #prefix>
           <span class="lucide-arrow-up h-5 w-5 text-ink-gray-6" />
