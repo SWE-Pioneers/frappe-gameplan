@@ -78,7 +78,7 @@ jobs:
       - name: Run Tests
         working-directory: /home/runner/frappe-bench
         run: |
-          bench --site gameplan.test run-tests --app gameplan --coverage
+          bench --site gameplan.test run-tests --app gameplan
 
       - name: Stop server
         if: ${{ always() }}
