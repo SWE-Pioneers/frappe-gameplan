@@ -26,7 +26,12 @@ export function useNewDiscussion(textEditorRef?: TextEditorRef) {
       content: '',
       project: null as string | null,
     },
-    { deep: true },
+    // `listenToStorageChanges` is disabled so that edits made in one tab don't
+    // reactively mutate the in-memory draft of another tab. New discussions share
+    // the `new_discussion` storage key, so without this a `storage` event from a
+    // second tab would update this tab's `draftData`, trip the auto-save watcher,
+    // and overwrite this tab's draft with the other tab's content. See #490.
+    { deep: true, listenToStorageChanges: false },
   )
 
   const draftDoc = ref<DraftDocument>(null)
