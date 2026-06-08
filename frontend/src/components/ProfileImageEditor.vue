@@ -20,7 +20,7 @@
               'drop-shadow-sm',
             ]"
           >
-            <span class="inline-block rounded-md bg-surface-gray-7/60 px-2 py-1 text-ink-white">
+            <span class="inline-block rounded-md bg-surface-gray-10/60 px-2 py-1 text-ink-base">
               {{
                 uploading
                   ? `Uploading ${progress}%`

@@ -2,7 +2,7 @@
   <div class="flex min-h-0 flex-col">
     <div class="flex items-center justify-between">
       <div class="flex items-center gap-2">
-        <h2 class="text-xl font-semibold leading-none text-ink-gray-9">Invite People</h2>
+        <h2 class="text-3xl-semibold leading-none text-ink-gray-9">Invite People</h2>
       </div>
     </div>
     <div class="mt-4 space-y-4">
@@ -83,7 +83,7 @@
                     pendingInvitations.delete.params.name === invitation.name
                   "
                 >
-                  <span class="text-ink-red-4"> Delete? </span>
+                  <span class="text-ink-red-8"> Delete? </span>
                 </Button>
               </div>
             </Tooltip>

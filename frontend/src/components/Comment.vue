@@ -6,13 +6,13 @@
     />
     <UserInfo :email="comment.owner" v-slot="{ user }">
       <div
-        class="flex items-center text-base text-ink-gray-8 sticky top-0 pt-14 pb-2 bg-surface-white z-[1]"
+        class="flex items-center text-base text-ink-gray-8 sticky top-0 pt-14 pb-2 bg-surface-base z-[1]"
       >
         <UserProfileLink class="mr-3" :user="user.name">
           <UserAvatarWithHover size="lg" :user="user.name" />
         </UserProfileLink>
         <div class="md:flex md:items-center">
-          <UserProfileLink class="font-medium hover:text-ink-blue-4" :user="user.name">
+          <UserProfileLink class="font-medium hover:text-ink-blue-8" :user="user.name">
             {{ user.full_name }}
             <span class="hidden md:inline">&nbsp;&middot;&nbsp;</span>
           </UserProfileLink>
@@ -33,7 +33,7 @@
             </span>
             <div v-if="updateError">
               &nbsp;&middot;
-              <span class="text-ink-red-4"> Error</span>
+              <span class="text-ink-red-8"> Error</span>
             </div>
           </div>
         </div>
@@ -52,7 +52,7 @@
       <div class="flex-1">
         <div
           :class="{
-            'w-full rounded-lg border bg-surface-white p-4 focus-within:border-outline-gray-3':
+            'w-full rounded-lg border bg-surface-base p-4 focus-within:border-outline-gray-3':
               isEditing,
           }"
           @keydown.ctrl.enter.capture.stop="updateComment()"

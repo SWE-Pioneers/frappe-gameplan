@@ -41,7 +41,7 @@
             :class="[
               hasUserReacted(emoji)
                 ? 'bg-surface-amber-2'
-                : 'bg-surface-menu-bar hover:bg-surface-gray-2',
+                : 'bg-surface-sidebar hover:bg-surface-gray-2',
             ]"
             @click="toggleReaction(emoji)"
             :disabled="isLoading"
@@ -49,7 +49,7 @@
             :whileHover="{ scale: 1.05 }"
             :whilePress="{ scale: 1.05 }"
           >
-            <span class="font-[emoji] text-2xl">
+            <span class="font-[emoji] text-4xl">
               {{ emoji }}
             </span>
           </Motion>
@@ -67,10 +67,10 @@
             :transition="{ type: 'spring', stiffness: 320, damping: 26 }"
           >
             <div class="mr-2 w-14 text-center">
-              <span class="text-2xl font-[emoji]"> {{ emoji }}</span>
-              <span class="text-p-lg text-ink-gray-4"> ({{ reactions.count }}) </span>
+              <span class="text-4xl font-[emoji]"> {{ emoji }}</span>
+              <span class="text-p-xl text-ink-gray-4"> ({{ reactions.count }}) </span>
             </div>
-            <span class="text-p-lg flex-1 text-ink-gray-6">
+            <span class="text-p-xl flex-1 text-ink-gray-6">
               {{ toolTipText(reactions) }}
             </span>
           </Motion>

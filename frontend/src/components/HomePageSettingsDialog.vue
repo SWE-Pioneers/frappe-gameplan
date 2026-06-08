@@ -24,10 +24,10 @@
           class="flex items-start w-full group data-[state=checked]:bg-surface-gray-2 p-2 rounded-md cursor-pointer hover:bg-surface-gray-1"
         >
           <div
-            class="size-4 border border-outline-gray-2 group-data-[state=checked]:bg-surface-gray-7 rounded-full grid place-content-center"
+            class="size-4 border border-outline-gray-2 group-data-[state=checked]:bg-surface-gray-10 rounded-full grid place-content-center"
           >
             <RadioGroupIndicator>
-              <CircleCheckIcon class="text-ink-white size-4.5" />
+              <CircleCheckIcon class="text-ink-base size-4.5" />
             </RadioGroupIndicator>
           </div>
           <div class="ml-2 text-left">

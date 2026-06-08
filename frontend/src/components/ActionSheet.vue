@@ -9,10 +9,10 @@
         <Transition name="action-sheet-panel">
           <div
             v-show="modelValue"
-            class="bg-surface-white max-h-screen overflow-auto shadow-lg w-full rounded-t-xl"
+            class="bg-surface-base max-h-screen overflow-auto shadow-lg w-full rounded-t-xl"
           >
             <div class="py-4 border-b text-center relative">
-              <div class="text-lg font-bold">
+              <div class="text-xl-bold">
                 {{ title }}
               </div>
               <div class="absolute right-0 inset-y-0 flex items-center pr-4">

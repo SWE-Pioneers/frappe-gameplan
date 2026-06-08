@@ -2,7 +2,7 @@
   <div class="flex">
     <div class="h-full w-full py-6">
       <div class="mb-4.5 flex items-center justify-between">
-        <h2 class="text-xl font-semibold">Discussions</h2>
+        <h2 class="text-3xl-semibold">Discussions</h2>
         <Button
           variant="solid"
           icon-left="lucide-plus"

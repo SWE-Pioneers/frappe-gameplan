@@ -12,7 +12,7 @@
 
       <div class="discussion-container isolate">
         <div class="top-12 z-10 sticky">
-          <div class="bg-surface-white">
+          <div class="bg-surface-base">
             <div class="flex items-center -ml-2 pt-2 pb-1">
               <div class="hidden sm:flex transition-opacity duration-100">
                 <EditorFixedMenu :editor="editor" :items="gameplanToolbar" />

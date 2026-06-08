@@ -3,7 +3,7 @@
     <div class="mt-32 w-full px-4">
       <GameplanLogo class="mx-auto h-8 w-8" />
       <div class="mt-6 flex items-center justify-center space-x-1.5">
-        <span class="text-3xl font-semibold text-ink-gray-8">Login to</span>
+        <span class="text-5xl-semibold text-ink-gray-8">Login to</span>
         <GameplanLogoType class="h-6 text-ink-gray-8" />
       </div>
       <div class="mx-auto mt-6 w-full px-4 sm:w-96">
@@ -47,7 +47,7 @@
             Login via email
           </Button>
           <a
-            class="block w-full rounded border bg-surface-gray-7 px-3 py-1 text-center text-base h-7 focus:outline-none focus:ring-2 focus:ring-outline-gray-3 text-ink-white transition-colors hover:bg-surface-gray-5"
+            class="block w-full rounded border bg-surface-gray-10 px-3 py-1 text-center text-base h-7 focus:outline-none focus:ring-2 focus:ring-outline-gray-3 text-ink-base transition-colors hover:bg-surface-gray-8"
             v-for="provider in authProviders.data"
             :key="provider.name"
             :href="provider.auth_url"

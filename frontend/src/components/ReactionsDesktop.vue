@@ -16,7 +16,7 @@
         <div class="mt-1 inline-flex p-1">
           <div class="grid grid-cols-10 items-center space-x-0.5">
             <button
-              class="h-6 w-6 rounded hover:bg-surface-menu-bar"
+              class="h-6 w-6 rounded hover:bg-surface-sidebar"
               v-for="emoji in standardEmojis"
               :key="emoji"
               @click="
@@ -47,7 +47,7 @@
       </button>
       <template #body>
         <div
-          class="max-w-[30ch] rounded bg-surface-gray-7 px-2 py-1 text-center text-p-xs text-ink-white shadow-xl"
+          class="max-w-[30ch] rounded bg-surface-gray-10 px-2 py-1 text-center text-p-xs text-ink-base shadow-xl"
         >
           {{ toolTipText(reactions) }}
         </div>

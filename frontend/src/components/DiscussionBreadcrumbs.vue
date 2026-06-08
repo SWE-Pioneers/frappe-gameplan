@@ -1,7 +1,7 @@
 <template>
   <span>
     <router-link
-      class="hover:text-ink-blue-4 text-ink-gray-7"
+      class="hover:text-ink-blue-8 text-ink-gray-7"
       :to="{
         name: 'Team',
         params: {
@@ -13,7 +13,7 @@
     </router-link>
     <span class="text-ink-gray-4"> &mdash; </span>
     <router-link
-      class="hover:text-ink-blue-4 text-ink-gray-7"
+      class="hover:text-ink-blue-8 text-ink-gray-7"
       :to="{
         name: 'Project',
         params: {

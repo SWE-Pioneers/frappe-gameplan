@@ -14,7 +14,7 @@
         @mousedown="initialY = $event.clientY"
       >
         <div class="text-center">
-          <div class="rounded-md py-1 text-lg text-ink-white">Drag up/down to reposition image</div>
+          <div class="rounded-md py-1 text-xl text-ink-base">Drag up/down to reposition image</div>
           <Button
             class="mt-2"
             @click="
@@ -66,7 +66,7 @@
     </div>
     <div
       v-else
-      class="flex h-[130px] w-full items-center justify-center bg-surface-menu-bar text-sm text-ink-gray-4"
+      class="flex h-[130px] w-full items-center justify-center bg-surface-sidebar text-sm text-ink-gray-4"
     >
       <UnsplashImageBrowser
         v-if="editable"

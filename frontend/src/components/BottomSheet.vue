@@ -12,7 +12,7 @@
         />
         <div class="absolute inset-x-0 bottom-0 flex justify-center">
           <Motion
-            class="w-full max-w-2xl transform-gpu rounded-t-2xl bg-surface-white shadow-lg [corner-shape:squircle]"
+            class="w-full max-w-2xl transform-gpu rounded-t-2xl bg-surface-base shadow-lg [corner-shape:squircle]"
             :initial="{ y: '50%', opacity: 0.5 }"
             :animate="{ y: dragY, opacity: 1 }"
             :exit="{ y: '100%', opacity: 0 }"
@@ -24,7 +24,7 @@
                   <div class="h-1.5 w-10 rounded-full bg-surface-gray-3" />
                 </div>
                 <div class="px-2 pb-3 pt-2 text-center">
-                  <div class="text-xl font-semibold text-ink-gray-9">{{ title }}</div>
+                  <div class="text-3xl-semibold text-ink-gray-9">{{ title }}</div>
                 </div>
               </div>
               <div class="h-[70vh] overflow-y-auto">

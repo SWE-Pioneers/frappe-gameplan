@@ -1,6 +1,6 @@
 <template>
   <div class="flex min-h-0 flex-col">
-    <h2 class="text-xl font-semibold">Archived Teams</h2>
+    <h2 class="text-3xl-semibold">Archived Teams</h2>
     <div v-if="archivedTeams.length" class="mt-6 divide-y overflow-y-auto pb-16">
       <div
         v-for="team in archivedTeams"
@@ -11,7 +11,7 @@
           <span class="flex-shrink-0">
             <span class="h-6 w-6 rounded-full">{{ team.icon }}</span>
           </span>
-          <span class="text-base font-medium text-ink-gray-8">
+          <span class="text-base-medium text-ink-gray-8">
             {{ team.title }}
           </span>
         </div>

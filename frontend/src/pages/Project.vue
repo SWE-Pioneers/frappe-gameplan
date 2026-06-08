@@ -2,12 +2,12 @@
   <div class="flex flex-col">
     <router-view v-slot="{ Component, route }">
       <header
-        class="sticky top-0 z-10 flex items-center justify-between border-b bg-surface-white px-5 py-2.5"
+        class="sticky top-0 z-10 flex items-center justify-between border-b bg-surface-base px-5 py-2.5"
         v-if="!route.meta?.hideHeader"
       >
         <Breadcrumbs class="h-7" :items="breadcrumbs">
           <template #prefix="{ item }">
-            <span class="mr-2 flex rounded-sm text-2xl leading-none" v-if="item.icon">
+            <span class="mr-2 flex rounded-sm text-4xl leading-none" v-if="item.icon">
               {{ item.icon }}
             </span>
           </template>

@@ -28,7 +28,7 @@
         >
           <div class="border-b border-blue-600"></div>
           <span
-            class="absolute -top-2 left-1/2 -translate-x-1/2 bg-surface-white px-2 text-sm font-medium text-ink-blue-4"
+            class="absolute -top-2 left-1/2 -translate-x-1/2 bg-surface-base px-2 text-sm-medium text-ink-blue-8"
           >
             New comments
           </span>
@@ -81,7 +81,7 @@
       ref="addComment"
     >
       <div class="sm:ml-60">
-        <div class="discussion-container border-t sm:border-t-0 bg-surface-white sm:py-3">
+        <div class="discussion-container border-t sm:border-t-0 bg-surface-base sm:py-3">
           <div v-show="!showCommentBox" class="py-3 sm:py-0">
             <button
               class="flex w-full items-center rounded-lg bg-surface-gray-2 px-2 py-2 text-left text-base text-ink-gray-5 hover:bg-surface-gray-3"
@@ -93,13 +93,13 @@
           </div>
           <div
             v-show="showCommentBox"
-            class="w-full sm:rounded-lg sm:border bg-surface-white py-3 sm:p-4 focus-within:border-outline-gray-3"
+            class="w-full sm:rounded-lg sm:border bg-surface-base py-3 sm:p-4 focus-within:border-outline-gray-3"
             @keydown.ctrl.enter.capture.stop="submitComment"
             @keydown.meta.enter.capture.stop="submitComment"
           >
             <div class="mb-4 flex items-center">
               <UserAvatar :user="$user().name" size="md" />
-              <span class="ml-2 text-base font-medium text-ink-gray-8">
+              <span class="ml-2 text-base-medium text-ink-gray-8">
                 {{ $user().full_name }}
               </span>
               <TabButtons

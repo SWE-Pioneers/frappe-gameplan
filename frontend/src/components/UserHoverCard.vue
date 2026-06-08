@@ -6,11 +6,11 @@
     </HoverCardTrigger>
     <HoverCardPortal>
       <HoverCardContent side="top" class="z-50 w-66">
-        <HoverCardArrow class="fill-surface-white" />
-        <div class="bg-surface-white p-3 rounded-lg shadow-2xl">
+        <HoverCardArrow class="fill-surface-base" />
+        <div class="bg-surface-base p-3 rounded-lg shadow-2xl">
           <div class="flex items-center gap-2.5">
             <div>
-              <div class="font-medium text-base text-ink-gray-8">
+              <div class="text-base-medium text-ink-gray-8">
                 {{ userData.full_name }}
               </div>
             </div>

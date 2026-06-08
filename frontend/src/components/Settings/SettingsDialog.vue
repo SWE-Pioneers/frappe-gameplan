@@ -1,16 +1,16 @@
 <template>
   <Dialog v-model:open="show" size="5xl" bare>
     <div class="flex" :style="{ height: 'calc(100vh - 8rem)' }">
-      <div class="flex w-52 shrink-0 flex-col bg-surface-menu-bar p-2">
+      <div class="flex w-52 shrink-0 flex-col bg-surface-sidebar p-2">
         <Dialog.Title as-child>
-          <h1 class="px-2 pt-2 text-lg font-semibold text-ink-gray-9">Settings</h1>
+          <h1 class="px-2 pt-2 text-xl-semibold text-ink-gray-9">Settings</h1>
         </Dialog.Title>
         <div class="mt-3">
           <button
             class="flex h-7 w-full items-center gap-2 rounded px-2 py-1"
             :class="[
               activeTab?.label == tab.label
-                ? 'bg-surface-white shadow-sm'
+                ? 'bg-surface-base shadow-sm'
                 : 'hover:bg-surface-gray-2',
             ]"
             v-for="tab in tabs"

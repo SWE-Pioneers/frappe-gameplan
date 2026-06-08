@@ -10,10 +10,10 @@
   >
     <div class="flex items-start w-full">
       <div class="inline-flex min-w-0 flex-1 mr-1">
-        <span class="text-lg mr-1.5 font-[emoji] leading-5">
+        <span class="text-xl mr-1.5 font-[emoji] leading-5">
           {{ space.icon }}
         </span>
-        <span class="text-base leading-5 text-ink-gray-9 font-medium truncate">
+        <span class="text-base-medium leading-5 text-ink-gray-9 truncate">
           {{ space.title }}
           <span
             v-if="space.is_private"
@@ -22,7 +22,7 @@
         </span>
       </div>
       <div class="!ml-auto flex">
-        <Badge v-if="getSpaceUnreadCount(space.name) > 0" class="group-hover:bg-surface-white">
+        <Badge v-if="getSpaceUnreadCount(space.name) > 0" class="group-hover:bg-surface-base">
           {{ getSpaceUnreadCount(space.name) }}
         </Badge>
       </div>

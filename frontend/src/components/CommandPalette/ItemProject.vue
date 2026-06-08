@@ -1,6 +1,6 @@
 <template>
   <div class="flex w-full items-center rounded px-2 py-2 text-base" v-if="space">
-    <span class="font-[emoji] size-4 leading-4 text-lg mr-3">{{ space.icon }}</span>
+    <span class="font-[emoji] size-4 leading-4 text-xl mr-3">{{ space.icon }}</span>
     <span v-if="category" class="font-medium inline-flex items-end text-ink-gray-5">
       {{ category?.title }}
       <div class="h-4 grid place-content-center mx-1">

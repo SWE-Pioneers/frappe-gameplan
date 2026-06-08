@@ -1,6 +1,6 @@
 <template>
   <div class="pb-20">
-    <header class="sticky top-0 z-10 border-b bg-surface-white px-5 py-2.5">
+    <header class="sticky top-0 z-10 border-b bg-surface-base px-5 py-2.5">
       <div class="flex items-center justify-between">
         <Breadcrumbs
           class="h-7"
@@ -18,7 +18,7 @@
               v-slot="{ isOpen }"
             >
               <button
-                class="mr-2 flex rounded-sm text-2xl leading-none"
+                class="mr-2 flex rounded-sm text-4xl leading-none"
                 :class="isOpen ? 'bg-surface-gray-3' : 'hover:bg-surface-gray-2'"
               >
                 {{ team.doc.icon }}

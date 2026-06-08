@@ -28,12 +28,12 @@
       <ErrorMessage class="mt-2" :message="resource.addMembers.error" />
     </div>
     <div class="mt-4" v-show="!addMembersIntent">
-      <h4 class="text-base font-medium">Members</h4>
+      <h4 class="text-base-medium">Members</h4>
       <ul role="list" class="mt-2 divide-y">
         <li class="flex w-full items-center py-2" v-for="member in members" :key="member.name">
           <UserAvatar :user="member.user" />
           <div class="ml-3">
-            <div class="text-base font-medium text-ink-gray-7">
+            <div class="text-base-medium text-ink-gray-7">
               {{ $user(member.user).full_name }}
             </div>
             <div class="text-sm text-ink-gray-5">

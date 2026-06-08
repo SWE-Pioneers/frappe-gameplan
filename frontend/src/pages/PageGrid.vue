@@ -32,7 +32,7 @@
           </div>
           <div class="mt-3 flex justify-between items-center">
             <div class="flex-grow w-full min-w-0">
-              <h1 class="text-base truncate font-semibold text-ink-gray-7">
+              <h1 class="text-base-semibold truncate text-ink-gray-7">
                 {{ d.title }}
               </h1>
               <div

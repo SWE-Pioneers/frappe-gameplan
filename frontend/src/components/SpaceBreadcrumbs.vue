@@ -8,7 +8,7 @@
       },
       {
         label: space?.title,
-        prefix: h('span', { class: 'grid place-items-center font-[emoji] text-lg' }, space?.icon),
+        prefix: h('span', { class: 'grid place-items-center font-[emoji] text-xl' }, space?.icon),
         suffix: space?.is_private ? 'lucide-lock' : null,
         route: { name: 'Space', params: { spaceId } },
       },

@@ -9,7 +9,7 @@
     <LastPostReminder class="mb-3" />
 
     <div class="overflow-x-auto flex gap-2 py-1 mb-3 items-center -mx-3 px-3">
-      <TabButtons :buttons="feedOptions" v-model="currentFeedType" />
+      <TabButtons :options="feedOptions" v-model="currentFeedType" />
       <div class="ml-auto flex space-x-2" v-if="currentFeedType !== 'drafts'">
         <Button
           v-if="discussionListRef?.discussions?.loading"

@@ -1,7 +1,7 @@
 <template>
   <div class="py-6">
     <div class="flex items-center justify-between">
-      <div class="text-xl font-semibold">Pages</div>
+      <div class="text-3xl-semibold">Pages</div>
       <div class="flex items-center space-x-2">
         <Dropdown
           :options="[

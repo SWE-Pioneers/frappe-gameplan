@@ -8,7 +8,7 @@
         </PageHeader>
         <div class="mx-auto w-full body-container pt-6">
           <div class="flex items-center justify-between">
-            <h2 class="text-xl font-semibold text-ink-gray-7">{{ people.length }} members</h2>
+            <h2 class="text-3xl-semibold text-ink-gray-7">{{ people.length }} members</h2>
             <div class="flex items-center gap-2">
               <TextInput
                 class="hidden sm:block"
@@ -73,7 +73,7 @@
                   <UserAvatarWithHover :user="user.user" size="2xl" />
                   <div class="ml-3 min-w-0">
                     <div class="flex items-center space-x-2">
-                      <div class="text-base font-medium text-ink-gray-8">
+                      <div class="text-base-medium text-ink-gray-8">
                         {{ $user(user.user).full_name }}
                       </div>
                       <Badge v-if="$user(user.user).isGuest">Guest</Badge>

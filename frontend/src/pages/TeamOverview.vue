@@ -10,7 +10,7 @@
 
     <div class="mt-8">
       <div class="mb-5 flex items-center justify-between space-x-2">
-        <h2 class="text-2xl font-semibold text-ink-gray-8">Projects</h2>
+        <h2 class="text-4xl-semibold text-ink-gray-8">Projects</h2>
         <div class="flex items-stretch space-x-2">
           <TabButtons :buttons="[{ label: 'Active' }, { label: 'Archived' }]" v-model="activeTab" />
           <Button
@@ -29,7 +29,7 @@
             class="group relative items-center rounded-lg p-3 shadow transition-colors focus-within:ring focus-within:ring-outline-gray-2 hover:bg-surface-gray-2"
           >
             <div>
-              <h3 class="overflow-hidden text-lg font-medium text-ink-gray-8">
+              <h3 class="overflow-hidden text-xl-medium text-ink-gray-8">
                 <router-link
                   :to="{
                     name: 'Project',
@@ -78,12 +78,12 @@
           @click="createNewProjectDialog = true"
         >
           <div
-            class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-surface-gray-2 transition-colors group-hover:bg-surface-white"
+            class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-surface-gray-2 transition-colors group-hover:bg-surface-base"
           >
             <span class="lucide-plus w-5 text-ink-gray-5" />
           </div>
           <div>
-            <h3 class="text-lg font-medium text-ink-gray-8">Add Project</h3>
+            <h3 class="text-xl-medium text-ink-gray-8">Add Project</h3>
           </div>
         </button>
       </ul>

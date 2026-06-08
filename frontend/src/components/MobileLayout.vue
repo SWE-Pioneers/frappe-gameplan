@@ -1,13 +1,13 @@
 <template>
   <div class="fixed inset-0 flex flex-col overflow-hidden touch-none">
     <div
-      class="flex-1 overflow-y-auto overscroll-auto bg-surface-white [-webkit-overflow-scrolling:touch]"
+      class="flex-1 overflow-y-auto overscroll-auto bg-surface-base [-webkit-overflow-scrolling:touch]"
       id="scrollContainer"
     >
       <slot />
     </div>
     <div
-      class="grid grid-cols-5 shrink-0 bg-surface-modal border-t border-outline-gray-2 standalone:pb-4"
+      class="grid grid-cols-5 shrink-0 bg-surface-elevation-2 border-t border-outline-gray-2 standalone:pb-4"
       :style="{ gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))` }"
       v-if="!isNewCommentOpen"
     >
