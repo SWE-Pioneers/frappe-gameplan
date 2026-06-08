@@ -1,7 +1,7 @@
 <template>
   <DiscussionEditor
     ref="textEditorRef"
-    editor-class="max-w-[unset] min-h-[calc(100vh-200px)] prose-v3 overflow-auto px-2 -mx-2"
+    editor-class="max-w-[unset] min-h-[calc(100vh-200px)] pb-40 prose-v3 overflow-auto px-2 -mx-2"
     :content="draftData.content"
     @change="(content: string) => (draftData.content = content)"
     :editable="author.name === sessionUser.name"

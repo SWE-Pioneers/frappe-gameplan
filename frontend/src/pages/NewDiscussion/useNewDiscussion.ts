@@ -1,4 +1,4 @@
-import { ref, computed, onMounted, provide, inject, watch, type InjectionKey } from 'vue'
+import { ref, computed, nextTick, onMounted, provide, inject, watch, type InjectionKey } from 'vue'
 import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'
 import { useLocalStorage } from '@vueuse/core'
 import { useDoc, useNewDoc, useDoctype, dialog } from 'frappe-ui'
@@ -6,7 +6,7 @@ import { debounce } from 'frappe-ui'
 import { useGroupedSpaceOptions } from '@/data/groupedSpaces'
 import { useSessionUser, useUser } from '@/data/users'
 import { tags } from '@/data/tags'
-import type { TextEditorRef, DraftDocumentCallback, DraftDocument, DraftMethods } from './types'
+import type { TextEditorRef, DraftDocument, DraftMethods, DraftData } from './types'
 import type { GPDraft, GPDiscussion } from '@/types/doctypes'
 
 export function useNewDiscussion(textEditorRef?: TextEditorRef) {
@@ -35,6 +35,8 @@ export function useNewDiscussion(textEditorRef?: TextEditorRef) {
   const isDeletingDraft = ref(false)
   const isPublishingSuccessfully = ref(false)
   const hasInteracted = ref(false)
+  const persistedDraftData = ref<DraftData | null>(null)
+  const isApplyingPersistedDraft = ref(false)
 
   // Computed values
   const isDraftChanged = computed(() => {
@@ -42,12 +44,11 @@ export function useNewDiscussion(textEditorRef?: TextEditorRef) {
     const currentContent = draftData.value.content
     const currentProject = draftData.value.project
 
-    if (draftDoc.value?.doc) {
-      let project = draftDoc.value.doc.project?.toString() || null
+    if (persistedDraftData.value) {
       return (
-        currentTitle !== (draftDoc.value.doc.title || '') ||
-        currentContent !== (draftDoc.value.doc.content || '') ||
-        currentProject !== project
+        currentTitle !== persistedDraftData.value.title ||
+        currentContent !== persistedDraftData.value.content ||
+        currentProject !== persistedDraftData.value.project
       )
     } else {
       return !!(currentTitle || currentContent || currentProject)
@@ -58,16 +59,21 @@ export function useNewDiscussion(textEditorRef?: TextEditorRef) {
   const savingDraft = ref(false)
 
   const canAutoSave = computed(() => {
-    return draftData.value.title.trim().length > 0 && !savingDraft.value
+    return !savingDraft.value && (draftData.value.title.trim().length > 0 || hasBodyContent())
   })
 
+  function hasBodyContent() {
+    return !!draftData.value.content && draftData.value.content !== '<p></p>'
+  }
+
   async function _updateDraft() {
-    if (!draftDoc.value?.doc) return
-    await draftDoc.value.setValue.submit({
+    if (!draftDoc.value) return
+    const doc = (await draftDoc.value.setValue.submit({
       title: draftData.value.title,
       content: draftData.value.content,
       project: draftData.value.project || undefined,
-    })
+    })) as GPDraft | null
+    persistedDraftData.value = doc ? getDraftData(doc) : getCurrentDraftData()
   }
 
   async function _createDraft() {
@@ -79,6 +85,7 @@ export function useNewDiscussion(textEditorRef?: TextEditorRef) {
     })
 
     const doc = await draft.submit()
+    persistedDraftData.value = getDraftData(doc)
     router.replace({ name: 'NewDiscussion', query: { draft: doc.name } })
     fetchDraftDoc(doc.name)
   }
@@ -88,7 +95,7 @@ export function useNewDiscussion(textEditorRef?: TextEditorRef) {
 
     savingDraft.value = true
     try {
-      if (draftDoc.value?.doc) {
+      if (draftDoc.value) {
         await _updateDraft()
       } else {
         await _createDraft()
@@ -107,7 +114,7 @@ export function useNewDiscussion(textEditorRef?: TextEditorRef) {
   watch(
     () => [draftData.value.title, draftData.value.content, draftData.value.project],
     () => {
-      if (canAutoSave.value) {
+      if (!isApplyingPersistedDraft.value && canAutoSave.value) {
         debouncedAutoSave()
       }
     },
@@ -146,21 +153,41 @@ export function useNewDiscussion(textEditorRef?: TextEditorRef) {
         publish: 'publish',
       },
     })
-    return draftDoc.value.onSuccess(() => updateLocalDraft())
+    return draftDoc.value.onSuccess((doc) => updateLocalDraft(doc))
   }
 
-  function updateLocalDraft() {
-    if (!draftDoc.value?.doc) return
-    const doc = draftDoc.value.doc
-    draftData.value.title = doc.title || ''
-    draftData.value.content = doc.content || ''
-    draftData.value.project = doc.project ? doc.project.toString() : null
+  function getDraftData(doc: GPDraft): DraftData {
+    return {
+      title: doc.title || '',
+      content: doc.content || '',
+      project: doc.project ? doc.project.toString() : null,
+    }
+  }
+
+  function getCurrentDraftData(): DraftData {
+    return {
+      title: draftData.value.title,
+      content: draftData.value.content,
+      project: draftData.value.project,
+    }
+  }
+
+  function updateLocalDraft(doc = draftDoc.value?.doc) {
+    if (!doc) return
+    const data = getDraftData(doc)
+    isApplyingPersistedDraft.value = true
+    persistedDraftData.value = data
+    draftData.value = { ...data }
+    nextTick(() => {
+      isApplyingPersistedDraft.value = false
+    })
   }
 
   function resetValues() {
     draftData.value.project = null
     draftData.value.title = ''
     draftData.value.content = ''
+    persistedDraftData.value = null
     localStorage.removeItem(getStorageKey())
   }
 
@@ -208,6 +235,7 @@ export function useNewDiscussion(textEditorRef?: TextEditorRef) {
 
   // Publish functionality
   function publish() {
+    hasInteracted.value = true
     if (!validateDraft(true)) {
       return
     }
@@ -215,7 +243,7 @@ export function useNewDiscussion(textEditorRef?: TextEditorRef) {
 
     const projectValue = draftData.value.project || undefined
 
-    if (draftDoc.value?.doc) {
+    if (draftDoc.value) {
       return draftDoc.value.setValue
         .submit({
           title: draftData.value.title,
@@ -330,14 +358,6 @@ export function useNewDiscussion(textEditorRef?: TextEditorRef) {
     }
 
     onMounted(() => {
-      if (draftDoc.value) {
-        draftDoc.value.onSuccess((doc: DraftDocumentCallback) => {
-          if (draftDoc.value?.doc?.name === doc.name) {
-            updateLocalDraft()
-          }
-        })
-      }
-
       if (textEditorRef) {
         setupEditorListeners(textEditorRef)
       }
@@ -356,9 +376,9 @@ export function useNewDiscussion(textEditorRef?: TextEditorRef) {
           message: 'You have unsaved changes. Do you want to save them before leaving?',
           confirmLabel: 'Save Draft',
           cancelLabel: 'Discard',
-          onConfirm: () => {
+          onConfirm: async () => {
             try {
-              immediateSave()
+              await immediateSave()
             } catch (e) {
               console.error('Failed to save draft before leaving:', e)
             }

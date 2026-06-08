@@ -2,12 +2,17 @@
   <FileUploader
     @success="(file) => setUserImage(file.file_url)"
     :validateFile="validateFile"
-    :fileTypes="['image/*']"
+    :fileTypes="['image/png', 'image/jpeg']"
     :uploadArgs="{ optimize: true }"
   >
     <template v-slot="{ file, progress, error, uploading, openFileSelector }">
       <div class="flex flex-col items-center">
-        <button class="group relative rounded-full border-2" @click="openFileSelector">
+        <button
+          class="group relative rounded-full border-2 disabled:cursor-not-allowed"
+          :disabled="uploading"
+          :aria-busy="uploading"
+          @click="openFileSelector"
+        >
           <div
             class="absolute inset-0 grid place-items-center rounded-full bg-gray-400/20 text-base text-ink-gray-5 transition-opacity"
             :class="[
@@ -101,7 +106,7 @@ export default {
     getRandomColor,
     validateFile(file) {
       let extn = file.name.split('.').pop().toLowerCase()
-      if (!['png', 'jpg'].includes(extn)) {
+      if (!['png', 'jpg', 'jpeg'].includes(extn)) {
         return 'Only PNG and JPG images are allowed'
       }
     },

@@ -65,10 +65,17 @@ class FloatingQuoteButtonView {
       return
     }
 
+    // Only offer "Reply" for a ranged TEXT selection. A NodeSelection (clicking
+    // an atom node like an image, video, iframe, or an existing richQuote) is
+    // also non-empty with `from !== to`, which used to surface the Reply button
+    // on top of the image viewer when a reader clicked a picture. `selection.node`
+    // is set only for a NodeSelection, so its absence narrows this to text
+    // selections — a text range spanning media is still a TextSelection, so
+    // quoting around media keeps working.
     if (
       !selection.empty &&
       selection.from !== selection.to &&
-      selection.node?.type.name !== 'richQuote'
+      !selection.node
     ) {
       const rect = getRectForSelection(view)
 

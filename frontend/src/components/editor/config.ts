@@ -1,6 +1,6 @@
 import type { Component } from 'vue'
 import { useFileUpload } from 'frappe-ui'
-import type { UploadedFile } from 'frappe-ui/editor'
+import type { MediaUploadRequestOptions, UploadedFile } from 'frappe-ui/editor'
 import FloatingQuoteButton from '@/components/RichQuoteExtension/floating-quote-button'
 import RichQuoteNodeExtension from '@/components/RichQuoteExtension/rich-quote-node-extension'
 import TextEditorMentionComponent from '@/components/TextEditorMentionComponent.vue'
@@ -75,6 +75,6 @@ export function richQuoteExtensions(handlers: RichQuoteHandlers = {}) {
  * The frappe file upload the v0 monolith invoked silently as its default. v1's
  * editor requires an explicit `uploadFunction`, so gameplan passes this one.
  */
-export function uploadFile(file: File): Promise<UploadedFile> {
-  return useFileUpload().upload(file, {})
+export function uploadFile(file: File, options?: MediaUploadRequestOptions): Promise<UploadedFile> {
+  return useFileUpload().upload(file, options ?? {})
 }
