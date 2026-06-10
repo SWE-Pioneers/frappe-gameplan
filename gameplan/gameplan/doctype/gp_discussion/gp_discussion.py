@@ -9,13 +9,14 @@ import gameplan
 from gameplan.gameplan.doctype.gp_notification.gp_notification import GPNotification
 from gameplan.gameplan.doctype.gp_unread_record.gp_unread_record import GPUnreadRecord
 from gameplan.mixins.activity import HasActivity
+from gameplan.mixins.attachments import HasAttachments
 from gameplan.mixins.mentions import HasMentions
 from gameplan.mixins.reactions import HasReactions
 from gameplan.mixins.tags import HasTags
 from gameplan.utils import get_document_revisions, remove_empty_trailing_paragraphs, url_safe_slug
 
 
-class GPDiscussion(HasActivity, HasMentions, HasReactions, HasTags, Document):
+class GPDiscussion(HasActivity, HasAttachments, HasMentions, HasReactions, HasTags, Document):
 	# Class Configuration
 	on_delete_cascade = ["GP Comment", "GP Discussion Visit", "GP Activity", "GP Poll"]
 	on_delete_set_null = ["GP Notification"]
@@ -29,6 +30,7 @@ class GPDiscussion(HasActivity, HasMentions, HasReactions, HasTags, Document):
 	]
 	mentions_field = "content"
 	tags_field = "content"
+	attachments_field = "content"
 
 	# Lifecycle Methods
 	def as_dict(self, *args, **kwargs):
@@ -88,6 +90,7 @@ class GPDiscussion(HasActivity, HasMentions, HasReactions, HasTags, Document):
 		self.notify_reactions()
 		self.log_title_update()
 		self.update_participants_count()
+		self.attach_files_in_content()
 
 	def before_save(self):
 		self.update_slug()

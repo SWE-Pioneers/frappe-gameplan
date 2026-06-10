@@ -6,16 +6,18 @@ from frappe.model.document import Document
 
 import gameplan
 from gameplan.gameplan.doctype.gp_unread_record.gp_unread_record import GPUnreadRecord
+from gameplan.mixins.attachments import HasAttachments
 from gameplan.mixins.mentions import HasMentions
 from gameplan.mixins.reactions import HasReactions
 from gameplan.mixins.tags import HasTags
 from gameplan.utils import get_document_revisions, remove_empty_trailing_paragraphs
 
 
-class GPComment(HasMentions, HasReactions, HasTags, Document):
+class GPComment(HasAttachments, HasMentions, HasReactions, HasTags, Document):
 	on_delete_set_null = ["GP Notification", "GP Discussion"]
 	mentions_field = "content"
 	tags_field = "content"
+	attachments_field = "content"
 
 	def before_insert(self):
 		if self.reference_doctype not in ["GP Discussion"]:
@@ -79,6 +81,7 @@ class GPComment(HasMentions, HasReactions, HasTags, Document):
 	def on_update(self):
 		self.notify_mentions()
 		self.notify_reactions()
+		self.attach_files_in_content()
 
 	@frappe.whitelist()
 	def get_revisions(self, fieldname="content"):

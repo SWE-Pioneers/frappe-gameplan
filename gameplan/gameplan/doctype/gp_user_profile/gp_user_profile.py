@@ -12,11 +12,17 @@ from rq.job import JobStatus
 
 import gameplan
 from gameplan.extends.client import check_permissions
+from gameplan.mixins.attachments import HasAttachments
 
 
-class GPUserProfile(Document):
+class GPUserProfile(HasAttachments, Document):
+	attachments_field = "readme"
+
 	def autoname(self):
 		self.name = self.generate_name()
+
+	def on_update(self):
+		self.attach_files_in_content()
 
 	def generate_name(self):
 		full_name = frappe.db.get_value("User", self.user, "full_name")

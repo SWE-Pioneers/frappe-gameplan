@@ -74,7 +74,13 @@ export function richQuoteExtensions(handlers: RichQuoteHandlers = {}) {
 /**
  * The frappe file upload the v0 monolith invoked silently as its default. v1's
  * editor requires an explicit `uploadFunction`, so gameplan passes this one.
+ *
+ * Uploads default to `private: true` so editor images/attachments are not served
+ * from the unauthenticated `/files/` path (frappe/security#206). The backend
+ * attaches each file to its parent doc on save (see gameplan/mixins/attachments.py),
+ * which is what lets other space members read the now-private file. The runtime
+ * `{ signal, onProgress }` the editor engine passes is preserved.
  */
 export function uploadFile(file: File, options?: MediaUploadRequestOptions): Promise<UploadedFile> {
-  return useFileUpload().upload(file, options ?? {})
+  return useFileUpload().upload(file, { private: true, ...(options ?? {}) })
 }

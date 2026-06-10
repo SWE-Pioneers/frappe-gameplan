@@ -6,7 +6,7 @@ import inspect
 import re
 from functools import wraps
 from html import unescape
-from urllib.parse import urlparse
+from urllib.parse import unquote, urlparse
 
 import frappe
 from bleach import clean
@@ -43,6 +43,31 @@ def extract_rich_quote_authors(html):
 			authors.append(author)
 			seen.add(author)
 	return authors
+
+
+def extract_file_urls(html):
+	"""Return distinct Frappe file paths referenced in HTML content.
+
+	Looks at src/href of img/a/video/source tags and keeps only same-origin paths
+	under /files/ or /private/files/. External (http/https/data) URLs are skipped.
+	The path is unquoted so the editor's `?fid=<File.name>` query and %-encoding are
+	dropped, matching how Frappe stores File.file_url (it unquotes on insert).
+	"""
+	if not html:
+		return []
+	soup = BeautifulSoup(html, "html.parser")
+	paths = set()
+	for tag in soup.find_all(["img", "a", "video", "source"]):
+		raw = tag.get("src") or tag.get("href")
+		if not raw:
+			continue
+		parsed = urlparse(raw)
+		if parsed.scheme or parsed.netloc:
+			continue
+		path = unquote(parsed.path)
+		if path.startswith(("/files/", "/private/files/")):
+			paths.add(path)
+	return list(paths)
 
 
 def remove_empty_trailing_paragraphs(html):
