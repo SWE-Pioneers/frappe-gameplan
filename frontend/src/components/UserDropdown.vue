@@ -3,7 +3,7 @@
     <template v-slot="{ open }">
       <button
         class="flex w-[14rem] items-center rounded-md px-2 py-2 text-left"
-        :class="open ? 'bg-surface-elevation-3 shadow-sm' : 'hover:bg-surface-gray-3'"
+        :class="open ? 'bg-surface-elevation-2 shadow-sm' : 'hover:bg-surface-gray-2'"
       >
         <GameplanLogo class="w-8 h-8 rounded" />
         <div class="ml-2 flex flex-col">
