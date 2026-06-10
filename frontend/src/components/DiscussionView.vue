@@ -105,6 +105,7 @@
             </div>
             <CommentEditor
               :value="discussion.doc.content"
+              :quote-source-id="`discussion:${discussion.doc.name}`"
               @change="discussion.doc.content = $event"
               @rich-quote="
                 handleRichQuote($event, {
@@ -145,6 +146,7 @@
           @rich-quote-click="handleRichQuoteClick"
           ref="commentsArea"
         />
+        <QuoteBacklinksPopover :store="quoteBacklinks" @select="scrollToQuotingComment" />
         <Dialog
           title="Move discussion to another space"
           @close="
@@ -278,6 +280,8 @@ import { tags } from '@/data/tags'
 import { useScrollPosition } from '@/utils/scrollContainer'
 import { isMobile } from '@/composables/isMobile'
 import { useRichQuoteHandler } from '@/components/RichQuoteExtension/useRichQuoteHandler'
+import { provideQuoteBacklinks } from '@/components/RichQuoteExtension/useQuoteBacklinks'
+import QuoteBacklinksPopover from '@/components/RichQuoteExtension/QuoteBacklinksPopover.vue'
 import { refreshUnreadCountForProjects } from '@/data/unreadCount'
 import { isSessionUser } from '@/data/session'
 
@@ -297,6 +301,12 @@ const { handleRichQuote, handleRichQuoteClick } = useRichQuoteHandler(
   commentsArea,
   mainPostContentEl,
 )
+
+const quoteBacklinks = provideQuoteBacklinks()
+
+function scrollToQuotingComment(commentId: string) {
+  commentsArea.value?.scrollToCommentById(commentId)
+}
 
 const editingPost = ref(false)
 const discussionMoveDialog = reactive<{

@@ -60,6 +60,7 @@
         >
           <CommentEditor
             v-if="comment.deleted_at == null"
+            :quote-source-id="`comment:${comment.name}`"
             :value="isEditing ? draftContent : comment.content"
             @change="
               (value: string) => {

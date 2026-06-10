@@ -146,7 +146,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, nextTick, onMounted, onUnmounted, watch, useTemplateRef } from 'vue'
+import {
+  ref,
+  computed,
+  nextTick,
+  onMounted,
+  onUnmounted,
+  watch,
+  watchEffect,
+  useTemplateRef,
+} from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useList } from 'frappe-ui'
 import { TabButtons, ErrorMessage } from 'frappe-ui'
@@ -163,6 +172,7 @@ import { GPActivity, GPComment, GPPoll } from '@/types/doctypes'
 import type { Editor } from '@tiptap/vue-3'
 import { tags } from '@/data/tags'
 import { isNewCommentOpen } from '@/data/newComment'
+import { injectQuoteBacklinks } from '@/components/RichQuoteExtension/useQuoteBacklinks'
 
 interface Props {
   doctype: string
@@ -187,7 +197,11 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 defineEmits<{
-  (e: 'rich-quote', quote: string, author: string): void
+  (
+    e: 'rich-quote',
+    quote: { html: string; occurrence: number },
+    source: { id: string; author: string },
+  ): void
   (e: 'rich-quote-click', payload: object): void
 }>()
 
@@ -214,6 +228,8 @@ const newCommentEditor = useTemplateRef('newCommentEditor')
 const addComment = ref(null)
 let mutationObserver: MutationObserver | undefined
 const commentEditorKey = ref(0)
+
+const quoteBacklinks = injectQuoteBacklinks()
 
 const comments = useList<GPComment>({
   doctype: 'GP Comment',
@@ -297,6 +313,12 @@ const polls = useList<GPPoll>({
       scrollToItem(poll)
     }
   },
+})
+
+watchEffect(() => {
+  if (quoteBacklinks) {
+    quoteBacklinks.commentsData.value = comments.data ?? null
+  }
 })
 
 // Computed

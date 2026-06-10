@@ -1,8 +1,11 @@
 import type { Component } from 'vue'
+import type { AnyExtension } from '@tiptap/core'
 import { useFileUpload } from 'frappe-ui'
 import type { MediaUploadRequestOptions, UploadedFile } from 'frappe-ui/editor'
-import FloatingQuoteButton from '@/components/RichQuoteExtension/floating-quote-button'
 import RichQuoteNodeExtension from '@/components/RichQuoteExtension/rich-quote-node-extension'
+import QuoteBacklinkDecoration, {
+  type QuoteBacklinkDecorationOptions,
+} from '@/components/RichQuoteExtension/quote-backlink-decoration'
 import TextEditorMentionComponent from '@/components/TextEditorMentionComponent.vue'
 import { activeUsers } from '@/data/users'
 import { tags as tagList } from '@/data/tags'
@@ -50,25 +53,32 @@ export interface RichQuoteClickPayload {
   quoteId: string
   author: string
   content: string
+  occurrence: number
 }
 
 export interface RichQuoteHandlers {
-  onQuote?: (html: string) => void
   onQuoteClick?: (payload: RichQuoteClickPayload) => void
+  backlinks?: QuoteBacklinkDecorationOptions
 }
 
 const noop = () => {}
 
 /**
  * gameplan-local RichQuote extensions, appended after the kit (spec §6). The
- * handlers re-emit so the host component can surface `@rich-quote` /
- * `@rich-quote-click`, exactly as the old wrapper did.
+ * handler re-emits so the host component can surface `@rich-quote-click`,
+ * exactly as the old wrapper did. The floating Reply button is no longer an
+ * extension — CommentEditor renders QuoteReplyButton.vue (a BubbleMenu) for
+ * read-only editors. `backlinks` (passed only inside discussions) adds the
+ * "quoted by" badge decorations to source posts/comments.
  */
 export function richQuoteExtensions(handlers: RichQuoteHandlers = {}) {
-  return [
-    FloatingQuoteButton.configure({ onClick: handlers.onQuote ?? noop }),
+  const extensions: AnyExtension[] = [
     RichQuoteNodeExtension.configure({ onClick: handlers.onQuoteClick ?? noop }),
   ]
+  if (handlers.backlinks) {
+    extensions.push(QuoteBacklinkDecoration.configure(handlers.backlinks))
+  }
+  return extensions
 }
 
 /**
