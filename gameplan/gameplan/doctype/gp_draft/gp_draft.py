@@ -26,16 +26,29 @@ class GPDraft(Document):
 
 		if self.type == "Discussion":
 			content = remove_query_params_from_images(self.content)
-			# The new discussion's on_update attaches the (private, unattached) editor
-			# files referenced in its content to itself — see HasAttachments. Editor
-			# uploads are never attached to the draft, so deleting the draft below does
-			# not cascade-delete the published discussion's files.
+			# New editor uploads are unattached and get picked up by HasAttachments on
+			# insert. Older drafts can still have files attached to the draft itself;
+			# move those before deleting the draft so Frappe doesn't cascade-delete them.
 			discussion = frappe.new_doc(
 				"GP Discussion", title=self.title, content=content, project=self.project
 			).insert()
+			self.move_attachments_to(discussion)
 
 			self.delete()
 			return discussion.name
+
+	def move_attachments_to(self, doc):
+		attachments = frappe.qb.get_query(
+			"File",
+			filters={"attached_to_doctype": self.doctype, "attached_to_name": self.name},
+		).run(pluck="name")
+		for attachment in attachments:
+			frappe.db.set_value(
+				"File",
+				attachment,
+				{"attached_to_doctype": doc.doctype, "attached_to_name": doc.name},
+				update_modified=False,
+			)
 
 
 def remove_query_params_from_images(content):

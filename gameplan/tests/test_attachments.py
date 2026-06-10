@@ -213,6 +213,30 @@ class TestContentAttachments(FrappeTestCase):
 		finally:
 			frappe.set_user("Administrator")
 
+	def test_draft_publish_moves_legacy_attached_file_to_discussion(self):
+		f = self._make_private_file("draft")
+		draft = frappe.get_doc(
+			doctype="GP Draft",
+			title="draft with image",
+			type="Discussion",
+			project=self.project.name,
+			content=f'<p>draft</p><img src="{f.file_url}?fid={f.name}">',
+		).insert(ignore_permissions=True)
+		frappe.db.set_value(
+			"File",
+			f.name,
+			{"attached_to_doctype": "GP Draft", "attached_to_name": draft.name},
+			update_modified=False,
+		)
+
+		discussion_name = draft.publish()
+
+		self.assertFalse(frappe.db.exists("GP Draft", draft.name))
+		self.assertTrue(frappe.db.exists("File", f.name))
+		row = self._attached_to(f.name)
+		self.assertEqual(row.attached_to_doctype, "GP Discussion")
+		self.assertEqual(str(row.attached_to_name), str(discussion_name))
+
 
 def _ensure_member(email):
 	if not frappe.db.exists("User", email):
