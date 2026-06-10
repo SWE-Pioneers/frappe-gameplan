@@ -56,6 +56,11 @@ export default defineConfig({
     alias: {
       '@': path.resolve(__dirname, 'src'),
     },
+    // The symlinked frappe-ui checkout (yarn dev:local) resolves @tiptap/pm from
+    // its own node_modules, yielding a second prosemirror-view instance. Cross-
+    // instance objects fail instanceof checks (e.g. a DecorationSet built by a
+    // gameplan extension inside the editor's view). Force single instances.
+    dedupe: ['prosemirror-state', 'prosemirror-view', 'prosemirror-model', 'prosemirror-transform'],
   },
   optimizeDeps: {
     include: ['feather-icons'],
