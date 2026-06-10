@@ -30,7 +30,7 @@
         <div class="ml-2 flex shrink-0 items-center space-x-2">
           <router-link
             v-if="d.discussion || d.task"
-            class="block text-sm font-medium text-ink-gray-5 hover:text-ink-gray-6"
+            class="block text-sm-medium text-ink-gray-5 hover:text-ink-gray-6"
             :to="
               d.discussion
                 ? {

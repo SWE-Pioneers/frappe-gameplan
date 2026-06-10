@@ -5,12 +5,18 @@ import frappe
 from frappe.model.document import Document
 
 import gameplan
+from gameplan.mixins.attachments import HasAttachments
 from gameplan.utils import url_safe_slug
 
 
-class GPPage(Document):
+class GPPage(HasAttachments, Document):
+	attachments_field = "content"
+
 	def before_save(self):
 		self.slug = url_safe_slug(self.title)
+
+	def on_update(self):
+		self.attach_files_in_content()
 
 
 def has_permission(doc, ptype="read", user=None):

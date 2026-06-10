@@ -5,14 +5,14 @@
       class="absolute inset-0 translate-y- z-[5] rounded border-2 -mx-4 -mb-4 mt-11 pointer-events-none"
     />
     <div
-      class="pb-2 flex items-center text-base text-ink-gray-8 pt-15 top-0 sticky bg-surface-white"
+      class="pb-2 flex items-center text-base text-ink-gray-8 pt-15 top-0 sticky bg-surface-base"
     >
       <UserInfo :email="_poll.owner" v-slot="{ user }">
         <UserProfileLink class="mr-3" :user="user.name">
           <UserAvatarWithHover :user="user.name" size="lg" />
         </UserProfileLink>
         <div class="md:flex md:items-center">
-          <UserProfileLink class="font-medium hover:text-ink-blue-4" :user="user.name">
+          <UserProfileLink class="font-medium hover:text-ink-blue-8" :user="user.name">
             {{ user.full_name }}
             <span class="hidden md:inline">&nbsp;&middot;&nbsp;</span>
           </UserProfileLink>
@@ -40,7 +40,7 @@
         <Dropdown
           align="end"
           :button="{
-            icon: 'more-horizontal',
+            icon: 'lucide-more-horizontal',
             variant: 'ghost',
             label: 'Poll Options',
           }"
@@ -48,7 +48,7 @@
         />
       </div>
     </div>
-    <div class="text-base text-ink-gray-8 font-semibold">{{ _poll.title }}</div>
+    <div class="text-base-semibold text-ink-gray-8">{{ _poll.title }}</div>
     <div class="mt-1 text-sm text-ink-gray-5">
       <span v-if="_poll.multiple_answers"> Multiple answers &middot; </span>
       <span v-if="_poll.anonymous"> Anonymous &middot; </span>
@@ -67,13 +67,13 @@
           class="mr-2 h-4 w-4 rounded-full border-2 text-sm"
           :class="
             isVotedByUser(option.title)
-              ? 'border-gray-900 bg-surface-gray-7'
+              ? 'border-gray-900 bg-surface-gray-10'
               : participated || isStopped
                 ? 'border-outline-gray-2'
                 : 'border-outline-gray-2 group-hover:border-outline-gray-3'
           "
         >
-          <span v-if="isVotedByUser(option.title)" class="lucide-check h-3 w-3 text-ink-white" />
+          <span v-if="isVotedByUser(option.title)" class="lucide-check h-3 w-3 text-ink-base" />
         </div>
         <div class="flex items-baseline">
           <div class="text-base text-ink-gray-8">{{ option.title }}</div>
@@ -87,12 +87,12 @@
       <Reactions doctype="GP Poll" :name="poll.name" :reactions="_poll.reactions" />
     </div>
     <Dialog title="Poll results" v-model:open="showDialog">
-      <h2 class="text-lg font-medium text-ink-gray-8">{{ _poll.title }}</h2>
+      <h2 class="text-xl-medium text-ink-gray-8">{{ _poll.title }}</h2>
       <div v-if="!pollResults" class="text-base text-ink-gray-6 mt-2">No votes yet</div>
       <div class="mt-6 space-y-6">
         <div v-for="option in pollResults" :key="option.title">
           <div class="flex items-center mb-2">
-            <h3 class="text-base text-ink-gray-8 font-medium">{{ option.title }}</h3>
+            <h3 class="text-base-medium text-ink-gray-8">{{ option.title }}</h3>
             <div class="mx-2 flex-1 border-b border-outline-gray-2"></div>
             <div class="text-base text-ink-gray-5">
               {{ option.votes }} {{ option.votes === 1 ? 'vote' : 'votes' }}
@@ -228,7 +228,7 @@ export default {
       return [
         {
           label: 'Show results',
-          icon: 'bar-chart-2',
+          icon: 'lucide-bar-chart-2',
           condition: () => !this._poll.anonymous,
           onClick: () => {
             this.showDialog = true
@@ -236,7 +236,7 @@ export default {
         },
         {
           label: 'Retract vote',
-          icon: 'corner-up-left',
+          icon: 'lucide-corner-up-left',
           condition: () =>
             !this._poll.anonymous &&
             this.participated &&
@@ -252,12 +252,12 @@ export default {
         },
         {
           label: 'Copy link',
-          icon: 'link',
+          icon: 'lucide-link',
           onClick: this.copyLink,
         },
         {
           label: 'Delete',
-          icon: 'trash',
+          icon: 'lucide-trash',
           condition: () => this.$isSessionUser(this._poll.owner),
           onClick: () => {
             dialog.danger({

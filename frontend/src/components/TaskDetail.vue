@@ -10,7 +10,7 @@
           <input
             type="text"
             placeholder="Title"
-            class="-ml-0.5 w-full rounded-sm border-none p-0.5 text-2xl bg-surface-white font-semibold text-ink-gray-8 focus:outline-none focus:ring-2 focus:ring-outline-gray-3"
+            class="-ml-0.5 w-full rounded-sm border-none p-0.5 text-4xl-semibold bg-surface-base text-ink-gray-8 focus:outline-none focus:ring-2 focus:ring-outline-gray-3"
             @blur="
               task.setValue.submit({
                 title: ($event.target as HTMLInputElement).value,
@@ -29,13 +29,11 @@
             ]"
           />
         </div>
-        <TextEditor
+        <TaskDescriptionEditor
           ref="description"
           editor-class="prose-v3 max-w-none focus-within:ring-2 focus-within:ring-outline-gray-3 rounded-sm p-0.5 -ml-0.5 min-h-[4rem]"
           placeholder="Description"
           :content="task.doc.description"
-          :bubbleMenu="true"
-          :floatingMenu="true"
           @blur="
             !$refs.description.editor.isEmpty
               ? task.setValue.submit({
@@ -93,12 +91,17 @@
         <div>Assignee</div>
         <div>
           <Combobox
+            class="w-full"
             placeholder="Assign a user"
             :options="assignableUsers"
             v-model="task.doc.assigned_to"
             @update:modelValue="changeAssignee"
             align="end"
-          />
+          >
+            <template #item-prefix="{ item }">
+              <UserAvatar :user="item.value" size="xs" />
+            </template>
+          </Combobox>
         </div>
         <div>Due Date</div>
         <div>
@@ -107,6 +110,7 @@
             variant="subtle"
             placeholder="Due date"
             format="D MMM, YYYY"
+            align="end"
             @update:modelValue="
               task.setValue.submit({
                 due_date: $event,
@@ -117,7 +121,9 @@
         <div>Space</div>
         <div>
           <Combobox
+            class="w-full"
             placeholder="Select space"
+            align="end"
             :options="spaceOptions"
             :modelValue="task.doc.project"
             @update:modelValue="changeSpace"
@@ -125,25 +131,19 @@
         </div>
         <div>Status</div>
         <div>
-          <Dropdown :options="statusOptions">
-            <Button>
-              <template #prefix>
-                <TaskStatusIcon :status="task.doc.status" />
-              </template>
-              {{ task.doc.status || 'Set status' }}
-            </Button>
-          </Dropdown>
+          <Select v-model="task.doc.status" :options="statusOptions" placeholder="Set status">
+            <template #item-prefix="{ item }">
+              <TaskStatusIcon :status="item.value" />
+            </template>
+          </Select>
         </div>
         <div>Priority</div>
         <div>
-          <Dropdown :options="priorityOptions">
-            <Button>
-              <template v-if="task.doc.priority" #prefix>
-                <TaskPriorityIcon :priority="task.doc.priority" />
-              </template>
-              {{ task.doc.priority || 'Set priority' }}
-            </Button>
-          </Dropdown>
+          <Select v-model="task.doc.priority" :options="priorityOptions" placeholder="Set priority">
+            <template #item-prefix="{ item }">
+              <TaskPriorityIcon :priority="item.value" />
+            </template>
+          </Select>
         </div>
       </div>
     </div>
@@ -153,12 +153,12 @@
 <script setup lang="ts">
 import { h, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import TextEditor from '@/components/TextEditor.vue'
+import TaskDescriptionEditor from '@/components/editor/TaskDescriptionEditor.vue'
 import CommentsList from '@/components/CommentsList.vue'
 import TaskStatusIcon from '@/components/NewTaskDialog/TaskStatusIcon.vue'
 import TaskPriorityIcon from '@/components/icons/TaskPriorityIcon.vue'
 import DropdownMoreOptions from './DropdownMoreOptions.vue'
-import { Dropdown, LoadingText, DatePicker, Button, Combobox, dialog } from 'frappe-ui'
+import { LoadingText, DatePicker, Button, Combobox, Select, dialog } from 'frappe-ui'
 import { vFocus } from '@/directives'
 import { activeUsers } from '@/data/users'
 import { useGroupedSpaceOptions } from '@/data/groupedSpaces'
@@ -210,6 +210,7 @@ const statusOptions = computed(() =>
     (status) => ({
       icon: () => h(TaskStatusIcon, { status }),
       label: status,
+      value: status,
       onClick: () => task.setValue.submit({ status }),
     }),
   ),
@@ -219,6 +220,7 @@ const priorityOptions = computed(() =>
   (['Low', 'Medium', 'High'] as Array<GPTask['priority']>).map((priority) => ({
     icon: () => h(TaskPriorityIcon, { priority }),
     label: priority,
+    value: priority,
     onClick: () => task.setValue.submit({ priority }),
   })),
 )

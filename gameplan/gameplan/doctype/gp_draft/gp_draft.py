@@ -26,27 +26,29 @@ class GPDraft(Document):
 
 		if self.type == "Discussion":
 			content = remove_query_params_from_images(self.content)
+			# New editor uploads are unattached and get picked up by HasAttachments on
+			# insert. Older drafts can still have files attached to the draft itself;
+			# move those before deleting the draft so Frappe doesn't cascade-delete them.
 			discussion = frappe.new_doc(
 				"GP Discussion", title=self.title, content=content, project=self.project
 			).insert()
-			attachments = frappe.db.get_all(
-				"File",
-				filters={"attached_to_doctype": "GP Draft", "attached_to_name": self.name},
-				fields=["file_name", "file_url", "is_private", "name"],
-			)
-			for attachment in attachments:
-				file = frappe.new_doc(
-					"File",
-					file_name=attachment.file_name,
-					file_url=attachment.file_url,
-					is_private=attachment.is_private,
-					attached_to_doctype=discussion.doctype,
-					attached_to_name=discussion.name,
-				)
-				file.insert()
+			self.move_attachments_to(discussion)
 
 			self.delete()
 			return discussion.name
+
+	def move_attachments_to(self, doc):
+		attachments = frappe.qb.get_query(
+			"File",
+			filters={"attached_to_doctype": self.doctype, "attached_to_name": self.name},
+		).run(pluck="name")
+		for attachment in attachments:
+			frappe.db.set_value(
+				"File",
+				attachment,
+				{"attached_to_doctype": doc.doctype, "attached_to_name": doc.name},
+				update_modified=False,
+			)
 
 
 def remove_query_params_from_images(content):

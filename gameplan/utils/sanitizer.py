@@ -83,6 +83,11 @@ def sanitize_content(html):
 	def attributes_filter(tag, name, value):
 		if name.startswith("data-"):
 			return True
+		# TipTap stores resized table column widths as a comma-separated
+		# `colwidth` attribute on cells; it is the authoritative source on
+		# reparse, so preserve it to keep custom column widths after save.
+		if name == "colwidth" and tag in ("td", "th"):
+			return True
 		return name in acceptable_attributes
 
 	attributes = {"*": attributes_filter, "svg": svg_attributes, "iframe": iframe_attribute_filter}

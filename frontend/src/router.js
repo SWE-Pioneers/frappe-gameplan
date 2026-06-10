@@ -273,11 +273,6 @@ let router = createRouter({
                   },
                 },
                 {
-                  name: 'ProjectDiscussionNew',
-                  path: 'discussions/new',
-                  component: () => import('@/pages/ProjectDiscussionNew.vue'),
-                },
-                {
                   name: 'ProjectTasks',
                   path: 'tasks',
                   component: () => import('@/pages/ProjectTasks.vue'),

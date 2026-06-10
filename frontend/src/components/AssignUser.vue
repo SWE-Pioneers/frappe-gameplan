@@ -11,7 +11,7 @@
         leave-to-class="opacity-0"
       >
         <ListboxOptions
-          class="absolute z-10 py-1 mt-1 bg-surface-white border rounded-md shadow-lg max-w-max"
+          class="absolute z-10 py-1 mt-1 bg-surface-base border rounded-md shadow-lg max-w-max"
         >
           <ListboxOption
             v-slot="{ active, selected }"

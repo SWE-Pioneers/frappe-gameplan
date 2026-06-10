@@ -28,7 +28,7 @@
         >
           <div class="border-b border-blue-600"></div>
           <span
-            class="absolute -top-2 left-1/2 -translate-x-1/2 bg-surface-white px-2 text-sm font-medium text-ink-blue-4"
+            class="absolute -top-2 left-1/2 -translate-x-1/2 bg-surface-base px-2 text-sm-medium text-ink-blue-8"
           >
             New comments
           </span>
@@ -60,13 +60,13 @@
         </div>
         <div
           v-show="showCommentBox"
-          class="w-full rounded-lg border bg-surface-white p-4 focus-within:border-outline-gray-3"
+          class="w-full rounded-lg border bg-surface-base p-4 focus-within:border-outline-gray-3"
           @keydown.ctrl.enter.capture.stop="submitComment"
           @keydown.meta.enter.capture.stop="submitComment"
         >
           <div class="mb-4 flex items-center sm:hidden">
             <UserAvatar :user="$user().name" size="sm" />
-            <span class="ml-2 text-base font-medium text-ink-gray-8">
+            <span class="ml-2 text-base-medium text-ink-gray-8">
               {{ $user().full_name }}
             </span>
           </div>
@@ -95,7 +95,7 @@
 import { ref, computed, nextTick, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useList } from 'frappe-ui'
-import CommentEditor from '@/components/CommentEditor.vue'
+import CommentEditor from '@/components/editor/CommentEditor.vue'
 import Comment from './Comment.vue'
 import Activity from './Activity.vue'
 import UserAvatar from './UserAvatar.vue'

@@ -6,14 +6,15 @@
       'max-h-[150px] overflow-hidden': !expand && collapsible,
     }"
   >
-    <TextEditor
+    <GPEditor
       ref="readme"
+      :extensions="extensions"
       editor-class="prose-v3"
       :content="resource.doc[fieldname]"
       :placeholder="placeholder"
       @change="(val) => (resource.doc[fieldname] = val)"
-      :bubbleMenu="true"
-      :floating-menu="true"
+      :bubble-menu="gameplanToolbar"
+      :floating-menu="gameplanFloatingToolbar"
       :editable="editReadme"
     />
     <div
@@ -67,7 +68,9 @@
 import { ref } from 'vue'
 import { Tooltip } from 'frappe-ui'
 import { useElementSize } from '@vueuse/core'
-import TextEditor from '@/components/TextEditor.vue'
+import GPEditor from '@/components/editor/GPEditor.vue'
+import { gameplanToolbar, gameplanFloatingToolbar } from '@/components/editor/toolbars'
+import { richTextExtensions } from '@/components/editor/richTextExtensions'
 
 export default {
   name: 'ReadmeEditor',
@@ -96,11 +99,14 @@ export default {
       default: false,
     },
   },
-  components: { TextEditor, Tooltip },
+  components: { GPEditor, Tooltip },
   data() {
     return {
       editReadme: false,
       expand: false,
+      extensions: richTextExtensions(),
+      gameplanToolbar,
+      gameplanFloatingToolbar,
     }
   },
   setup() {

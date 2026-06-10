@@ -9,10 +9,9 @@ import {
   Alert,
   Badge,
   request,
-  setConfig,
   frappeRequest,
   pageMetaPlugin,
-  resourcesPlugin,
+  FrappeUI,
   useCall,
 } from 'frappe-ui'
 import * as Sentry from '@sentry/vue'
@@ -36,9 +35,6 @@ let globalComponents = {
   Badge,
 }
 let app = createApp(App)
-setConfig('resourceFetcher', frappeRequest)
-setConfig('defaultListUrl', 'gameplan.extends.client.get_list')
-app.use(resourcesPlugin)
 app.use(pageMetaPlugin)
 app.use(router)
 app.mixin(resetDataMixin)
@@ -63,14 +59,26 @@ if (import.meta.env.DEV) {
       for (let key in values) {
         window[key] = values[key]
       }
-      window.system_timezone && setConfig('systemTimezone', window.system_timezone)
-      socket = initSocket()
-      app.config.globalProperties.$socket = socket
-      app.mount('#app')
+      setupApp()
     },
   })
 } else {
-  window.system_timezone && setConfig('systemTimezone', window.system_timezone)
+  setupApp()
+}
+
+// Runs once boot values are on `window` (inline script in prod, the dev
+// context call above in dev) so frappe-ui gets its full config in one place.
+function setupApp() {
+  app.use(FrappeUI, {
+    call: false,
+    socketio: false,
+    config: {
+      resourceFetcher: frappeRequest,
+      defaultListUrl: 'gameplan.extends.client.get_list',
+      systemTimezone: window.system_timezone || null,
+      maxFileSize: window.max_file_size ? Number(window.max_file_size) : null,
+    },
+  })
   socket = initSocket()
   app.config.globalProperties.$socket = socket
   app.mount('#app')

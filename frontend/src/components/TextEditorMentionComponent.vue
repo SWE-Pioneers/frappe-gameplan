@@ -9,7 +9,7 @@
     <UserHoverCard :user="node.attrs.id">
       <button
         @click="handleClick"
-        class="mention bg-surface-white hover:bg-surface-gray-1 text-ink-gray-8 inline-block"
+        class="mention bg-surface-base hover:bg-surface-gray-1 text-ink-gray-8 inline-block"
       >
         @{{ node.attrs.label || node.attrs.id || '' }}
       </button>

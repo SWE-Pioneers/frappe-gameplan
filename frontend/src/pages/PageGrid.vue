@@ -32,7 +32,7 @@
           </div>
           <div class="mt-3 flex justify-between items-center">
             <div class="flex-grow w-full min-w-0">
-              <h1 class="text-base truncate font-semibold text-ink-gray-7">
+              <h1 class="text-base-semibold truncate text-ink-gray-7">
                 {{ d.title }}
               </h1>
               <div
@@ -49,7 +49,7 @@
             <div class="shrink-0 ml-1 invisible group-hover:visible">
               <Dropdown
                 :button="{
-                  icon: 'more-horizontal',
+                  icon: 'lucide-more-horizontal',
                   label: 'Page Options',
                   variant: 'ghost',
                 }"
@@ -98,7 +98,7 @@ function getSpace(page: Page) {
 const getDropdownOptions = (page: Page) => [
   {
     label: 'Delete',
-    icon: 'trash',
+    icon: 'lucide-trash',
     onClick: () => {
       dialog.danger({
         title: 'Delete Page',

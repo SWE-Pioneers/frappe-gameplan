@@ -2,12 +2,12 @@
   <div class="relative flex h-full flex-col" v-if="postId">
     <div class="discussion-container">
       <div v-if="discussion.loading">
-        <div class="pb-2 pt-14 flex w-full items-center sticky top-0 z-[1] bg-surface-white">
+        <div class="pb-2 pt-14 flex w-full items-center sticky top-0 z-[1] bg-surface-base">
           <Avatar size="lg" label="A" class="mr-3 animate-pulse shrink-0">
             <div></div>
           </Avatar>
           <div class="flex flex-col md:block">
-            <div class="text-base font-medium bg-surface-gray-2 animate-pulse w-20 h-4"></div>
+            <div class="text-base-medium bg-surface-gray-2 animate-pulse w-20 h-4"></div>
           </div>
           <div class="ml-auto flex space-x-2">
             <Button>
@@ -18,7 +18,7 @@
           </div>
         </div>
         <div class="flex items-start justify-between space-x-1">
-          <h1 class="flex items-center text-2xl font-semibold animate-pulse">
+          <h1 class="flex items-center text-4xl-semibold animate-pulse">
             <span class="bg-surface-gray-3 h-5.5 w-32"> </span>
             <span class="bg-surface-gray-3 h-5.5 w-20 ml-2"> </span>
             <span class="bg-surface-gray-3 h-5.5 w-40 ml-2"> </span>
@@ -27,13 +27,13 @@
       </div>
       <template v-else-if="discussion.doc">
         <div>
-          <div class="pb-2 pt-14 flex w-full items-center sticky top-0 z-[1] bg-surface-white">
+          <div class="pb-2 pt-14 flex w-full items-center sticky top-0 z-[1] bg-surface-base">
             <UserProfileLink class="mr-3" :user="discussion.doc.owner">
               <UserAvatarWithHover size="lg" :user="discussion.doc.owner" />
             </UserProfileLink>
             <div class="flex flex-col md:block">
               <UserProfileLink
-                class="text-base font-medium text-ink-gray-8 hover:text-ink-blue-4"
+                class="text-base-medium text-ink-gray-8 hover:text-ink-blue-8"
                 :user="discussion.doc.owner"
               >
                 {{ $user(discussion.doc.owner).full_name }}
@@ -51,7 +51,7 @@
                 class="ml-auto"
                 align="end"
                 :button="{
-                  icon: 'more-horizontal',
+                  icon: 'lucide-more-horizontal',
                   variant: 'ghost',
                   label: 'Discussion Options',
                 }"
@@ -61,7 +61,7 @@
           </div>
           <div :class="{ 'pb-4 mt-1': !editingPost }">
             <div class="flex items-start justify-between space-x-1">
-              <h1 v-if="!editingPost" class="flex items-center text-2xl font-semibold">
+              <h1 v-if="!editingPost" class="flex items-center text-4xl-semibold">
                 <Tooltip v-if="discussion.doc.closed_at" text="This discussion is closed">
                   <span class="lucide-lock mr-2 h-4 w-4 text-ink-gray-6" />
                 </Tooltip>
@@ -95,7 +95,7 @@
                 <input
                   v-if="editingPost"
                   type="text"
-                  class="w-full rounded border-0 text-ink-gray-8 px-0 py-0.5 text-2xl font-semibold focus:ring-0"
+                  class="w-full rounded border-0 text-ink-gray-8 px-0 py-0.5 text-4xl-semibold focus:ring-0"
                   ref="title"
                   v-model="discussion.doc.title"
                   placeholder="Title"
@@ -105,6 +105,7 @@
             </div>
             <CommentEditor
               :value="discussion.doc.content"
+              :quote-source-id="`discussion:${discussion.doc.name}`"
               @change="discussion.doc.content = $event"
               @rich-quote="
                 handleRichQuote($event, {
@@ -145,6 +146,7 @@
           @rich-quote-click="handleRichQuoteClick"
           ref="commentsArea"
         />
+        <QuoteBacklinksPopover :store="quoteBacklinks" @select="scrollToQuotingComment" />
         <Dialog
           title="Move discussion to another space"
           @close="
@@ -195,7 +197,7 @@
           <div class="space-y-2">
             <label class="flex items-center justify-between">
               <div>
-                <div class="text-base font-medium text-ink-gray-9 mb-1">Pin Globally</div>
+                <div class="text-base-medium text-ink-gray-9 mb-1">Pin Globally</div>
                 <div class="text-sm text-ink-gray-5" v-if="pinDialog.pinGlobally">
                   Show in all discussions
                 </div>
@@ -234,7 +236,10 @@
         />
       </template>
     </div>
-    <div v-if="!isMobile" class="fixed bottom-3 h-9 grid place-content-center right-3 z-[2] print:hidden">
+    <div
+      v-if="!isMobile"
+      class="fixed bottom-3 h-9 grid place-content-center right-3 z-[2] print:hidden"
+    >
       <Button variant="ghost" v-show="isScrolled" @click="scrollToTop">
         <template #prefix>
           <span class="lucide-arrow-up h-5 w-5 text-ink-gray-6" />
@@ -263,7 +268,7 @@ import { until } from '@vueuse/core'
 import Reactions from './Reactions.vue'
 import UserAvatarWithHover from './UserAvatarWithHover.vue'
 import CommentsArea from '@/components/CommentsArea.vue'
-import CommentEditor from './CommentEditor.vue'
+import CommentEditor from './editor/CommentEditor.vue'
 import UserProfileLink from './UserProfileLink.vue'
 import RevisionsDialog from './RevisionsDialog.vue'
 import { vFocus } from '@/directives'
@@ -275,6 +280,8 @@ import { tags } from '@/data/tags'
 import { useScrollPosition } from '@/utils/scrollContainer'
 import { isMobile } from '@/composables/isMobile'
 import { useRichQuoteHandler } from '@/components/RichQuoteExtension/useRichQuoteHandler'
+import { provideQuoteBacklinks } from '@/components/RichQuoteExtension/useQuoteBacklinks'
+import QuoteBacklinksPopover from '@/components/RichQuoteExtension/QuoteBacklinksPopover.vue'
 import { refreshUnreadCountForProjects } from '@/data/unreadCount'
 import { isSessionUser } from '@/data/session'
 
@@ -294,6 +301,12 @@ const { handleRichQuote, handleRichQuoteClick } = useRichQuoteHandler(
   commentsArea,
   mainPostContentEl,
 )
+
+const quoteBacklinks = provideQuoteBacklinks()
+
+function scrollToQuotingComment(commentId: string) {
+  commentsArea.value?.scrollToCommentById(commentId)
+}
 
 const editingPost = ref(false)
 const discussionMoveDialog = reactive<{
@@ -422,24 +435,24 @@ const spaceOptions = useGroupedSpaceOptions({
 const actions = computed(() => [
   {
     label: 'Edit',
-    icon: 'edit',
+    icon: 'lucide-edit',
     onClick: () => {
       editingPost.value = true
     },
   },
   {
     label: 'Revisions',
-    icon: 'rotate-ccw',
+    icon: 'lucide-rotate-ccw',
     onClick: () => (showRevisionsDialog.value = true),
   },
   {
     label: 'Copy link',
-    icon: 'link',
+    icon: 'lucide-link',
     onClick: copyLink,
   },
   {
     label: 'Mark as unread',
-    icon: 'mail',
+    icon: 'lucide-mail',
     onClick: () => {
       discussion.markAsUnread.submit().then(() => {
         if (discussion.doc?.project) {
@@ -450,13 +463,13 @@ const actions = computed(() => [
   },
   {
     label: 'Bookmark',
-    icon: 'bookmark',
+    icon: 'lucide-bookmark',
     onClick: () => discussion.addBookmark.submit(),
     condition: () => !discussion.doc?.is_bookmarked,
   },
   {
     label: 'Pin discussion...',
-    icon: 'arrow-up-left',
+    icon: 'lucide-arrow-up-left',
     condition: () => !discussion.doc?.pinned_at,
     onClick: () => {
       pinDialog.show = true
@@ -464,7 +477,7 @@ const actions = computed(() => [
   },
   {
     label: 'Unpin discussion...',
-    icon: 'arrow-down-left',
+    icon: 'lucide-arrow-down-left',
     condition: () => !!discussion.doc?.pinned_at,
     onClick: () => {
       const scopeText =
@@ -483,7 +496,7 @@ const actions = computed(() => [
   },
   {
     label: 'Close discussion...',
-    icon: 'lock',
+    icon: 'lucide-lock',
     condition: () => !discussion.doc?.closed_at,
     onClick: () => {
       dialog.confirm({
@@ -498,7 +511,7 @@ const actions = computed(() => [
   },
   {
     label: 'Re-open discussion...',
-    icon: 'unlock',
+    icon: 'lucide-unlock',
     condition: () => discussion.doc?.closed_at,
     onClick: () => {
       dialog.confirm({
@@ -512,20 +525,20 @@ const actions = computed(() => [
   },
   {
     label: 'Remove Bookmark',
-    icon: 'bookmark',
+    icon: 'lucide-bookmark',
     onClick: () => discussion.removeBookmark.submit(),
     condition: () => discussion.doc?.is_bookmarked,
   },
   {
     label: 'Move to...',
-    icon: 'log-out',
+    icon: 'lucide-log-out',
     onClick: () => {
       discussionMoveDialog.show = true
     },
   },
   {
     label: 'Delete',
-    icon: 'trash',
+    icon: 'lucide-trash',
     condition: () => !!discussion.doc?.owner && isSessionUser(discussion.doc.owner),
     onClick: () => {
       dialog.danger({

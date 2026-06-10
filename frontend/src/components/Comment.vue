@@ -6,13 +6,13 @@
     />
     <UserInfo :email="comment.owner" v-slot="{ user }">
       <div
-        class="flex items-center text-base text-ink-gray-8 sticky top-0 pt-14 pb-2 bg-surface-white z-[1]"
+        class="flex items-center text-base text-ink-gray-8 sticky top-0 pt-14 pb-2 bg-surface-base z-[1]"
       >
         <UserProfileLink class="mr-3" :user="user.name">
           <UserAvatarWithHover size="lg" :user="user.name" />
         </UserProfileLink>
         <div class="md:flex md:items-center">
-          <UserProfileLink class="font-medium hover:text-ink-blue-4" :user="user.name">
+          <UserProfileLink class="font-medium hover:text-ink-blue-8" :user="user.name">
             {{ user.full_name }}
             <span class="hidden md:inline">&nbsp;&middot;&nbsp;</span>
           </UserProfileLink>
@@ -33,7 +33,7 @@
             </span>
             <div v-if="updateError">
               &nbsp;&middot;
-              <span class="text-ink-red-4"> Error</span>
+              <span class="text-ink-red-8"> Error</span>
             </div>
           </div>
         </div>
@@ -42,7 +42,7 @@
           class="ml-auto print:hidden"
           align="end"
           :button="{
-            icon: 'more-horizontal',
+            icon: 'lucide-more-horizontal',
             variant: 'ghost',
             label: 'Comment Options',
           }"
@@ -52,7 +52,7 @@
       <div class="flex-1">
         <div
           :class="{
-            'w-full rounded-lg border bg-surface-white p-4 focus-within:border-outline-gray-3':
+            'w-full rounded-lg border bg-surface-base p-4 focus-within:border-outline-gray-3':
               isEditing,
           }"
           @keydown.ctrl.enter.capture.stop="updateComment()"
@@ -60,6 +60,7 @@
         >
           <CommentEditor
             v-if="comment.deleted_at == null"
+            :quote-source-id="`comment:${comment.name}`"
             :value="isEditing ? draftContent : comment.content"
             @change="
               (value: string) => {
@@ -106,7 +107,7 @@ import { Dropdown, Tooltip, dayjsLocal } from 'frappe-ui'
 import { useList } from 'frappe-ui'
 import { copyToClipboard } from '@/utils'
 import UserProfileLink from './UserProfileLink.vue'
-import CommentEditor from './CommentEditor.vue'
+import CommentEditor from './editor/CommentEditor.vue'
 import Reactions from './Reactions.vue'
 import RevisionsDialog from './RevisionsDialog.vue'
 import UserAvatarWithHover from './UserAvatarWithHover.vue'
@@ -172,24 +173,24 @@ const copyLink = (comment: GPComment) => {
 const dropdownOptions = computed(() => [
   {
     label: 'Edit',
-    icon: 'edit',
+    icon: 'lucide-edit',
     onClick: () => startEditing(),
     condition: () => !props.comment.deleted_at && !props.readOnlyMode,
   },
   {
     label: 'Revisions',
-    icon: 'rotate-ccw',
+    icon: 'lucide-rotate-ccw',
     onClick: () => (showRevisionsDialog.value = true),
     condition: () => Boolean(props.comment.edited_at),
   },
   {
     label: 'Copy link',
-    icon: 'link',
+    icon: 'lucide-link',
     onClick: () => copyLink(props.comment),
   },
   {
     label: 'Delete',
-    icon: 'trash',
+    icon: 'lucide-trash',
     onClick: () => {
       dialog.danger({
         title: 'Delete comment',

@@ -2,7 +2,7 @@
   <div class="w-full space-y-5 py-6">
     <div class="sm:rounded sm:border sm:px-4 sm:py-3">
       <div class="mb-3 flex items-center justify-between">
-        <h2 class="text-xl font-semibold">Discussions</h2>
+        <h2 class="text-3xl-semibold">Discussions</h2>
         <Button :route="{ name: 'Discussions' }">View all</Button>
       </div>
       <DiscussionList
@@ -15,7 +15,7 @@
     <div class="grid grid-cols-1 gap-5 sm:grid-cols-1">
       <div class="sm:rounded sm:border sm:px-4 sm:py-3">
         <div class="mb-3 flex items-center justify-between">
-          <h2 class="text-xl font-semibold">Tasks</h2>
+          <h2 class="text-3xl-semibold">Tasks</h2>
           <Button :route="{ name: 'MyTasks' }">View all</Button>
         </div>
         <TaskList

@@ -1,72 +1,68 @@
-import { defineConfig, type PluginOption, type UserConfig } from 'vite'
+import { defineConfig, type PluginOption } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import vueJsx from '@vitejs/plugin-vue-jsx'
 import path from 'path'
 import { visualizer } from 'rollup-plugin-visualizer'
-import { getLocalFrappeUIDevConfig, importFrappeUIPlugin } from './vite-helpers'
+// @ts-expect-error frappe-ui/vite ships untyped JS; drop this once it gains types.
+import frappeui from 'frappe-ui/vite'
 
-export default defineConfig(async ({ mode }): Promise<UserConfig> => {
-  const { useLocalFrappeUI, localFrappeUIAliases } = getLocalFrappeUIDevConfig({
-    mode,
-    rootDir: __dirname,
-  })
-
-  const frappeui = await importFrappeUIPlugin({ useLocalFrappeUI })
-
-  const baseAliases = {
-    '@': path.resolve(__dirname, 'src'),
-  }
-
-  return {
-    define: {
-      __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: 'false',
-    },
-    plugins: [
-      frappeui({
-        frontendRoute: '/g',
-        frappeTypes: {
-          input: {
-            gameplan: [
-              'gp_project',
-              'gp_member',
-              'gp_team',
-              'gp_comment',
-              'gp_discussion',
-              'gp_page',
-              'gp_task',
-              'gp_poll',
-              'gp_guest_access',
-              'gp_invitation',
-              'gp_user_profile',
-              'gp_notification',
-              'gp_activity',
-              'gp_search_feedback',
-              'gp_draft',
-              'gp_tag',
-              'gp_pinned_project',
-            ],
-          },
+// frappe-ui is resolved through node_modules — the published package by default,
+// or the local ../frappe-ui checkout when symlinked via `yarn dev:local`. Either
+// way its `exports`/`imports` maps drive resolution, so no aliases are needed here.
+export default defineConfig({
+  define: {
+    __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: 'false',
+  },
+  plugins: [
+    frappeui({
+      frontendRoute: '/g',
+      frappeTypes: {
+        input: {
+          gameplan: [
+            'gp_project',
+            'gp_member',
+            'gp_team',
+            'gp_comment',
+            'gp_discussion',
+            'gp_page',
+            'gp_task',
+            'gp_poll',
+            'gp_guest_access',
+            'gp_invitation',
+            'gp_user_profile',
+            'gp_notification',
+            'gp_activity',
+            'gp_search_feedback',
+            'gp_draft',
+            'gp_tag',
+            'gp_pinned_project',
+          ],
         },
-      }),
-      vue(),
-      vueJsx(),
-      visualizer({ emitFile: true }) as PluginOption,
-    ],
-    server: {
-      host: '0.0.0.0',
-      allowedHosts: true,
-      fs: {
-        allow: ['..', 'node_modules', '../frappe-ui'],
       },
+    }),
+    vue(),
+    vueJsx(),
+    visualizer({ emitFile: true }) as PluginOption,
+  ],
+  server: {
+    host: '0.0.0.0',
+    allowedHosts: true,
+    // Allow serving the symlinked checkout's real path (yarn dev:local).
+    fs: {
+      allow: ['..', 'node_modules', '../frappe-ui'],
     },
-    resolve: {
-      alias: {
-        ...localFrappeUIAliases,
-        ...baseAliases,
-      },
+  },
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, 'src'),
     },
-    optimizeDeps: {
-      include: ['feather-icons'],
-    },
-  }
+    // The symlinked frappe-ui checkout (yarn dev:local) resolves @tiptap/pm from
+    // its own node_modules, yielding a second prosemirror-view instance. Cross-
+    // instance objects fail instanceof checks (e.g. a DecorationSet built by a
+    // gameplan extension inside the editor's view). Force single instances.
+    dedupe: ['prosemirror-state', 'prosemirror-view', 'prosemirror-model', 'prosemirror-transform'],
+  },
+  optimizeDeps: {
+    include: ['feather-icons'],
+  },
 })

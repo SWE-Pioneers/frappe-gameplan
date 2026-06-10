@@ -75,7 +75,7 @@
         </span>
         <div class="mb-3 md:px-[70px]">
           <input
-            class="w-full border-0 p-0 pt-4 text-3xl font-semibold focus:outline-none focus:ring-0 bg-surface-white text-ink-gray-8"
+            class="w-full border-0 p-0 pt-4 text-5xl-semibold focus:outline-none focus:ring-0 bg-surface-base text-ink-gray-8"
             type="text"
             v-model="title"
             @input="autosave"
@@ -84,7 +84,7 @@
             placeholder="Title"
           />
         </div>
-        <TextEditor
+        <PageEditor
           editor-class="rounded-b-lg max-w-[unset] prose-v3 pb-[50vh] md:px-[70px]"
           :content="content"
           @change="
@@ -94,7 +94,6 @@
             }
           "
           placeholder="Start writing here..."
-          :bubbleMenu="true"
           ref="textEditor"
         />
       </div>
@@ -105,7 +104,8 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount, useTemplateRef } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Breadcrumbs, TextEditor, usePageMeta, debounce, dayjsLocal } from 'frappe-ui'
+import { Breadcrumbs, usePageMeta, debounce, dayjsLocal } from 'frappe-ui'
+import PageEditor from '@/components/editor/PageEditor.vue'
 import PageHeader from '@/components/PageHeader.vue'
 import { useDoc, dialog } from 'frappe-ui'
 import { useSpace } from '@/data/spaces'
@@ -115,7 +115,7 @@ import DropdownMoreOptions from '@/components/DropdownMoreOptions.vue'
 import { relativeTimestamp } from '@/utils'
 const props = defineProps<{
   pageId: string
-  slug: string
+  slug?: string
   spaceId?: string
 }>()
 

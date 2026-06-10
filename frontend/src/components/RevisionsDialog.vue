@@ -18,7 +18,7 @@
             type="button"
             @click="currentRevisionIndex = index"
           >
-            <div class="text-sm font-medium">
+            <div class="text-sm-medium">
               {{ dayjsLocal(revision.creation).format('LLL') }}
             </div>
             <div class="mt-0.5 text-sm text-ink-gray-5">{{ revision.owner }}</div>
@@ -33,7 +33,7 @@
             </UserProfileLink>
             <div class="space-y-0.5">
               <UserProfileLink
-                class="font-medium text-ink-gray-8 hover:text-ink-blue-4"
+                class="font-medium text-ink-gray-8 hover:text-ink-blue-8"
                 :user="user.name"
               >
                 {{ user.full_name }}
@@ -59,7 +59,7 @@
 
   <BottomSheet :title v-else v-model="sheetVisible" @close-complete="handleSheetCloseComplete">
     <div v-if="orderedRevisions.length" class="flex flex-col">
-      <div class="sticky top-0 z-10 bg-surface-white pb-3 pt-1">
+      <div class="sticky top-0 z-10 bg-surface-base pb-3 pt-1">
         <div class="flex items-center justify-center gap-1">
           <button
             v-for="(revision, index) in orderedRevisions"
@@ -73,7 +73,7 @@
             <Motion
               :initial="false"
               class="block size-2 rounded-full"
-              :class="index === currentRevisionIndex ? 'bg-surface-gray-7' : 'bg-surface-gray-3'"
+              :class="index === currentRevisionIndex ? 'bg-surface-gray-10' : 'bg-surface-gray-3'"
               :animate="{
                 scale: index === currentRevisionIndex ? 1.2 : 1,
                 opacity: index === currentRevisionIndex ? 1 : 0.7,

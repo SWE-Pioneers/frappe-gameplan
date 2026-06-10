@@ -9,7 +9,10 @@
   cv11  — single-story lowercase 'a': cleaner, more contemporary feel
 */
 html {
-  font-feature-settings: 'calt' 1, 'cv01' 1, 'cv03' 1, 'cv04' 1, 'cv11' 1;
+  font-feature-settings:
+    'calt' 1,
+    'cv01' 1,
+    'cv11' 1;
 }
 
 /* ProseMirror disables ligatures by default; restore so the font-feature-settings
@@ -29,6 +32,23 @@ html {
     max-width: calc(720px + var(--discussion-padding));
     @apply w-full px-3 sm:px-5 mx-auto;
     @apply [--discussion-padding:1.5rem] sm:[--discussion-padding:2.5rem];
+  }
+}
+
+/* Flash on the source passage when navigating from a rich quote back to it.
+   Duration matches the 2.5s class-removal timeout in useRichQuoteHandler. */
+.highlighted-quote-target {
+  border-radius: 0.25rem;
+  animation: quote-target-flash 2.5s ease-out;
+}
+
+@keyframes quote-target-flash {
+  0%,
+  50% {
+    background-color: var(--surface-gray-3);
+  }
+  100% {
+    background-color: transparent;
   }
 }
 

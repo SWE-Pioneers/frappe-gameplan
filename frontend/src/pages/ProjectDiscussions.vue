@@ -2,12 +2,12 @@
   <div class="flex">
     <div class="h-full w-full py-6">
       <div class="mb-4.5 flex items-center justify-between">
-        <h2 class="text-xl font-semibold">Discussions</h2>
+        <h2 class="text-3xl-semibold">Discussions</h2>
         <Button
           variant="solid"
           icon-left="lucide-plus"
           v-if="!$readOnlyMode && !project.doc.archived_at"
-          :route="{ name: 'ProjectDiscussionNew' }"
+          :route="{ name: 'NewDiscussion' }"
         >
           Add new
         </Button>
@@ -21,7 +21,7 @@
   </div>
 </template>
 <script>
-import { Avatar, TextEditor } from 'frappe-ui'
+import { Avatar } from 'frappe-ui'
 import Link from '@/components/Link.vue'
 import Reactions from '@/components/Reactions.vue'
 import DiscussionList from '@/components/DiscussionList.vue'
@@ -31,7 +31,6 @@ export default {
   name: 'ProjectDiscussions',
   props: ['project', 'postId'],
   components: {
-    TextEditor,
     Avatar,
     Link,
     Reactions,

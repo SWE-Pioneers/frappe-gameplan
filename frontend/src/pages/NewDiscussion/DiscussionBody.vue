@@ -3,7 +3,7 @@
     <ErrorMessage :message="errorMessage || draftDoc?.publish.error" />
     <textarea
       ref="titleTextarea"
-      class="mt-1 w-full bg-transparent resize-none border-0 px-0 py-0.5 text-2xl text-ink-gray-8 font-semibold placeholder-ink-gray-3 focus:ring-0"
+      class="mt-1 w-full bg-transparent resize-none border-0 px-0 py-0.5 text-4xl-semibold text-ink-gray-8 placeholder-ink-gray-3 focus:ring-0"
       :value="draftData.title"
       placeholder="Title"
       rows="1"
@@ -15,18 +15,22 @@
       :disabled="sessionUser.name != author.name"
       @input="handleTitleInput"
     />
-    <TextEditorContent :editor="editor" />
+    <EditorContent :editor="editor" :class="editorClass" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { onMounted, nextTick, useTemplateRef } from 'vue'
-import { ErrorMessage, TextEditorContent } from 'frappe-ui'
+import { ErrorMessage } from 'frappe-ui'
+import { EditorContent } from 'frappe-ui/editor'
 import { useNewDiscussionContext } from './useNewDiscussion'
 import type { TextEditorInstance } from './types'
 
 interface Props {
   editor: TextEditorInstance['editor']
+  // Editor-content classes (e.g. `prose-v3`) forwarded from the GPEditor
+  // `#editor` slot scope — the renderless <TextEditor> applies no classes itself.
+  editorClass?: unknown
 }
 
 defineProps<Props>()

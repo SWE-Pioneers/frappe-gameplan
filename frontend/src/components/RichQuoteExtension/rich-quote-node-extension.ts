@@ -4,7 +4,12 @@ import RichQuoteNodeView from './RichQuoteNodeView.vue'
 
 export interface RichQuoteOptions {
   HTMLAttributes: Record<string, any>
-  onClick?: (props: { quoteId: string; author: string; content: string }) => void
+  onClick?: (props: {
+    quoteId: string
+    author: string
+    content: string
+    occurrence: number
+  }) => void
 }
 
 declare module '@tiptap/core' {
@@ -64,6 +69,20 @@ export const RichQuoteNodeExtension = Node.create<RichQuoteOptions>({
           }
           return {
             'data-author': attributes.author,
+          }
+        },
+      },
+      // which occurrence of the quoted text within the source was selected;
+      // disambiguates identical passages when scrolling back / placing badges
+      occurrence: {
+        default: 0,
+        parseHTML: (element) => Number(element.getAttribute('data-rich-quote-occurrence')) || 0,
+        renderHTML: (attributes) => {
+          if (!attributes.occurrence) {
+            return {}
+          }
+          return {
+            'data-rich-quote-occurrence': attributes.occurrence,
           }
         },
       },

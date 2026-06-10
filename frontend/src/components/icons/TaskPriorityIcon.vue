@@ -3,9 +3,9 @@
     <div
       class="h-3 w-3 rounded-full"
       :class="{
-        'bg-surface-red-5': priority === 'High',
-        'bg-surface-amber-5': priority === 'Medium',
-        'bg-surface-gray-5': priority === 'Low',
+        'bg-surface-red-7': priority === 'High',
+        'bg-surface-amber-3': priority === 'Medium',
+        'bg-surface-gray-8': priority === 'Low',
       }"
     ></div>
   </div>

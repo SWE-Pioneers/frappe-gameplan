@@ -10,7 +10,7 @@
         v-for="option in modelValue"
         :key="option.value"
         :class="
-          focusedOption === option ? 'bg-surface-white ring-2 ring-blue-600' : 'bg-surface-white'
+          focusedOption === option ? 'bg-surface-base ring-2 ring-blue-600' : 'bg-surface-base'
         "
       >
         {{ option.displayValue || option.label }}
@@ -41,7 +41,7 @@
                 @after-leave="query = ''"
               >
                 <ComboboxOptions
-                  class="mt-1 max-h-60 w-full overflow-auto rounded-md bg-surface-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm"
+                  class="mt-1 max-h-60 w-full overflow-auto rounded-md bg-surface-base py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm"
                 >
                   <div
                     v-if="filteredOptions.length === 0"
@@ -59,7 +59,7 @@
                     <li
                       class="relative cursor-default select-none px-3 py-2"
                       :class="{
-                        'bg-blue-500 text-ink-white': active,
+                        'bg-blue-500 text-ink-base': active,
                         'text-ink-gray-8': !active,
                       }"
                     >

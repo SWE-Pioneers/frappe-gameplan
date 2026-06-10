@@ -1,7 +1,7 @@
 <template>
   <div class="leading-5">
     <span class="text-base text-ink-gray-7">
-      <UserProfileLink class="hover:text-ink-blue-4" :user="discussion.owner">
+      <UserProfileLink class="hover:text-ink-blue-8" :user="discussion.owner">
         {{ $user(discussion.owner).full_name }}
       </UserProfileLink>
       in

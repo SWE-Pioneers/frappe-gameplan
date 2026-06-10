@@ -24,7 +24,7 @@ const headerRef = useTemplateRef('headerRef')
 const { height } = useElementSize(headerRef)
 
 const headerClasses = computed(() => {
-  const base = 'z-10 border-b bg-surface-white px-3 sm:px-5 flex flex-col justify-center min-h-12'
+  const base = 'z-10 border-b bg-surface-base px-3 sm:px-5 flex flex-col justify-center min-h-12'
   const position = props.fixedOnMobile ? 'fixed inset-x-0 top-0 sm:sticky sm:top-0' : 'sticky top-0'
 
   return [base, position]

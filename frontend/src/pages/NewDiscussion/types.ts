@@ -18,12 +18,6 @@ export type DraftDocument = ReturnType<
   typeof import('frappe-ui').useDoc<GPDraft, DraftMethods>
 > | null
 
-// Callback parameter types
-export interface DraftDocumentCallback {
-  name: string
-  [key: string]: any
-}
-
 // Editor-related types
 export interface TextEditorInstance {
   editor: Editor

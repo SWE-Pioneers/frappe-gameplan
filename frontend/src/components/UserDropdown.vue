@@ -3,11 +3,11 @@
     <template v-slot="{ open }">
       <button
         class="flex w-[14rem] items-center rounded-md px-2 py-2 text-left"
-        :class="open ? 'bg-surface-selected shadow-sm' : 'hover:bg-surface-gray-3'"
+        :class="open ? 'bg-surface-elevation-2 shadow-sm' : 'hover:bg-surface-gray-2'"
       >
         <GameplanLogo class="w-8 h-8 rounded" />
         <div class="ml-2 flex flex-col">
-          <div class="text-base font-medium text-ink-gray-8 leading-none">Gameplan</div>
+          <div class="text-base-medium text-ink-gray-8 leading-none">Gameplan</div>
           <div class="mt-1 hidden text-sm text-ink-gray-6 sm:inline leading-none">
             {{ user.full_name }}
           </div>
@@ -36,7 +36,7 @@ const { setTheme } = useTheme()
 
 const dropdownItems = computed(() => [
   {
-    icon: 'user',
+    icon: 'lucide-user',
     label: 'My Profile',
     route: {
       name: 'PersonProfile',
@@ -53,7 +53,7 @@ const dropdownItems = computed(() => [
     ],
   },
   {
-    icon: 'settings',
+    icon: 'lucide-settings',
     label: 'Settings & Members',
     onClick: () => showSettingsDialog(),
     condition: () => user.isNotGuest,
@@ -64,17 +64,17 @@ const dropdownItems = computed(() => [
     submenu: [
       {
         label: 'Light Mode',
-        icon: 'sun',
+        icon: 'lucide-sun',
         onClick: () => setTheme('light'),
       },
       {
         label: 'Dark Mode',
-        icon: 'moon',
+        icon: 'lucide-moon',
         onClick: () => setTheme('dark'),
       },
       {
         label: 'System Default',
-        icon: 'monitor',
+        icon: 'lucide-monitor',
         onClick: () => setTheme('system'),
       },
     ],
@@ -100,7 +100,7 @@ const dropdownItems = computed(() => [
     },
   },
   {
-    icon: 'log-out',
+    icon: 'lucide-log-out',
     label: 'Log out',
     onClick: () => session.logout.submit(),
   },

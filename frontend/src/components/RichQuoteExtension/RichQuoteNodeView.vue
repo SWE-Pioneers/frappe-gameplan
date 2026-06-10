@@ -42,6 +42,7 @@ function handleClick() {
       quoteId: props.node.attrs.quoteId,
       author: props.node.attrs.author,
       content: htmlContent,
+      occurrence: props.node.attrs.occurrence ?? 0,
     })
   } else {
     setSelectionToEnd()

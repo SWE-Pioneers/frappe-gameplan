@@ -20,24 +20,20 @@
       </li>
     </ul>
     <div>
-      <Autocomplete
-        :options="invitableUsers"
-        v-model="selectedUser"
-        placeholder="Add member by name"
-      >
-        <template #item-prefix="{ option }">
-          <UserAvatar :user="option.email" size="sm" />
+      <Combobox :options="invitableUsers" v-model="selectedUser" placeholder="Add member by name">
+        <template #item-prefix="{ item }">
+          <UserAvatar :user="item.email" size="sm" />
         </template>
-      </Autocomplete>
+      </Combobox>
       <ErrorMessage class="mt-2" :message="resource.addMembers.error" />
     </div>
     <div class="mt-4" v-show="!addMembersIntent">
-      <h4 class="text-base font-medium">Members</h4>
+      <h4 class="text-base-medium">Members</h4>
       <ul role="list" class="mt-2 divide-y">
         <li class="flex w-full items-center py-2" v-for="member in members" :key="member.name">
           <UserAvatar :user="member.user" />
           <div class="ml-3">
-            <div class="text-base font-medium text-ink-gray-7">
+            <div class="text-base-medium text-ink-gray-7">
               {{ $user(member.user).full_name }}
             </div>
             <div class="text-sm text-ink-gray-5">
@@ -66,8 +62,7 @@
   </Dialog>
 </template>
 <script>
-import { Autocomplete, ErrorMessage } from 'frappe-ui'
-import { Combobox, ComboboxInput, ComboboxOptions, ComboboxOption } from '@headlessui/vue'
+import { Combobox, ErrorMessage } from 'frappe-ui'
 import { activeUsers } from '@/data/users'
 
 export default {
@@ -76,10 +71,6 @@ export default {
   components: {
     ErrorMessage,
     Combobox,
-    ComboboxInput,
-    ComboboxOptions,
-    ComboboxOption,
-    Autocomplete,
   },
   data() {
     return {
@@ -90,8 +81,10 @@ export default {
     }
   },
   watch: {
-    selectedUser(user) {
-      if (user === null) return
+    selectedUser(value) {
+      if (value === null) return
+      let user = this.invitableUsers.find((user) => user.value === value)
+      if (!user) return
       if (!this.membersToAdd.includes(user)) {
         this.membersToAdd.push(user)
         this.query = ''
@@ -151,7 +144,7 @@ export default {
 
           if (emailRegex.test(this.query)) {
             users.push({
-              icon: 'mail',
+              icon: 'lucide-mail',
               email: this.query,
             })
           }

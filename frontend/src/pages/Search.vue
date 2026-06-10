@@ -10,7 +10,6 @@
             ref="searchInput"
             class="flex-1"
             placeholder="Search or press / to focus"
-            autocomplete="off"
             v-focus
             :model-value="query"
             @update:model-value="updateQuery"
@@ -233,10 +232,10 @@
                 <div class="flex items-center">
                   <div
                     v-if="item.title"
-                    class="text-base font-medium text-ink-gray-9"
+                    class="text-base-medium text-ink-gray-9"
                     v-html="item.title"
                   />
-                  <div class="text-base font-medium text-ink-gray-9" v-else>
+                  <div class="text-base-medium text-ink-gray-9" v-else>
                     {{ $user(item.author).full_name }}
                   </div>
                   <span class="px-1 leading-none text-sm text-ink-gray-5">

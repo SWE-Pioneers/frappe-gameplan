@@ -2,7 +2,7 @@
   <div class="flex min-h-0 flex-col">
     <div class="flex items-center justify-between">
       <div class="flex items-center gap-2">
-        <h2 class="text-xl font-semibold leading-none text-ink-gray-9">Invite People</h2>
+        <h2 class="text-3xl-semibold leading-none text-ink-gray-9">Invite People</h2>
       </div>
     </div>
     <div class="mt-4 space-y-4">
@@ -16,9 +16,8 @@
       />
       <template v-if="emails">
         <div>
-          <FormControl
+          <Select
             label="Role"
-            type="select"
             :options="[
               { label: 'Admin', value: 'Gameplan Admin' },
               { label: 'Member', value: 'Gameplan Member' },
@@ -29,14 +28,12 @@
           <p class="mt-2 text-base text-ink-gray-8">{{ description }}</p>
         </div>
         <div v-if="role === 'Gameplan Guest'">
-          <label class="text-sm leading-4 text-ink-gray-6"> Invite Guest to Spaces </label>
-          <div class="mt-2">
-            <MultiSelect
-              :options="groupedSpaceOptions"
-              v-model="selectedProjects"
-              placeholder="Select spaces"
-            />
-          </div>
+          <MultiSelect
+            label="Invite Guest to Spaces"
+            :options="groupedSpaceOptions"
+            v-model="selectedProjects"
+            placeholder="Select spaces"
+          />
         </div>
         <ErrorMessage :message="inviteByEmail.error" />
         <Button
@@ -86,7 +83,7 @@
                     pendingInvitations.delete.params.name === invitation.name
                   "
                 >
-                  <span class="text-ink-red-4"> Delete? </span>
+                  <span class="text-ink-red-8"> Delete? </span>
                 </Button>
               </div>
             </Tooltip>
@@ -99,7 +96,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { MultiSelect, Tooltip } from 'frappe-ui'
+import { MultiSelect, Select, Tooltip } from 'frappe-ui'
 import { useCall, useList } from 'frappe-ui'
 import { useGroupedSpaceOptions } from '@/data/groupedSpaces'
 import { GPInvitation } from '@/types/doctypes'

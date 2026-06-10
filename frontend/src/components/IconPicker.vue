@@ -10,7 +10,7 @@
     <template #body>
       <div class="left-1/2 mt-3 max-w-max -translate-x-1/2 transform px-4 sm:px-0">
         <div
-          class="relative max-h-96 overflow-y-auto rounded-lg pb-3 bg-surface-white shadow-2xl ring-1 ring-black ring-opacity-5"
+          class="relative max-h-96 overflow-y-auto rounded-lg pb-3 bg-surface-elevation-2 shadow-2xl ring-1 ring-black ring-opacity-5"
         >
           <div class="flex gap-2 px-3 pb-1 pt-3">
             <div class="flex-1">
@@ -19,19 +19,18 @@
                 placeholder="Search by keyword"
                 v-model="search"
                 :debounce="300"
-                autocomplete="off"
               />
             </div>
             <Button @click="setRandom">Random</Button>
           </div>
           <div class="w-96"></div>
           <div class="px-3" v-for="(emojis, group) in emojiGroups" :key="group">
-            <div class="sticky top-0 bg-surface-white pb-2 pt-3 text-sm text-ink-gray-6">
+            <div class="sticky top-0 bg-surface-elevation-2 pb-2 pt-3 text-sm text-ink-gray-6">
               {{ group }}
             </div>
             <div class="grid w-96 grid-cols-12 place-items-center">
               <button
-                class="h-8 w-8 rounded-md p-1 text-2xl hover:bg-surface-gray-2 focus:outline-none focus:ring focus:ring-blue-200"
+                class="h-8 w-8 rounded-md p-1 text-4xl hover:bg-surface-gray-2 focus:outline-none focus:ring focus:ring-blue-200"
                 v-for="emoji in emojis"
                 :key="emoji.description"
                 @click="$emit('update:modelValue', emoji.emoji)"

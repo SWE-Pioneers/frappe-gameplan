@@ -3,7 +3,7 @@
     :to="to"
     :isActive="isActive"
     class="flex items-center rounded px-2 py-1 text-ink-gray-7 transition h-7"
-    activeClass="bg-surface-selected shadow-sm"
+    activeClass="bg-surface-elevation-3 shadow-sm"
     inactiveClass="hover:bg-surface-gray-2"
   >
     <div class="flex w-full items-center space-x-2">

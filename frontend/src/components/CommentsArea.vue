@@ -28,7 +28,7 @@
         >
           <div class="border-b border-blue-600"></div>
           <span
-            class="absolute -top-2 left-1/2 -translate-x-1/2 bg-surface-white px-2 text-sm font-medium text-ink-blue-4"
+            class="absolute -top-2 left-1/2 -translate-x-1/2 bg-surface-base px-2 text-sm-medium text-ink-blue-8"
           >
             New comments
           </span>
@@ -81,7 +81,7 @@
       ref="addComment"
     >
       <div class="sm:ml-60">
-        <div class="discussion-container border-t sm:border-t-0 bg-surface-white sm:py-3">
+        <div class="discussion-container border-t sm:border-t-0 bg-surface-base sm:py-3">
           <div v-show="!showCommentBox" class="py-3 sm:py-0">
             <button
               class="flex w-full items-center rounded-lg bg-surface-gray-2 px-2 py-2 text-left text-base text-ink-gray-5 hover:bg-surface-gray-3"
@@ -93,13 +93,13 @@
           </div>
           <div
             v-show="showCommentBox"
-            class="w-full sm:rounded-lg sm:border bg-surface-white py-3 sm:p-4 focus-within:border-outline-gray-3"
+            class="w-full sm:rounded-lg sm:border bg-surface-base py-3 sm:p-4 focus-within:border-outline-gray-3"
             @keydown.ctrl.enter.capture.stop="submitComment"
             @keydown.meta.enter.capture.stop="submitComment"
           >
             <div class="mb-4 flex items-center">
               <UserAvatar :user="$user().name" size="md" />
-              <span class="ml-2 text-base font-medium text-ink-gray-8">
+              <span class="ml-2 text-base-medium text-ink-gray-8">
                 {{ $user().full_name }}
               </span>
               <TabButtons
@@ -146,11 +146,20 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, nextTick, onMounted, onUnmounted, watch, useTemplateRef } from 'vue'
+import {
+  ref,
+  computed,
+  nextTick,
+  onMounted,
+  onUnmounted,
+  watch,
+  watchEffect,
+  useTemplateRef,
+} from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useList } from 'frappe-ui'
 import { TabButtons, ErrorMessage } from 'frappe-ui'
-import CommentEditor from '@/components/CommentEditor.vue'
+import CommentEditor from '@/components/editor/CommentEditor.vue'
 import Comment from './Comment.vue'
 import Activity from './Activity.vue'
 import PollEditor from './PollEditor.vue'
@@ -163,6 +172,7 @@ import { GPActivity, GPComment, GPPoll } from '@/types/doctypes'
 import type { Editor } from '@tiptap/vue-3'
 import { tags } from '@/data/tags'
 import { isNewCommentOpen } from '@/data/newComment'
+import { injectQuoteBacklinks } from '@/components/RichQuoteExtension/useQuoteBacklinks'
 
 interface Props {
   doctype: string
@@ -187,7 +197,11 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 defineEmits<{
-  (e: 'rich-quote', quote: string, author: string): void
+  (
+    e: 'rich-quote',
+    quote: { html: string; occurrence: number },
+    source: { id: string; author: string },
+  ): void
   (e: 'rich-quote-click', payload: object): void
 }>()
 
@@ -214,6 +228,8 @@ const newCommentEditor = useTemplateRef('newCommentEditor')
 const addComment = ref(null)
 let mutationObserver: MutationObserver | undefined
 const commentEditorKey = ref(0)
+
+const quoteBacklinks = injectQuoteBacklinks()
 
 const comments = useList<GPComment>({
   doctype: 'GP Comment',
@@ -297,6 +313,12 @@ const polls = useList<GPPoll>({
       scrollToItem(poll)
     }
   },
+})
+
+watchEffect(() => {
+  if (quoteBacklinks) {
+    quoteBacklinks.commentsData.value = comments.data ?? null
+  }
 })
 
 // Computed

@@ -2,7 +2,7 @@
   <RouterLink :to="linkTo" custom v-slot="{ href, navigate }">
     <a
       :href="href"
-      class="group relative block h-15 sm:rounded-[10px] select-none transition-colors duration-150 active:bg-surface-gray-2 sm:hover:bg-surface-gray-2"
+      class="group relative block h-15 sm:rounded-[10px] select-none transition-colors duration-150 active:bg-surface-gray-2 sm:hover:bg-surface-gray-1"
       @click="handleRowClick($event, navigate)"
     >
       <div class="flex h-full items-center overflow-hidden px-3 py-2">
@@ -120,7 +120,7 @@
       <!-- Separator -->
       <div class="pl-1" v-if="index < total - 1">
         <div
-          class="ml-16 mr-3 h-px border-t border-outline-gray-modals transition-opacity group-hover:opacity-0"
+          class="ml-16 mr-3 h-px border-t border-outline-elevation-2 transition-opacity group-hover:opacity-0"
         />
       </div>
     </a>

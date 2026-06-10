@@ -1,6 +1,6 @@
 <template>
   <div class="flex">
-    <div class="bg-surface-menu-bar min-w-[256px] pointer-events-none min-h-screen">
+    <div class="bg-surface-sidebar min-w-[256px] pointer-events-none min-h-screen">
       <div class="p-2">
         <UserDropdown />
       </div>
@@ -10,7 +10,7 @@
             v-for="link in navigation"
             :key="link.name"
             class="flex items-center rounded px-2 py-1 text-ink-gray-7 transition"
-            activeClass="bg-surface-selected shadow-sm"
+            activeClass="bg-surface-elevation-3 shadow-sm"
             inactiveClass="hover:bg-surface-gray-2"
           >
             <div class="flex w-full items-center space-x-2">
@@ -30,7 +30,7 @@
           <div class="mb-2 mt-0.5 space-y-0.5">
             <div class="flex h-7 items-center rounded px-2 text-ink-gray-7 transition">
               <span class="inline-flex min-w-0 items-center space-x-2">
-                <span class="flex-shrink-0 flex h-5 w-6 items-center justify-center text-xl">
+                <span class="flex-shrink-0 flex h-5 w-6 items-center justify-center text-3xl">
                   {{ space.icon }}
                 </span>
                 <span class="truncate text-sm flex-grow">
@@ -44,10 +44,10 @@
     </div>
     <div class="body-container pt-14">
       <div class="max-w-xl mx-auto">
-        <div class="text-2xl font-semibold text-ink-gray-8">Welcome to Gameplan</div>
+        <div class="text-4xl-semibold text-ink-gray-8">Welcome to Gameplan</div>
 
         <div class="mt-2 pt-8 border-t">
-          <h2 class="text-base font-medium text-ink-gray-8 mb-2">Let's create your first space</h2>
+          <h2 class="text-base-medium text-ink-gray-8 mb-2">Let's create your first space</h2>
           <p class="text-p-sm text-ink-gray-6">
             A space is where your discussions live. Create one for your team, project, or any topic
             you want to discuss and organize.
@@ -73,7 +73,6 @@
                     (value) => (space.title = value.length <= 50 ? value : value.slice(0, 50))
                   "
                   maxlength="50"
-                  autocomplete="off"
                   description="Give your space a short and descriptive name"
                 >
                   <template #suffix>
@@ -87,7 +86,7 @@
           </div>
         </div>
         <div class="mt-8 border-t pt-8">
-          <h3 class="text-base font-medium text-ink-gray-8 mb-2">Invite team members</h3>
+          <h3 class="text-base-medium text-ink-gray-8 mb-2">Invite team members</h3>
           <p class="text-sm text-ink-gray-6">
             Add email addresses of people you'd like to invite to this space
           </p>

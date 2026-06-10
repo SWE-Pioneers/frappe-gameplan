@@ -1,6 +1,6 @@
 <template>
   <div class="isolate" ref="el">
-    <div class="flex items-center gap-2 py-2 bg-surface-white z-[1]">
+    <div class="flex items-center gap-2 py-2 bg-surface-base z-[1]">
       <div class="text-base text-ink-gray-8">
         {{ noCategories ? 'All spaces' : group.title || group.name }}
       </div>

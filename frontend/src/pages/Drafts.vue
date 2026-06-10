@@ -8,12 +8,16 @@
           :options="[
             {
               label: 'Delete drafts',
-              icon: 'trash-2',
+              icon: 'lucide-trash-2',
               onClick: () => (isBulkDeleteMode = true),
             },
           ]"
         />
-        <Button icon-left="lucide-plus" variant="solid" :route="{ name: 'NewDiscussion' }">
+        <Button
+          icon-left="lucide-plus"
+          variant="solid"
+          @click="router.push({ name: 'NewDiscussion' })"
+        >
           Add new
         </Button>
       </template>
@@ -76,7 +80,7 @@
               <div class="ml-4 flex-1 min-w-0">
                 <div class="flex items-center min-w-0">
                   <span
-                    class="overflow-hidden text-ellipsis whitespace-nowrap text-ink-gray-8 text-base font-medium"
+                    class="overflow-hidden text-ellipsis whitespace-nowrap text-ink-gray-8 text-base-medium"
                   >
                     {{ draft.title }}
                   </span>
@@ -109,7 +113,7 @@
             </a>
           </RouterLink>
           <div
-            class="mx-3 h-px border-t border-outline-gray-modals transition-opacity group-hover:opacity-0"
+            class="mx-3 h-px border-t border-outline-elevation-2 transition-opacity group-hover:opacity-0"
             v-if="index < (drafts.data?.length || 0) - 1"
           ></div>
         </template>
@@ -149,6 +153,7 @@ import { useSpace } from '@/data/spaces'
 import { relativeTimestamp } from '@/utils'
 import PageHeader from '@/components/PageHeader.vue'
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { motion, AnimatePresence } from 'motion-v'
 import DropdownMoreOptions from '@/components/DropdownMoreOptions.vue'
 
@@ -167,6 +172,7 @@ interface DeleteDraftsResponse {
 const isBulkDeleteMode = ref(false)
 const selectedDrafts = ref<string[]>([])
 const showDeleteConfirm = ref(false)
+const router = useRouter()
 
 function toggleSelection(name: string) {
   if (selectedDrafts.value.includes(name)) {

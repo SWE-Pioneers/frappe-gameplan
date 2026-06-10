@@ -2,7 +2,7 @@
   <div class="@container" v-if="tasks.data?.length">
     <div v-for="group in groupedTasks" :key="group.title">
       <button
-        class="group flex w-full items-baseline rounded-sm bg-surface-menu-bar px-2.5 py-2 text-base transition hover:bg-surface-gray-2"
+        class="group flex w-full items-baseline rounded-sm bg-surface-sidebar px-2.5 py-2 text-base transition hover:bg-surface-gray-2"
         v-if="group.title && group.tasks.length"
         @click="isOpen[group.title] = !isOpen[group.title]"
       >
@@ -52,7 +52,7 @@
                   </Dropdown>
                 </Tooltip>
                 <div
-                  class="ml-2.5 overflow-hidden text-ellipsis whitespace-nowrap text-base font-medium leading-4 text-ink-gray-8"
+                  class="ml-2.5 overflow-hidden text-ellipsis whitespace-nowrap text-base-medium leading-4 text-ink-gray-8"
                 >
                   {{ d.title }}
                 </div>
@@ -91,9 +91,9 @@
                     <div
                       class="h-2 w-2 rounded-full"
                       :class="{
-                        'bg-surface-red-5': d.priority === 'High',
-                        'bg-surface-amber-5': d.priority === 'Medium',
-                        'bg-surface-gray-5': d.priority === 'Low',
+                        'bg-surface-red-7': d.priority === 'High',
+                        'bg-surface-amber-7': d.priority === 'Medium',
+                        'bg-surface-gray-8': d.priority === 'Low',
                       }"
                     ></div>
                     <span class="ml-2 text-base text-ink-gray-5">

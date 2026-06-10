@@ -2,7 +2,7 @@
   <ScrollAreaViewport
     @mouseenter="onMouseEnter"
     @mouseleave="onMouseLeave"
-    class="inline-flex group/sidebar h-full flex-1 flex-col overflow-y-auto border-r bg-surface-menu-bar pb-40 w-60"
+    class="inline-flex group/sidebar h-full flex-1 flex-col overflow-y-auto border-r bg-surface-sidebar pb-40 w-60"
   >
     <div class="flex flex-col px-2 py-2">
       <UserDropdown />
@@ -122,11 +122,11 @@
               :key="space.name"
               :to="{ name: 'Space', params: { spaceId: space.name } }"
               class="flex h-7 items-center rounded px-2 text-ink-gray-7 transition"
-              activeClass="bg-surface-selected shadow-sm"
+              activeClass="bg-surface-elevation-3 shadow-sm"
               inactiveClass="hover:bg-surface-gray-2"
             >
               <span class="inline-flex min-w-0 items-center w-full">
-                <span class="flex-shrink-0 flex h-5 w-6 items-center justify-center text-xl">
+                <span class="flex-shrink-0 flex h-5 w-6 items-center justify-center text-3xl">
                   {{ space.icon }}
                 </span>
                 <span class="truncate text-sm flex-grow w-full ml-2">

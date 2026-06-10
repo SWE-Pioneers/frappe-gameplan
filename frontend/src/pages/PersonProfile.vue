@@ -39,10 +39,10 @@
                 imagePreview.show = true
               }
             "
-            class="rounded-full shrink-0 bg-surface-white outline-none hover:brightness-110 focus-visible:ring focus-visible:ring-outline-gray-3"
+            class="rounded-full shrink-0 bg-surface-base outline-none hover:brightness-110 focus-visible:ring focus-visible:ring-outline-gray-3"
           >
             <UserImage
-              class="h-[100px] w-[100px] rounded-full border-4 border-outline-white object-cover"
+              class="h-[100px] w-[100px] rounded-full border-4 border-outline-base object-cover"
               :user="currentUser.name"
             />
           </button>
@@ -57,7 +57,7 @@
           </button>
         </div>
         <div class="ml-6 flex-1">
-          <h2 class="mt-2 text-3xl font-semibold text-ink-gray-8">
+          <h2 class="mt-2 text-5xl-semibold text-ink-gray-8">
             {{ user ? user.full_name : profile.full_name }}
           </h2>
           <p v-if="profile.bio" class="mt-2 text-base text-ink-gray-6">
