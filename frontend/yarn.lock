@@ -1948,10 +1948,10 @@ framer-motion@^12.25.0:
     motion-utils "^12.39.0"
     tslib "^2.4.0"
 
-frappe-ui@1.0.0-beta.5:
-  version "1.0.0-beta.5"
-  resolved "https://registry.yarnpkg.com/frappe-ui/-/frappe-ui-1.0.0-beta.5.tgz#f0a7afe12d3861499184156dd07c4037733aed1b"
-  integrity sha512-ik0l7WYCUfEhvRO5qcLayReYGdOiXtybYPfRpU3svgeKvka6Z1SMcfHpJCDJk5sOvaoGJ6dKwtPYEfAgqKx6kQ==
+frappe-ui@1.0.0-beta.6:
+  version "1.0.0-beta.6"
+  resolved "https://registry.yarnpkg.com/frappe-ui/-/frappe-ui-1.0.0-beta.6.tgz#a0ae881839f45b3c0cb9d1455e9c3418faddc121"
+  integrity sha512-qrPMNElioV7vbLs98+sP99UwaT7VEDP3f6d/gD05oczxxrTU0r7cmF81pAZ+cr+lvDho8Q8ORcuqCX+vE7C2LA==
   dependencies:
     "@floating-ui/dom" "^1.7.4"
     "@headlessui/vue" "^1.7.14"
