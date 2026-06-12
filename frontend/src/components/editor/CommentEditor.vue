@@ -9,9 +9,10 @@ import { quoteBacklinksPluginKey } from '@/components/RichQuoteExtension/quote-b
 import { gameplanToolbar } from './toolbars'
 import { commentExtensions } from './commentExtensions'
 
-// gameplan's comment box: the lighter CommentKit (no table / toc / slash / iframe)
-// + @-mentions + #-tags + RichQuote. The shared `gameplanToolbar` self-prunes to
-// the comment-available buttons (spec §5), so it needs no separate curation.
+// gameplan's comment box: the lighter CommentKit (no toc / iframe) + tables +
+// @-mentions + #-tags + RichQuote + slash commands. The shared `gameplanToolbar`
+// self-prunes to the comment-available buttons (spec §5), so it needs no separate
+// curation.
 const props = withDefaults(
   defineProps<{
     value?: string
