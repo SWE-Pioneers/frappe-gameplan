@@ -5,8 +5,12 @@ on:
   push:
     branches: [main, develop]
 
+# GitHub downgrades this token to read-only for fork-originated runs regardless of
+# what is declared here, so write access only applies to trusted same-repo PRs (which
+# comment inline below). Fork PRs are reported by ui-test-report.yml via workflow_run.
 permissions:
   contents: read
+  pull-requests: write
 
 jobs:
   test:
@@ -87,11 +91,52 @@ jobs:
         uses: cypress-io/github-action@v6
         with:
           working-directory: frontend
-          record: true
-          key: 9c23c39a-b56b-46d5-b673-44faf1f1da83
         env:
           CYPRESS_BASE_URL: http://gameplan.test:8000
-          CYPRESS_RECORD_KEY: 9c23c39a-b56b-46d5-b673-44faf1f1da83
+
+      # Same-repo PRs have a read-write token, so comment directly here for instant
+      # feedback. Fork PRs (read-only token) are handled by ui-test-report.yml, which
+      # consumes the artifacts uploaded below — hence the same-repo-only guard.
+      - name: Build markdown report
+        if: ${{ always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository }}
+        run: python .github/scripts/junit_to_markdown.py frontend/cypress/results "${{ github.event.pull_request.head.sha }}" > "$RUNNER_TEMP/ui-test-report.md"
+
+      - name: Comment results on PR (same-repo)
+        uses: marocchino/sticky-pull-request-comment@v2
+        if: ${{ always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository }}
+        with:
+          header: ui-test-results
+          path: ${{ runner.temp }}/ui-test-report.md
+
+      # Uploaded for the workflow_run reporter (fork PRs): the JUnit XML plus the
+      # event payload, which the report job needs to resolve which PR to comment on.
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: ${{ always() }}
+        with:
+          name: cypress-results
+          path: frontend/cypress/results/*.xml
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Upload event file
+        uses: actions/upload-artifact@v4
+        if: ${{ always() }}
+        with:
+          name: cypress-event
+          path: ${{ github.event_path }}
+          retention-days: 7
+
+      - name: Upload failure screenshots & videos
+        uses: actions/upload-artifact@v4
+        if: ${{ failure() }}
+        with:
+          name: cypress-failure-artifacts
+          path: |
+            frontend/cypress/screenshots
+            frontend/cypress/videos
+          if-no-files-found: ignore
+          retention-days: 7
 
       - name: Stop server
         run: |

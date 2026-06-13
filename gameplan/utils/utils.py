@@ -71,17 +71,22 @@ def extract_file_urls(html):
 
 
 def remove_empty_trailing_paragraphs(html):
-	from bs4 import BeautifulSoup
+	from bs4 import BeautifulSoup, NavigableString
 
 	soup = BeautifulSoup(html, "html.parser")
-	# remove p, br tags that are at the end with no content
-	all_tags = soup.find_all(True)
-	all_tags.reverse()
-	for tag in all_tags:
-		if tag.name in ["br", "p"] and not tag.contents:
-			tag.extract()
+	# Walk nodes in reverse document order, including text nodes, and peel off only
+	# genuinely-trailing empty <br>/<p>. Text nodes must be considered: a <br> followed
+	# by real text is a mid-content line break, not a stray trailing one, so stop at the
+	# first non-whitespace text. (Element-only walks miss this and drop interior breaks.)
+	for node in reversed(list(soup.descendants)):
+		if isinstance(node, NavigableString):
+			if node.strip():
+				break
+			continue
+		if node.name in ("br", "p") and not node.get_text(strip=True):
+			node.extract()
 		else:
-			# break on first non-empty tag
+			# break on first non-empty element
 			break
 	return str(soup)
 
