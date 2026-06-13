@@ -19,7 +19,14 @@ permissions:
 jobs:
   report:
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion != 'skipped' && github.repository_owner == 'frappe' }}
+    # Fork PRs only — same-repo PRs comment inline from ui-test.yml, so skipping them
+    # here avoids a duplicate comment. (head_repository differs from the base repo
+    # only when the run originated from a fork.)
+    if: >-
+      github.event.workflow_run.conclusion != 'skipped'
+      && github.repository_owner == 'frappe'
+      && github.event.workflow_run.event == 'pull_request'
+      && github.event.workflow_run.head_repository.full_name != github.repository
     steps:
       - name: Download artifacts from test run
         uses: actions/download-artifact@v4

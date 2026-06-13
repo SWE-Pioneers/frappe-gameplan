@@ -5,10 +5,13 @@ on:
   push:
     branches: [main, develop]
 
-# Read-only: this workflow also runs untrusted code from fork PRs, so it must not
-# hold write permissions. Results are reported by ui-test-report.yml via workflow_run.
+# GitHub downgrades this token to read-only for fork-originated runs regardless of
+# what is declared here, so write access only applies to trusted same-repo PRs (which
+# comment inline below). Fork PRs are reported by ui-test-report.yml via workflow_run.
 permissions:
   contents: read
+  checks: write
+  pull-requests: write
 
 jobs:
   test:
@@ -92,9 +95,19 @@ jobs:
         env:
           CYPRESS_BASE_URL: http://gameplan.test:8000
 
-      # Reporting happens in ui-test-report.yml (workflow_run) so it works for fork
-      # PRs too, where this workflow's token is read-only. Here we only upload the
-      # raw results + the event payload (needed to resolve the PR to comment on).
+      # Same-repo PRs have a read-write token, so comment directly here for instant
+      # feedback. Fork PRs (read-only token) are handled by ui-test-report.yml, which
+      # consumes the artifacts uploaded below — hence the same-repo-only guard.
+      - name: Publish test report comment (same-repo PRs)
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: ${{ always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository }}
+        with:
+          check_name: UI Test Results
+          comment_mode: always
+          files: frontend/cypress/results/*.xml
+
+      # Uploaded for the workflow_run reporter (fork PRs): the JUnit XML plus the
+      # event payload, which the report job needs to resolve which PR to comment on.
       - name: Upload test results
         uses: actions/upload-artifact@v4
         if: ${{ always() }}
