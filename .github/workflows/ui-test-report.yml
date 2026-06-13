@@ -1,0 +1,40 @@
+name: UI Test Report
+
+# Runs after "UI Test" completes. Triggered by workflow_run, it executes in the
+# base-repo (trusted) context with a read-write token, so it can post a results
+# comment even when the test run came from a fork PR — where the test workflow's
+# own token is read-only and cannot comment.
+on:
+  workflow_run:
+    workflows: ["UI Test"]
+    types:
+      - completed
+
+permissions:
+  contents: read
+  actions: read
+  checks: write
+  pull-requests: write
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion != 'skipped' && github.repository_owner == 'frappe' }}
+    steps:
+      - name: Download artifacts from test run
+        uses: actions/download-artifact@v4
+        with:
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
+          path: artifacts
+
+      - name: Publish test report comment
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        with:
+          check_name: UI Test Results
+          comment_mode: always
+          # workflow_run context: tell the action which commit/PR the results belong to
+          commit: ${{ github.event.workflow_run.head_sha }}
+          event_file: artifacts/cypress-event/event.json
+          event_name: ${{ github.event.workflow_run.event }}
+          files: artifacts/cypress-results/*.xml
