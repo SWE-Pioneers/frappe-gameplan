@@ -13,7 +13,6 @@ on:
 permissions:
   contents: read
   actions: read
-  checks: write
   pull-requests: write
 
 jobs:
@@ -28,6 +27,11 @@ jobs:
       && github.event.workflow_run.event == 'pull_request'
       && github.event.workflow_run.head_repository.full_name != github.repository
     steps:
+      # Checks out the default branch (trusted), not the fork PR code — we only need
+      # the report script here, never the untrusted branch under test.
+      - name: Checkout report script
+        uses: actions/checkout@v4
+
       - name: Download artifacts from test run
         uses: actions/download-artifact@v4
         with:
@@ -35,13 +39,16 @@ jobs:
           github-token: ${{ github.token }}
           path: artifacts
 
-      - name: Publish test report comment
-        uses: EnricoMi/publish-unit-test-result-action@v2
+      - name: Resolve PR number
+        id: pr
+        run: echo "number=$(jq -r '.pull_request.number' artifacts/cypress-event/event.json)" >> "$GITHUB_OUTPUT"
+
+      - name: Build markdown report
+        run: python .github/scripts/junit_to_markdown.py artifacts/cypress-results "${{ github.event.workflow_run.head_sha }}" > "$RUNNER_TEMP/ui-test-report.md"
+
+      - name: Comment results on PR (fork)
+        uses: marocchino/sticky-pull-request-comment@v2
         with:
-          check_name: UI Test Results
-          comment_mode: always
-          # workflow_run context: tell the action which commit/PR the results belong to
-          commit: ${{ github.event.workflow_run.head_sha }}
-          event_file: artifacts/cypress-event/event.json
-          event_name: ${{ github.event.workflow_run.event }}
-          files: artifacts/cypress-results/*.xml
+          header: ui-test-results
+          number: ${{ steps.pr.outputs.number }}
+          path: ${{ runner.temp }}/ui-test-report.md
