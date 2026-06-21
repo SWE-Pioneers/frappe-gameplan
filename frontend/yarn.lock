@@ -2261,10 +2261,10 @@ framer-motion@^12.25.0:
     motion-utils "^12.39.0"
     tslib "^2.4.0"
 
-frappe-ui@1.0.0-beta.10:
-  version "1.0.0-beta.10"
-  resolved "https://registry.yarnpkg.com/frappe-ui/-/frappe-ui-1.0.0-beta.10.tgz#5bf3eaed1ed0c6432d1fe035a4cb6f250d527e89"
-  integrity sha512-bK1izxRINT/mB7MTQEsVAUMePttdw5kC+be5Rest7/4LykzYLRRVHoxuE07yn6k7W7SFISs3NPXGt0Fn1NNsmA==
+frappe-ui@1.0.0-beta.11:
+  version "1.0.0-beta.11"
+  resolved "https://registry.yarnpkg.com/frappe-ui/-/frappe-ui-1.0.0-beta.11.tgz#442b801bb756b8d53fa7d67c942eb33fdf238514"
+  integrity sha512-yUWvsfmIDTgyJP2XfYqYfwpwpFVivj8ZCrBXAt+BwfancSyLN+Db6QvAopHIdlKFYdmUsEsPZaFm1+CKi1/fSA==
   dependencies:
     "@codemirror/lang-css" "^6.3.0"
     "@codemirror/lang-html" "^6.4.9"
