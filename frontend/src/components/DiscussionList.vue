@@ -42,7 +42,7 @@
         <span class="lucide-coffee h-7 w-7 text-ink-gray-4" />
         No discussions
       </EmptyStateBox>
-      <div class="flex items-center justify-center p-3" v-if="discussions.hasNextPage">
+      <div class="flex items-center justify-center p-3" v-if="showLoadMoreButton">
         <Button
           icon-left="lucide-refresh-cw"
           @click="discussions.next"
@@ -115,6 +115,7 @@ const pinnedDiscussions = useDiscussions({
 const filters = computed(() => toValue(props.filters))
 const skeletonRowCount = 3
 const isInitialLoading = computed(() => discussions.loading && !discussions.data?.length)
+const showLoadMoreButton = computed(() => discussions.hasNextPage && !isInitialLoading.value)
 
 function toggleSelection(name: string) {
   emit('toggle-selection', name)

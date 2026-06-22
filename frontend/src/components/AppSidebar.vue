@@ -173,7 +173,9 @@ const isParticipatingFeed = computed(() => feedType.value === 'participating')
 const showNewSpaceDialog = ref(false)
 const activeSpaceId = computed(() => {
   const routeName = route.name?.toString() || ''
-  if (routeName.startsWith('Space')) return route.params.spaceId?.toString() || null
+  if (routeName.startsWith('Space') || routeName === 'Discussion') {
+    return route.params.spaceId?.toString() || null
+  }
   if (routeName === 'NewDiscussion') return routeQueryString(route.query.spaceId)
   return null
 })

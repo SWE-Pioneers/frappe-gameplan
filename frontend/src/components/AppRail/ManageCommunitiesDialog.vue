@@ -34,7 +34,7 @@
                   class="lucide-grip-vertical size-4 shrink-0 text-ink-gray-4"
                   aria-hidden="true"
                 />
-                <CommunityImage :community="community" class="h-7 w-7 shrink-0 bg-surface-gray-1" />
+                <CommunityImage :community="community" class="size-5 shrink-0 bg-surface-gray-1" />
                 <span class="min-w-0 flex-1">
                   <span class="flex items-center gap-1.5 text-base">
                     <span class="truncate">{{ community.title }}</span>
@@ -83,7 +83,7 @@
               />
               <CommunityImage
                 :community="community"
-                class="h-7 w-7 shrink-0 bg-surface-gray-1 opacity-70"
+                class="size-5 shrink-0 bg-surface-gray-1 opacity-70"
               />
               <span class="min-w-0 flex-1">
                 <span class="flex items-center gap-1.5 text-base">
