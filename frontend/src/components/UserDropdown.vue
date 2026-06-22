@@ -25,6 +25,21 @@ const dropdownItems = computed(() => [
     },
   },
   {
+    icon: 'lucide-bookmark',
+    label: 'Bookmarks',
+    route: { name: 'Bookmarks' },
+  },
+  {
+    icon: 'lucide-list-todo',
+    label: 'Tasks',
+    route: { name: 'MyTasks' },
+  },
+  {
+    icon: 'lucide-files',
+    label: 'Pages',
+    route: { name: 'MyPages' },
+  },
+  {
     icon: 'lucide-moon',
     label: 'Toggle theme',
     submenu: [

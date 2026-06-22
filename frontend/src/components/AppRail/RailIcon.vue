@@ -1,20 +1,20 @@
 <template>
   <TooltipRoot>
     <TooltipTrigger as-child>
-      <button
-        type="button"
-        :aria-label="label"
+      <Button
+        variant="ghost"
+        size="sm"
+        :icon="icon"
+        :label="ariaLabel"
         :aria-current="isActive ? 'page' : undefined"
-        class="flex size-7 items-center justify-center rounded transition"
-        :class="
-          isActive
-            ? 'bg-surface-base text-ink-gray-8 shadow-sm'
-            : 'text-ink-gray-6 hover:bg-surface-gray-3'
-        "
+        class="relative"
+        :class="isActive ? '!bg-surface-base shadow-sm' : ''"
         @click="emit('click')"
       >
-        <span :class="[icon, 'size-4']" />
-      </button>
+        <template #suffix>
+          <UnreadBadge :count="unreadCount ?? 0" />
+        </template>
+      </Button>
     </TooltipTrigger>
     <TooltipBubble side="right">
       <template #content>
@@ -25,14 +25,20 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { TooltipRoot, TooltipTrigger } from 'reka-ui'
-import { TooltipBubble } from 'frappe-ui'
+import { Button, TooltipBubble } from 'frappe-ui'
+import { unreadAriaLabel } from '@/utils/formatters'
+import UnreadBadge from './UnreadBadge.vue'
 
-defineProps<{
+const props = defineProps<{
   label: string
   icon: string
   isActive: boolean
+  unreadCount?: number
 }>()
 
 const emit = defineEmits<{ click: [] }>()
+
+const ariaLabel = computed(() => unreadAriaLabel(props.label, props.unreadCount ?? 0))
 </script>
