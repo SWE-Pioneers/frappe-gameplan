@@ -24,7 +24,7 @@
           <template #prefix>
             <span class="lucide-settings-2 size-4" />
           </template>
-          Manage communities
+          Customize sidebar
         </Button>
       </div>
     </template>

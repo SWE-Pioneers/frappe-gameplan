@@ -13,6 +13,9 @@ from gameplan.gameplan.doctype.gp_project.patches.assign_default_team_to_uncateg
 from gameplan.gameplan.doctype.gp_team.patches.join_active_users_to_communities import (
 	execute as join_active_users,
 )
+from gameplan.gameplan.doctype.gp_user_profile.patches.backfill_community_order import (
+	execute as backfill_community_order,
+)
 from gameplan.tests.utils import create_guest, create_member, create_project, create_team
 
 
@@ -195,6 +198,37 @@ class TestJoinActiveUsersMigration(FrappeTestCase):
 		self.assertEqual(_team_member_count(team.name, member.name), 1)
 
 
+class TestBackfillCommunityOrderMigration(FrappeTestCase):
+	def tearDown(self):
+		frappe.set_user("Administrator")
+		frappe.db.rollback()
+
+	def test_backfills_joined_communities_by_title(self):
+		member = create_member("test_community_order_backfill@example.com")
+		zebra = create_team("Zebra Community")
+		alpha = create_team("Alpha Community")
+		_add_team_member(zebra.name, member.name)
+		_add_team_member(alpha.name, member.name)
+		_clear_community_order(member.name)
+
+		backfill_community_order()
+
+		self.assertEqual(_get_community_order(member.name), [alpha.name, zebra.name])
+
+	def test_does_not_overwrite_existing_community_order(self):
+		member = create_member("test_existing_community_order@example.com")
+		first = create_team("First Existing Order Community")
+		second = create_team("Second Existing Order Community")
+		_add_team_member(first.name, member.name)
+		_add_team_member(second.name, member.name)
+		existing_order = [second.name, first.name]
+		_set_community_order(member.name, existing_order)
+
+		backfill_community_order()
+
+		self.assertEqual(_get_community_order(member.name), existing_order)
+
+
 def _uncategorized_exists():
 	return bool(frappe.db.get_all("GP Project", filters={"team": ["in", ["", None]]}, limit=1))
 
@@ -249,3 +283,34 @@ def _is_team_member(team, user):
 
 def _team_member_count(team, user):
 	return frappe.db.count("GP Member", {"parenttype": "GP Team", "parent": team, "user": user})
+
+
+def _add_team_member(team, user):
+	team_doc = frappe.get_doc("GP Team", team)
+	team_doc.add_member(user)
+	team_doc.save(ignore_permissions=True)
+
+
+def _clear_community_order(user):
+	frappe.db.set_value(
+		"GP User Profile",
+		{"user": user},
+		"community_order",
+		None,
+		update_modified=False,
+	)
+
+
+def _set_community_order(user, community_order):
+	frappe.db.set_value(
+		"GP User Profile",
+		{"user": user},
+		"community_order",
+		frappe.as_json(community_order),
+		update_modified=False,
+	)
+
+
+def _get_community_order(user):
+	community_order = frappe.db.get_value("GP User Profile", {"user": user}, "community_order")
+	return frappe.parse_json(community_order)

@@ -9,6 +9,7 @@
   "user",
   "enabled",
   "full_name",
+  "community_order",
   "bio",
   "readme",
   "bento_section",
@@ -108,6 +109,11 @@
    "fieldname": "enabled",
    "fieldtype": "Check",
    "label": "Enabled"
+  },
+  {
+   "fieldname": "community_order",
+   "fieldtype": "JSON",
+   "label": "Community Order"
   }
  ],
  "index_web_pages_for_search": 1,

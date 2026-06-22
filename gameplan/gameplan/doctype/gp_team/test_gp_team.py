@@ -4,6 +4,10 @@
 import frappe
 from frappe.tests.utils import FrappeTestCase
 
+from gameplan.gameplan.doctype.gp_team.gp_team import update_joined_teams
+from gameplan.gameplan.doctype.gp_user_profile.gp_user_profile import get_session_user_profile
+from gameplan.tests.utils import create_member
+
 
 class TestGPTeam(FrappeTestCase):
 	def tearDown(self):
@@ -35,3 +39,18 @@ class TestGPTeam(FrappeTestCase):
 		team.insert(ignore_permissions=True)
 
 		self.assertEqual(frappe.db.count("GP Project", {"team": team.name}), 0)
+
+	def test_update_joined_teams_saves_profile_community_order(self):
+		user = create_member("community-order@example.com", "Community Order")
+		first_team = frappe.get_doc(doctype="GP Team", title="Order First Team").insert(
+			ignore_permissions=True
+		)
+		second_team = frappe.get_doc(doctype="GP Team", title="Order Second Team").insert(
+			ignore_permissions=True
+		)
+
+		frappe.set_user(user.name)
+		ordered_teams = [second_team.name, first_team.name]
+
+		self.assertEqual(update_joined_teams(ordered_teams), ordered_teams)
+		self.assertEqual(frappe.parse_json(get_session_user_profile().community_order), ordered_teams)

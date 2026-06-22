@@ -1,6 +1,7 @@
 import { computed, reactive } from 'vue'
 import { useCall } from 'frappe-ui'
 import router from '@/router'
+import { setCommunityOrder } from './communityOrder'
 import { session } from './session'
 
 let usersByName = reactive<Record<string, UserInfo>>({})
@@ -17,6 +18,7 @@ interface UserInfo {
   is_image_background_removed: number
   discussions_count_3m: number
   comments_count_3m: number
+  community_order?: unknown
   bio: string
   role: 'Gameplan Admin' | 'Gameplan Member' | 'Gameplan Guest'
   isGuest?: boolean
@@ -34,6 +36,9 @@ export let users = useCall<UserInfo[]>({
       user.isNotGuest = !user.isGuest
       user.isDisabled = user.enabled === 0
       usersByName[user.name] = user
+      if (user.name === session.user) {
+        setCommunityOrder(user.community_order)
+      }
     }
     return data
   },

@@ -1,6 +1,7 @@
 import { computed, MaybeRefOrGetter, toValue } from 'vue'
 import { useList } from 'frappe-ui'
 import { GPTeam, GPMember } from '@/types/doctypes'
+import { communityOrder } from './communityOrder'
 
 export interface CommunityMember extends Pick<GPMember, 'user'> {
   user: string
@@ -44,7 +45,7 @@ export let availableCommunities = computed(() => {
 })
 
 export let activeCommunities = computed(() => {
-  return availableCommunities.value.filter(isCommunityJoined)
+  return sortCommunitiesByUserOrder(availableCommunities.value.filter(isCommunityJoined))
 })
 
 export let useCommunity = (communityId: MaybeRefOrGetter<string | undefined>) => {
@@ -72,6 +73,20 @@ export let getActiveCommunity = (communityId: string) => {
 export function isCommunityJoined(community: Community) {
   let user = getSessionUserFromCookie()
   return Boolean(user && community.members?.some((member) => member.user === user))
+}
+
+function sortCommunitiesByUserOrder(communities: Community[]) {
+  let orderByName = new Map(communityOrder.value.map((name, index) => [name, index]))
+  return [...communities].sort((left, right) => {
+    let leftOrder = orderByName.get(left.name) ?? Number.MAX_SAFE_INTEGER
+    let rightOrder = orderByName.get(right.name) ?? Number.MAX_SAFE_INTEGER
+
+    if (leftOrder !== rightOrder) {
+      return leftOrder - rightOrder
+    }
+
+    return left.title.localeCompare(right.title)
+  })
 }
 
 function getSessionUserFromCookie() {

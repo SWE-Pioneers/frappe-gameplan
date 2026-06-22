@@ -51,8 +51,6 @@ export interface GPUserProfile extends DocType {
   user: string
   /** Readme: Text Editor */
   readme?: string
-  /** Bento Cards: Table (GP Profile Bento Card) */
-  bento_cards: GPProfileBentoCard[]
   /** Full Name: Data */
   full_name?: string
   /** Cover Image: Attach Image */
@@ -71,28 +69,6 @@ export interface GPUserProfile extends DocType {
   image_background_color?: string
   /** Enabled: Check */
   enabled: 0 | 1
-}
-
-// Last updated: 2026-06-22 03:15:00.000000
-export interface GPProfileBentoCard extends ChildDocType {
-  /** Card ID: Data */
-  card_id: string
-  /** Type: Select */
-  type: 'Text' | 'Image' | 'Blank'
-  /** Size: Select */
-  size: '1x1' | '2x1' | '2x2' | '4x1' | '4x2'
-  /** Title: Data */
-  title?: string
-  /** Text: Small Text */
-  text?: string
-  /** URL: Data */
-  url?: string
-  /** Image: Attach Image */
-  image?: string
-  /** Image Rendering: Select */
-  image_rendering?: 'Cover' | 'Natural' | 'Fit'
-  /** Image Position: Int */
-  image_position?: number
 }
 
 // Last updated: 2024-02-06 12:18:02.871772
@@ -180,7 +156,7 @@ export interface GPDiscussion extends DocType {
   /** Tags: Table (GP Tag Link) */
   tags: GPTagLink[]
   /** Pin Scope: Select */
-  pin_scope?: 'Category' | 'Space'
+  pin_scope?: 'Global' | 'Space'
 }
 
 // Last updated: 2026-05-01 22:51:01.454329
@@ -365,12 +341,6 @@ export interface GPDraft extends DocType {
   content?: string
   /** Type: Select */
   type?: 'Discussion' | 'Comment'
-  /** Mode: Select */
-  mode?: 'New' | 'Edit'
-  /** Reference DocType: Link (DocType) */
-  reference_doctype?: string
-  /** Reference Name: Dynamic Link */
-  reference_name?: string
   /** Project: Link (GP Project) */
   project?: string
   /** Team: Link (GP Team) */

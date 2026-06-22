@@ -94,7 +94,8 @@ def update_joined_teams(teams: list = None):
 	if gameplan.is_guest():
 		frappe.throw("Guests cannot manage communities")
 
-	team_names = set(teams or [])
+	ordered_team_names = list(dict.fromkeys(teams or []))
+	team_names = set(ordered_team_names)
 	if not team_names:
 		frappe.throw("Select at least one community")
 
@@ -114,7 +115,16 @@ def update_joined_teams(teams: list = None):
 			team.remove(member)
 			team.save(ignore_permissions=True)
 
-	return list(team_names)
+	save_session_user_community_order(ordered_team_names)
+	return ordered_team_names
+
+
+def save_session_user_community_order(team_names: list[str]):
+	from gameplan.gameplan.doctype.gp_user_profile.gp_user_profile import get_session_user_profile
+
+	profile = get_session_user_profile()
+	profile.community_order = frappe.as_json(team_names)
+	profile.save(ignore_permissions=True)
 
 
 def get_accessible_team_names():
