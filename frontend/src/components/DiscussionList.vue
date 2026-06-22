@@ -62,6 +62,7 @@ import { UseDiscussionOptions, useDiscussions } from '@/data/discussions'
 import DiscussionRow from './DiscussionRow.vue'
 import DiscussionRowSkeleton from './DiscussionRowSkeleton.vue'
 import EmptyStateBox from './EmptyStateBox.vue'
+import Pin from './icons/Pin.vue'
 
 interface Props {
   filters: UseDiscussionOptions['filters']
