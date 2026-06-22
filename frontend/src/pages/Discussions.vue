@@ -8,12 +8,7 @@
     </template>
   </MobileHeader>
   <PageHeader class="hidden sm:flex">
-    <Breadcrumbs
-      class="h-7"
-      :items="[
-        { label: feedTitle, route: { name: 'DiscussionsTab', params: { communityId, feedType } } },
-      ]"
-    />
+    <Breadcrumbs class="h-7" :items="breadcrumbs" />
     <div class="flex items-center gap-2">
       <Select class="shrink-0 !w-fit" :options="orderOptions" v-model="orderBy" />
       <Button
@@ -51,6 +46,7 @@ import LastPostReminder from '@/components/LastPostReminder.vue'
 import MobileBackButton from '@/components/MobileBackButton.vue'
 import MobileHeader from '@/components/MobileHeader.vue'
 import { communityState } from '@/data/communityState'
+import { useCommunity } from '@/data/communities'
 
 type FeedType = 'recent' | 'unread' | 'participating'
 
@@ -78,6 +74,26 @@ const feedTitles: Record<FeedType, string> = {
 }
 
 const feedTitle = computed(() => feedTitles[props.feedType])
+
+const community = useCommunity(() => props.communityId)
+
+const breadcrumbs = computed(() => {
+  const items = []
+  if (community.value) {
+    items.push({
+      label: community.value.title,
+      route: { name: 'Discussions', params: { communityId: props.communityId } },
+    })
+  }
+  items.push({
+    label: feedTitle.value,
+    route: {
+      name: 'DiscussionsTab',
+      params: { communityId: props.communityId, feedType: props.feedType },
+    },
+  })
+  return items
+})
 
 const orderOptions = [
   {
