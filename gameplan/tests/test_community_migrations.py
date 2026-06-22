@@ -10,7 +10,10 @@ from gameplan.gameplan.doctype.gp_discussion.api import get_discussions
 from gameplan.gameplan.doctype.gp_project.patches.assign_default_team_to_uncategorized_spaces import (
 	execute as assign_default_team,
 )
-from gameplan.tests.utils import create_member, create_project, create_team
+from gameplan.gameplan.doctype.gp_team.patches.join_active_users_to_communities import (
+	execute as join_active_users,
+)
+from gameplan.tests.utils import create_guest, create_member, create_project, create_team
 
 
 def _make_orphan_project(title):
@@ -121,6 +124,77 @@ class TestFetchFromTeam(FrappeTestCase):
 		self.assertEqual(discussion.team, team.name)
 
 
+class TestJoinActiveUsersMigration(FrappeTestCase):
+	def tearDown(self):
+		frappe.set_user("Administrator")
+		frappe.db.rollback()
+
+	def test_discussion_author_is_joined_to_community(self):
+		member = create_member("test_discussion_author_join@example.com")
+		team, project = _create_team_and_project("Discussion Author Join")
+
+		frappe.set_user(member.name)
+		frappe.get_doc(
+			doctype="GP Discussion",
+			title="Discussion by future community member",
+			project=project.name,
+			content="hello",
+		).insert(ignore_permissions=True)
+
+		join_active_users()
+
+		self.assertTrue(_is_team_member(team.name, member.name))
+
+	def test_discussion_comment_author_is_joined_to_community(self):
+		member = create_member("test_discussion_comment_join@example.com")
+		team, project = _create_team_and_project("Discussion Comment Join")
+		discussion = _create_discussion(project.name)
+
+		_create_comment(member.name, "GP Discussion", discussion.name)
+
+		join_active_users()
+
+		self.assertTrue(_is_team_member(team.name, member.name))
+
+	def test_task_comment_author_is_joined_to_community(self):
+		member = create_member("test_task_comment_join@example.com")
+		team, project = _create_team_and_project("Task Comment Join")
+		task = _create_task(project.name)
+
+		_create_comment(member.name, "GP Task", task.name)
+
+		join_active_users()
+
+		self.assertTrue(_is_team_member(team.name, member.name))
+
+	def test_guest_activity_does_not_join_community(self):
+		guest = create_guest("test_guest_activity_not_joined@example.com")
+		team, project = _create_team_and_project("Guest Activity Not Joined")
+
+		frappe.set_user(guest.name)
+		frappe.get_doc(
+			doctype="GP Discussion",
+			title="Guest discussion",
+			project=project.name,
+			content="hello",
+		).insert(ignore_permissions=True)
+
+		join_active_users()
+
+		self.assertFalse(_is_team_member(team.name, guest.name))
+
+	def test_patch_is_idempotent(self):
+		member = create_member("test_active_join_idempotent@example.com")
+		team, project = _create_team_and_project("Active Join Idempotent")
+		discussion = _create_discussion(project.name)
+		_create_comment(member.name, "GP Discussion", discussion.name)
+
+		join_active_users()
+		join_active_users()
+
+		self.assertEqual(_team_member_count(team.name, member.name), 1)
+
+
 def _uncategorized_exists():
 	return bool(frappe.db.get_all("GP Project", filters={"team": ["in", ["", None]]}, limit=1))
 
@@ -133,3 +207,45 @@ def _categorize_everything():
 		"UPDATE `tabGP Project` SET team = %s WHERE team IS NULL OR team = ''",
 		team.name,
 	)
+
+
+def _create_team_and_project(title):
+	frappe.set_user("Administrator")
+	team = create_team(f"{title} Team")
+	project = create_project(f"{title} Space", team.name)
+	return team, project
+
+
+def _create_discussion(project):
+	frappe.set_user("Administrator")
+	return frappe.get_doc(
+		doctype="GP Discussion",
+		title="Community activity discussion",
+		project=project,
+		content="hello",
+	).insert(ignore_permissions=True)
+
+
+def _create_task(project):
+	frappe.set_user("Administrator")
+	return frappe.get_doc(doctype="GP Task", title="Community activity task", project=project).insert(
+		ignore_permissions=True
+	)
+
+
+def _create_comment(user, reference_doctype, reference_name):
+	frappe.set_user(user)
+	return frappe.get_doc(
+		doctype="GP Comment",
+		reference_doctype=reference_doctype,
+		reference_name=reference_name,
+		content="A comment",
+	).insert(ignore_permissions=True)
+
+
+def _is_team_member(team, user):
+	return bool(_team_member_count(team, user))
+
+
+def _team_member_count(team, user):
+	return frappe.db.count("GP Member", {"parenttype": "GP Team", "parent": team, "user": user})
