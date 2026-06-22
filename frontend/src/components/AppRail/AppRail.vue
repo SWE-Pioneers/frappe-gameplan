@@ -37,7 +37,10 @@
               <CommunityImage
                 :community="community"
                 class="size-7 transition"
-                :class="!isActiveCommunity(community.name) ? 'grayscale opacity-30' : ''"
+                :class="{
+                  grayscale: !isActiveCommunity(community.name),
+                  'opacity-70': isInactiveCommunityWithImage(community),
+                }"
               />
             </button>
           </TooltipTrigger>
@@ -243,6 +246,10 @@ function goToCommunity(community: Community) {
 
 function isActiveCommunity(communityName: string) {
   return props.showCommunityActiveState && communityName === communityState.id
+}
+
+function isInactiveCommunityWithImage(community: Community) {
+  return !isActiveCommunity(community.name) && Boolean(community.image)
 }
 
 function goHome() {
