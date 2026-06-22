@@ -18,14 +18,9 @@
       <span class="lucide-edit-3 h-4 w-4" v-else-if="activity.action === 'Task Value Changed'" />
     </div>
     <p>
-      <UserInfo :email="activity.user" v-slot="{ user }">
-        <UserProfileLink
-          class="font-medium text-ink-gray-7 hover:text-ink-gray-5"
-          :user="user.name"
-        >
-          {{ user.full_name }}
-        </UserProfileLink>
-      </UserInfo>
+      <UserProfileLink class="font-medium text-ink-gray-7 hover:text-ink-gray-5" :user="user.name">
+        {{ user.full_name }}
+      </UserProfileLink>
       <span v-if="activity.action == 'Discussion Closed'"> closed this discussion</span>
       <span v-if="activity.action == 'Discussion Reopened'"> reopened this discussion</span>
       <span v-if="activity.action == 'Discussion Pinned'"> pinned this discussion</span>
@@ -38,14 +33,26 @@
       <span v-if="activity.action == 'Discussion Moved'">
         moved this discussion from
         <router-link
-          :to="{ name: 'Space', params: { spaceId: activity.data.old_project } }"
+          :to="{
+            name: 'Space',
+            params: {
+              communityId: getSpace(activity.data.old_project)?.team,
+              spaceId: activity.data.old_project,
+            },
+          }"
           class="text-ink-gray-8 hover:text-ink-gray-5"
         >
           {{ spaceTitle(activity.data.old_project) }}
         </router-link>
         to
         <router-link
-          :to="{ name: 'Space', params: { spaceId: activity.data.new_project } }"
+          :to="{
+            name: 'Space',
+            params: {
+              communityId: getSpace(activity.data.new_project)?.team,
+              spaceId: activity.data.new_project,
+            },
+          }"
           class="text-ink-gray-8 hover:text-ink-gray-5"
         >
           {{ spaceTitle(activity.data.new_project) }}
@@ -56,9 +63,9 @@
           assigned this to
           <UserProfileLink
             class="font-medium text-ink-gray-7 hover:text-ink-gray-5"
-            :user="$user(activity.data.new_value).name"
+            :user="assignedUser.name"
           >
-            {{ $user(activity.data.new_value).full_name }}
+            {{ assignedUser.full_name }}
           </UserProfileLink>
         </template>
         <template v-else-if="activity.data.field === 'description'">
@@ -68,14 +75,26 @@
           changed project
           <span v-if="activity.data.old_value">from&nbsp;</span>
           <router-link
-            :to="{ name: 'Space', params: { spaceId: activity.data.old_value } }"
+            :to="{
+              name: 'Space',
+              params: {
+                communityId: getSpace(activity.data.old_value)?.team,
+                spaceId: activity.data.old_value,
+              },
+            }"
             class="text-ink-gray-8 hover:text-ink-gray-5"
           >
             {{ spaceTitle(activity.data.old_value) }}
           </router-link>
           to
           <router-link
-            :to="{ name: 'Space', params: { spaceId: activity.data.new_value } }"
+            :to="{
+              name: 'Space',
+              params: {
+                communityId: getSpace(activity.data.new_value)?.team,
+                spaceId: activity.data.new_value,
+              },
+            }"
             class="text-ink-gray-8 hover:text-ink-gray-5"
           >
             {{ spaceTitle(activity.data.new_value) }}
@@ -96,9 +115,12 @@
   </div>
 </template>
 <script setup lang="ts">
+import { computed } from 'vue'
 import { dayjsLocal, Tooltip } from 'frappe-ui'
 import UserProfileLink from './UserProfileLink.vue'
+import { getSpace } from '@/data/spaces'
 import { spaceTitle } from '@/utils/formatters'
+import { useUser } from '@/data/users'
 
 interface Activity {
   action: string
@@ -116,7 +138,10 @@ interface Activity {
   }
 }
 
-defineProps<{
+const props = defineProps<{
   activity: Activity
 }>()
+
+const user = computed(() => useUser(props.activity.user))
+const assignedUser = computed(() => useUser(props.activity.data.new_value))
 </script>

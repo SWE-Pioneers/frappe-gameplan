@@ -1,7 +1,7 @@
 <template>
   <div class="body-container mt-5">
     <SpaceHeaderActions>
-      <template v-if="!isBulkMoveMode">
+      <template v-if="canEditSpace && !isBulkMoveMode">
         <DropdownMoreOptions
           align="end"
           :options="[
@@ -15,12 +15,18 @@
         <Button
           variant="solid"
           icon-left="lucide-plus"
-          @click="router.push({ name: 'NewDiscussion', query: { spaceId: spaceId } })"
+          @click="
+            router.push({
+              name: 'NewDiscussion',
+              params: { communityId: route.params.communityId },
+              query: { spaceId: spaceId },
+            })
+          "
         >
           Add new
         </Button>
       </template>
-      <template v-else>
+      <template v-else-if="isBulkMoveMode">
         <Button variant="ghost" @click="cancelBulkMove">Cancel</Button>
         <Button
           variant="solid"
@@ -79,7 +85,7 @@
 </template>
 <script setup lang="ts">
 import { computed, ref, useTemplateRef } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { Combobox, Dialog, ErrorMessage, useCall, toast } from 'frappe-ui'
 import DiscussionList from '@/components/DiscussionList.vue'
 import SpaceHeaderActions from '@/components/SpaceHeaderActions.vue'
@@ -87,6 +93,7 @@ import SpaceTabs from '@/components/SpaceTabs.vue'
 import DropdownMoreOptions from '@/components/DropdownMoreOptions.vue'
 import { useGroupedSpaceOptions } from '@/data/groupedSpaces'
 import { useSpace, spaces } from '@/data/spaces'
+import { readOnlyMode } from '@/data/readOnlyMode'
 
 interface BulkUpdateResponse {
   moved: string[]
@@ -100,12 +107,15 @@ const props = defineProps<{
   spaceId: string
 }>()
 
+const route = useRoute()
 const isBulkMoveMode = ref(false)
 const selectedDiscussions = ref<string[]>([])
 const showMoveDialog = ref(false)
 const selectedSpace = ref<string | null>(null)
 const discussionListRef = useTemplateRef('discussionListRef')
 const router = useRouter()
+const currentSpace = useSpace(() => props.spaceId)
+const canEditSpace = computed(() => !readOnlyMode && !currentSpace.value?.archived_at)
 const selectedSpaceTitle = computed(() => {
   return selectedSpace.value ? useSpace(selectedSpace.value).value?.title : ''
 })

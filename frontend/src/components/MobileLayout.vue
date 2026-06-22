@@ -1,96 +1,140 @@
 <template>
   <div class="fixed inset-0 flex flex-col overflow-hidden touch-none">
+    <div id="pageHeaderTarget" class="standalone:pt-[env(safe-area-inset-top)]" />
+
     <div
-      class="flex-1 overflow-y-auto overscroll-auto bg-surface-base [-webkit-overflow-scrolling:touch]"
       id="scrollContainer"
+      class="flex-1 overflow-y-auto overscroll-auto bg-surface-base [-webkit-overflow-scrolling:touch]"
     >
+      <ReadOnlyBanner v-if="readOnlyMode" />
       <slot />
     </div>
+
     <div
-      class="grid grid-cols-5 shrink-0 bg-surface-elevation-2 border-t border-outline-gray-2 standalone:pb-4"
-      :style="{ gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))` }"
       v-if="!isNewCommentOpen"
+      class="shrink-0 border-t border-outline-gray-2 bg-surface-elevation-2 standalone:pb-4"
     >
-      <button
-        v-for="tab in tabs"
-        :key="tab.name"
-        class="flex flex-col items-center justify-center py-3 transition active:scale-95"
-        @click="onTabClick(tab)"
-      >
-        <span
-          :class="[tab.icon, 'h-6 w-6', tab.isActive ? 'text-ink-gray-8' : 'text-ink-gray-5']"
-        />
-      </button>
+      <div class="grid grid-cols-4">
+        <button
+          v-for="tab in tabs"
+          :key="tab.name"
+          type="button"
+          :aria-label="tab.name"
+          class="flex min-h-14 flex-col items-center justify-center gap-1 py-2 transition active:scale-95"
+          @click="onTabClick(tab)"
+        >
+          <UserAvatar
+            v-if="tab.name === 'You' && sessionUser.name"
+            :user="sessionUser.name"
+            class="size-6"
+            :class="tab.isActive ? 'ring-2 ring-outline-gray-4' : ''"
+          />
+          <span
+            v-else
+            :class="[tab.icon, 'size-6', tab.isActive ? 'text-ink-gray-8' : 'text-ink-gray-5']"
+          />
+          <span
+            class="text-xs-medium"
+            :class="tab.isActive ? 'text-ink-gray-8' : 'text-ink-gray-5'"
+          >
+            {{ tab.name }}
+          </span>
+        </button>
+      </div>
     </div>
   </div>
 </template>
-<script>
+
+<script setup lang="ts">
+defineOptions({
+  inheritAttrs: false,
+})
+
+import { computed } from 'vue'
+import { useRoute, useRouter, type RouteLocationRaw } from 'vue-router'
+import { isNewCommentOpen } from '@/data/newComment'
+import { useSessionUser } from '@/data/users'
 import { scrollTo } from '@/utils/scrollContainer'
-import { isNewCommentOpen as isNewCommentOpenRef } from '@/data/newComment'
-export default {
-  name: 'MobileLayout',
-  computed: {
-    isNewCommentOpen() {
-      return isNewCommentOpenRef.value
-    },
-    tabs() {
-      return [
-        {
-          name: 'Discussions',
-          icon: 'lucide-newspaper',
-          route: { name: 'Discussions' },
-          isActive: this.$route.name === 'Discussions',
-        },
-        {
-          name: 'MyTasks',
-          icon: 'lucide-list-todo',
-          route: { name: 'MyTasks' },
-          isActive: /MyTasks|Task/g.test(this.$route.name),
-        },
-        {
-          name: 'Spaces',
-          icon: 'lucide-layout-grid',
-          route: { name: 'Spaces' },
-          isActive: [
-            'Spaces',
-            'Space',
-            'SpaceDiscussions',
-            'SpaceDiscussion',
-            'SpaceTasks',
-            'SpaceTask',
-          ].includes(this.$route.name),
-        },
-        {
-          name: 'People',
-          icon: 'lucide-users-2',
-          route: { name: 'People' },
-          isActive: /People|PersonProfile/g.test(this.$route.name),
-          condition: () => this.$user().isNotGuest,
-        },
-        {
-          name: 'Search',
-          icon: 'lucide-search',
-          route: { name: 'Search' },
-          isActive: this.$route.name === 'Search',
-          condition: () => this.$user().isNotGuest,
-        },
-        {
-          name: 'Notifications',
-          icon: 'lucide-inbox',
-          route: { name: 'Notifications' },
-          isActive: this.$route.name === 'Notifications',
-        },
-      ].filter((tab) => (tab.condition ? tab.condition() : true))
-    },
+import ReadOnlyBanner from './ReadOnlyBanner.vue'
+import UserAvatar from './UserAvatar.vue'
+import { readOnlyMode } from '@/data/readOnlyMode'
+
+interface MobileTab {
+  name: 'Home' | 'Inbox' | 'Search' | 'You'
+  icon: string
+  route: RouteLocationRaw
+  isActive: boolean
+}
+
+const route = useRoute()
+const router = useRouter()
+const sessionUser = useSessionUser()
+
+const onCommunityRoute = computed(() => route.matched.some((record) => record.meta?.communityScope))
+const isHomeRoute = computed(() => {
+  return route.name === 'Home' || route.name === 'MobileCommunityMenu' || onCommunityRoute.value
+})
+
+const tabs = computed<MobileTab[]>(() => [
+  {
+    name: 'Home',
+    icon: 'lucide-home',
+    route: { name: 'Home' },
+    isActive: isHomeRoute.value,
   },
-  methods: {
-    onTabClick(tab) {
-      if (tab.isActive) {
-        scrollTo({ top: 0, behavior: 'smooth' })
-        return
-      }
-      this.$router.push(tab.route)
-    },
+  {
+    name: 'Inbox',
+    icon: 'lucide-inbox',
+    route: { name: 'Notifications' },
+    isActive: route.name === 'Notifications',
   },
+  {
+    name: 'Search',
+    icon: 'lucide-search',
+    route: { name: 'Search' },
+    isActive: route.name === 'Search',
+  },
+  {
+    name: 'You',
+    icon: 'lucide-menu',
+    route: { name: 'More' },
+    isActive: isMoreRoute(),
+  },
+])
+
+function isMoreRoute() {
+  const name = route.name?.toString() || ''
+  return [
+    'More',
+    'Bookmarks',
+    'People',
+    'PersonProfile',
+    'PersonProfileProfile',
+    'PersonProfileAboutMe',
+    'PersonProfilePosts',
+    'PersonProfileReplies',
+    'MyPages',
+    'Page',
+    'MyTasks',
+    'Task',
+    'Drafts',
+    'Spaces',
+    'CommunitySpaces',
+    'CommunityMembers',
+  ].includes(name)
+}
+
+function onTabClick(tab: MobileTab) {
+  if (tab.name === 'Home' && route.name !== 'Home') {
+    router.push(tab.route)
+    return
+  }
+
+  if (tab.isActive) {
+    scrollTo({ top: 0, behavior: 'smooth' })
+    return
+  }
+
+  router.push(tab.route)
 }
 </script>

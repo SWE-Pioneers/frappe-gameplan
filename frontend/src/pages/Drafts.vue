@@ -1,24 +1,44 @@
 <template>
-  <PageHeader>
+  <MobileHeader class="sm:hidden" title="Drafts">
+    <template #left>
+      <Button v-if="isBulkDeleteMode" variant="ghost" size="md" @click="cancelBulkDelete">
+        Cancel
+      </Button>
+      <MobileBackButton v-else :to="{ name: 'More' }" />
+    </template>
+    <template #right>
+      <Button
+        v-if="!isBulkDeleteMode"
+        v-show="drafts.data?.length"
+        variant="ghost"
+        size="md"
+        @click="isBulkDeleteMode = true"
+      >
+        Select
+      </Button>
+      <Button
+        v-else
+        variant="subtle"
+        theme="red"
+        size="md"
+        :disabled="selectedDrafts.length === 0"
+        @click="showDeleteConfirm = true"
+      >
+        Delete{{ selectedDrafts.length ? ` ${selectedDrafts.length}` : '' }}
+      </Button>
+    </template>
+  </MobileHeader>
+  <PageHeader class="hidden sm:flex">
     <Breadcrumbs class="h-7" :items="[{ label: 'Drafts', route: { name: 'Drafts' } }]" />
     <div class="flex items-center gap-2">
       <template v-if="!isBulkDeleteMode">
-        <DropdownMoreOptions
-          align="end"
-          :options="[
-            {
-              label: 'Delete drafts',
-              icon: 'lucide-trash-2',
-              onClick: () => (isBulkDeleteMode = true),
-            },
-          ]"
-        />
         <Button
-          icon-left="lucide-plus"
-          variant="solid"
-          @click="router.push({ name: 'NewDiscussion' })"
+          v-show="drafts.data?.length"
+          variant="ghost"
+          icon-left="lucide-square-check"
+          @click="isBulkDeleteMode = true"
         >
-          Add new
+          Select
         </Button>
       </template>
       <template v-else>
@@ -42,40 +62,36 @@
       </EmptyStateBox>
       <div class="-mx-3" v-else>
         <template v-for="(draft, index) in drafts.data" :key="draft.name">
-          <RouterLink
-            :to="{ name: 'NewDiscussion', query: { draft: draft.name } }"
-            custom
-            v-slot="{ href, navigate }"
-          >
+          <RouterLink :to="draftRoute(draft)" custom v-slot="{ href, navigate }">
             <a
               :href="href"
-              class="flex items-center py-2 px-3 group relative h-15 rounded-[10px] transition hover:bg-surface-gray-2 cursor-pointer"
+              class="flex items-center py-2 px-3 group relative h-15 rounded-[10px] transition hover:bg-surface-gray-2 active:bg-surface-gray-2 cursor-pointer"
               @click="handleDraftRowClick($event, navigate, draft.name)"
             >
-              <motion.div
-                class="flex shrink-0 items-center overflow-hidden"
-                :animate="{ width: isBulkDeleteMode ? 32 : 0 }"
-                :transition="{ type: 'spring', stiffness: 700, damping: 48, mass: 0.5 }"
+              <div
+                class="flex shrink-0 items-center overflow-hidden transition-[width] duration-200 ease-out"
+                :style="{ width: isBulkDeleteMode ? '32px' : '0px' }"
               >
-                <AnimatePresence>
-                  <motion.div
+                <Transition
+                  enter-active-class="transition-transform duration-75 ease-out"
+                  leave-active-class="transition-transform duration-75 ease-out"
+                  enter-from-class="scale-0"
+                  leave-to-class="scale-0"
+                >
+                  <div
                     v-if="isBulkDeleteMode"
                     class="flex items-center"
                     role="checkbox"
                     :aria-checked="selectedDrafts.includes(draft.name)"
                     tabindex="0"
-                    :initial="{ scale: 0 }"
-                    :animate="{ scale: 1 }"
-                    :exit="{ scale: 0 }"
-                    :transition="{ duration: 0.08, ease: 'easeOut' }"
                     @click.stop="toggleSelection(draft.name)"
                     @keydown.enter.prevent="toggleSelection(draft.name)"
                     @keydown.space.prevent="toggleSelection(draft.name)"
                   >
                     <Checkbox :modelValue="selectedDrafts.includes(draft.name)" />
-                  </motion.div>
-                </AnimatePresence>
-              </motion.div>
+                  </div>
+                </Transition>
+              </div>
               <UserAvatarWithHover :user="draft.owner" size="2xl" />
               <div class="ml-4 flex-1 min-w-0">
                 <div class="flex items-center min-w-0">
@@ -149,13 +165,13 @@ import {
 import { GPDraft } from '@/types/doctypes'
 import { useList } from 'frappe-ui'
 import UserAvatarWithHover from '@/components/UserAvatarWithHover.vue'
-import { useSpace } from '@/data/spaces'
+import { getSpace, useSpace } from '@/data/spaces'
 import { relativeTimestamp } from '@/utils'
+import MobileBackButton from '@/components/MobileBackButton.vue'
+import MobileHeader from '@/components/MobileHeader.vue'
 import PageHeader from '@/components/PageHeader.vue'
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { motion, AnimatePresence } from 'motion-v'
-import DropdownMoreOptions from '@/components/DropdownMoreOptions.vue'
+import type { RouteLocationRaw } from 'vue-router'
 
 interface Draft extends GPDraft {
   project_title: string
@@ -172,7 +188,21 @@ interface DeleteDraftsResponse {
 const isBulkDeleteMode = ref(false)
 const selectedDrafts = ref<string[]>([])
 const showDeleteConfirm = ref(false)
-const router = useRouter()
+
+// Drafts with a space open in the scoped composer; legacy drafts without a
+// resolvable community keep opening on the unscoped route.
+function draftRoute(draft: Draft): RouteLocationRaw {
+  const communityId = draft.project ? getSpace(draft.project)?.team : null
+  if (!communityId) {
+    return { name: 'LegacyNewDiscussion', query: { draft: draft.name } }
+  }
+
+  return {
+    name: 'NewDiscussion',
+    params: { communityId },
+    query: { draft: draft.name },
+  }
+}
 
 function toggleSelection(name: string) {
   if (selectedDrafts.value.includes(name)) {
@@ -245,6 +275,9 @@ let drafts = useList<Draft>({
   doctype: 'GP Draft',
   filters: {
     type: 'Discussion',
+    // Only standalone new-discussion drafts belong here; edit/comment buffers
+    // (mode='Edit', or comment drafts) are surface-local and excluded.
+    mode: 'New',
   },
   fields: [
     'name',

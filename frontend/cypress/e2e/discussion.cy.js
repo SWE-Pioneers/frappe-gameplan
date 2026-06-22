@@ -26,13 +26,19 @@ describe('Discussion', () => {
       .its('body.message')
       .as('data')
       .then((data) => {
+        // Scoped routes only resolve a joined community, so join Engineering first.
+        cy.request('POST', '/api/v2/method/GP Team/update_joined_teams', {
+          teams: ['engineering'],
+        })
         cy.visit(`/g/space/${data[1]}`)
       })
 
-    // publish draft discussion
+    // publish draft discussion. Publishing now flushes the draft and calls the
+    // whitelisted `publish_draft` method (frappe-ui `call` → /api/method/...),
+    // which returns the new discussion name as the response `message`.
     cy.intercept({
       method: 'POST',
-      url: '/api/v2/document/GP%20Draft/*/method/publish',
+      url: '/api/method/gameplan.gameplan.doctype.gp_draft.gp_draft.publish_draft',
       times: 1,
     }).as('discussionId')
 
@@ -45,9 +51,12 @@ describe('Discussion', () => {
       .should('be.visible')
       .click()
       .type('This is content for new discussion{enter}')
-    cy.get('button').contains('Publish').click()
+    // The composer renders a Publish button in both the mobile (sm:hidden) and
+    // desktop headers; target the visible one so the click doesn't hit the hidden
+    // mobile button at desktop viewport.
+    cy.button('Publish').click()
     cy.wait('@discussionId')
-      .its('response.body.data')
+      .its('response.body.message')
       .then((discussionId) => {
         cy.url().should('include', `/discussion/${discussionId}/starting-a-new-discussion`)
       })
@@ -55,10 +64,10 @@ describe('Discussion', () => {
     // add comment
     cy.intercept('POST', '/api/v2/document/GP%20Comment').as('comment')
     cy.button('Add a comment').click()
-    // Wait for the comment editor to mount and receive focus before typing,
-    // and submit via the explicit button instead of {enter} to avoid a
-    // double-submit race in the rich-text editor.
-    cy.focused().should('be.visible').type('This is the first comment')
+    // Click the editor to settle focus and expand the composer before typing —
+    // relying on cy.focused() races the just-mounted ProseMirror view (drops the
+    // first keystroke) and can leave the composer collapsed so Submit never shows.
+    cy.get('[contenteditable=true]').should('be.visible').click().type('This is the first comment')
     cy.button('Submit').click()
     cy.wait('@comment')
       .its('response.body.data')
@@ -72,7 +81,7 @@ describe('Discussion', () => {
       .should('be.visible')
       .type(' {selectall}', { delay: 200 })
       .type('Edited Discussion Title')
-    cy.button('Submit').click()
+    cy.button('Save').click()
     cy.get('h1:contains("Edited Discussion Title")').should('exist')
     cy.contains('changed the title from').should('exist')
 
@@ -80,9 +89,9 @@ describe('Discussion', () => {
     cy.selectDropdownOption('Discussion Options', 'Edit')
     cy.get('[contenteditable=true]')
       .should('be.visible')
-      .type('{enter}{enter}', { delay: 200 })
-      .type('adding more content')
-    cy.button('Submit').click()
+      .click()
+      .type('{moveToEnd} adding more content')
+    cy.button('Save').click()
     cy.get('p:contains("adding more content")').should('exist')
 
     // move to another project
@@ -93,9 +102,12 @@ describe('Discussion', () => {
     cy.get('@data').then((data) => {
       let erpnextProject = data[2]
       cy.get('@discussionId')
-        .its('response.body.data')
+        .its('response.body.message')
         .then((discussionId) => {
-          cy.url().should('include', `/g/space/${erpnextProject}/discussion/${discussionId}`)
+          cy.url().should(
+            'include',
+            `/g/community/engineering/space/${erpnextProject}/discussion/${discussionId}`,
+          )
         })
     })
 

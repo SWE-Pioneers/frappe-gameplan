@@ -2,7 +2,20 @@
   <div class="flex">
     <div class="bg-surface-sidebar min-w-[256px] pointer-events-none min-h-screen">
       <div class="p-2">
-        <UserDropdown />
+        <UserDropdown>
+          <template #trigger="{ open }">
+            <button
+              class="flex w-[14rem] items-center rounded-md px-2 py-2 text-left"
+              :class="open ? 'bg-surface-elevation-2 shadow-sm' : 'hover:bg-surface-gray-2'"
+            >
+              <GameplanLogo class="h-8 w-8 rounded" />
+              <div class="ml-2 flex flex-col">
+                <div class="text-base-medium leading-none text-ink-gray-8">Gameplan</div>
+              </div>
+              <span class="lucide-chevron-down ml-auto hidden h-4 w-4 text-ink-gray-7 sm:inline" />
+            </button>
+          </template>
+        </UserDropdown>
       </div>
       <div class="flex-1">
         <nav class="space-y-0.5 px-2">
@@ -30,9 +43,7 @@
           <div class="mb-2 mt-0.5 space-y-0.5">
             <div class="flex h-7 items-center rounded px-2 text-ink-gray-7 transition">
               <span class="inline-flex min-w-0 items-center space-x-2">
-                <span class="flex-shrink-0 flex h-5 w-6 items-center justify-center text-3xl">
-                  {{ space.icon }}
-                </span>
+                <SpaceIcon :icon="space.icon" class="size-4 flex-shrink-0 text-ink-gray-6" />
                 <span class="truncate text-sm flex-grow">
                   {{ space.title }}
                 </span>
@@ -47,17 +58,43 @@
         <div class="text-4xl-semibold text-ink-gray-8">Welcome to Gameplan</div>
 
         <div class="mt-2 pt-8 border-t">
-          <h2 class="text-base-medium text-ink-gray-8 mb-2">Let's create your first space</h2>
+          <h2 class="text-base-medium text-ink-gray-8 mb-2">Name your community</h2>
           <p class="text-p-sm text-ink-gray-6">
-            A space is where your discussions live. Create one for your team, project, or any topic
-            you want to discuss and organize.
+            A community is the top-level home for your team. All of your spaces and discussions live
+            inside it.
+          </p>
+          <div class="mt-6">
+            <FormControl
+              type="text"
+              class="w-full"
+              placeholder="Acme Inc, My Team, ..."
+              id="new-community-name"
+              :modelValue="community"
+              @update:modelValue="
+                (value) => (community = value.length <= 50 ? value : value.slice(0, 50))
+              "
+              maxlength="50"
+              description="Give your community a short and descriptive name"
+            >
+              <template #suffix>
+                <span class="text-ink-gray-5 text-sm">{{ 50 - community.length }}</span>
+              </template>
+            </FormControl>
+          </div>
+        </div>
+
+        <div class="mt-8 border-t pt-8">
+          <h2 class="text-base-medium text-ink-gray-8 mb-2">Create your first space</h2>
+          <p class="text-p-sm text-ink-gray-6">
+            A space is where your discussions live. Create one for a project, team, or any topic you
+            want to discuss and organize.
           </p>
           <div class="mt-6 space-y-2">
             <div class="space-x-2 flex items-start w-full">
-              <IconPicker v-model="space.icon" v-slot="{ isOpen }">
-                <Button>
+              <IconPicker v-model="space.icon" v-slot="{ togglePopover }">
+                <Button @click="togglePopover()">
                   <template #icon>
-                    <span v-if="space.icon">{{ space.icon }}</span>
+                    <SpaceIcon v-if="space.icon" :icon="space.icon" class="size-4" />
                     <span v-else class="lucide-plus h-4 w-4" />
                   </template>
                 </Button>
@@ -86,9 +123,9 @@
           </div>
         </div>
         <div class="mt-8 border-t pt-8">
-          <h3 class="text-base-medium text-ink-gray-8 mb-2">Invite team members</h3>
+          <h3 class="text-base-medium text-ink-gray-8 mb-2">Invite people</h3>
           <p class="text-sm text-ink-gray-6">
-            Add email addresses of people you'd like to invite to this space
+            Add email addresses of people you'd like to invite to this community
           </p>
           <div class="mt-3">
             <FormControl
@@ -112,7 +149,7 @@
           <Button
             variant="solid"
             :loading="onboarding.loading"
-            :disabled="!space.title"
+            :disabled="!community || !space.title"
             @click="submit"
           >
             Continue
@@ -126,10 +163,15 @@
 import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCall } from 'frappe-ui'
+import GameplanLogo from '@/components/GameplanLogo.vue'
+import IconPicker from '@/components/IconPicker.vue'
+import SpaceIcon from '@/components/SpaceIcon.vue'
 import UserDropdown from '@/components/UserDropdown.vue'
 import { joinedSpaces, spaces } from '@/data/spaces'
-import { teams } from '@/data/teams'
+import { communities } from '@/data/communities'
+import { communityState } from '@/data/communityState'
 
+const community = ref('')
 const space = reactive({
   title: '',
   icon: '',
@@ -155,31 +197,43 @@ const validateEmails = (emails: string) => {
 }
 
 type OnboardingParams = {
+  community: string
   space: string
   icon: string
   emails: string[]
 }
 
-const onboarding = useCall<string, OnboardingParams>({
+type OnboardingResult = {
+  team: string
+  space: string
+}
+
+const onboarding = useCall<OnboardingResult, OnboardingParams>({
   url: '/api/v2/method/gameplan.api.onboarding',
   method: 'POST',
   immediate: false,
   beforeSubmit() {
+    if (!community.value) {
+      throw new Error('Please enter a community name')
+    }
     if (!space.title) {
       throw new Error('Please enter a space name')
     }
   },
-  onSuccess(spaceId) {
-    teams.reload()
-    spaces.reload()
-    joinedSpaces.reload()
-
-    router.replace({ name: 'Space', params: { spaceId } })
+  onSuccess(result) {
+    communityState.change(result.team)
+    Promise.all([communities.reload(), spaces.reload(), joinedSpaces.reload()]).then(() => {
+      router.replace({
+        name: 'Discussions',
+        params: { communityId: result.team },
+      })
+    })
   },
 })
 
 function submit() {
   onboarding.submit({
+    community: community.value,
     space: space.title,
     icon: space.icon,
     emails: emailInput.value.split(/[\n,]/),

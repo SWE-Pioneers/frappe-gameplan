@@ -35,6 +35,11 @@
         </div>
         <Comment
           v-if="item.doctype == 'GP Comment'"
+          :class="{
+            'pt-14 sm:pt-0': needsMobileCommentGap(timelineItems, i, {
+              includeFirstComment: true,
+            }),
+          }"
           :ref="($comment) => setItemRef($comment, item)"
           :comment="item"
           :highlight="
@@ -42,10 +47,6 @@
           "
           :readOnlyMode="readOnlyMode"
           :comments="comments"
-          @rich-quote="
-            $emit('rich-quote', $event, { id: `comment:${item.name}`, author: item.owner })
-          "
-          @rich-quote-click="$emit('rich-quote-click', $event)"
         />
         <Activity
           :class="[
@@ -69,50 +70,125 @@
       </template>
     </div>
 
-    <!-- Comment Box -->
     <div
-      v-if="!readOnlyMode && !disableNewComment"
-      class="fixed z-[2] left-0 right-0 mt-2 w-full print:hidden"
+      v-if="!readOnlyMode && !disableNewComment && !hideNewComment"
+      class="pointer-events-none fixed left-0 right-0 z-[2] w-full print:hidden sm:left-[274px] sm:right-1 sm:w-auto"
       :class="[
-        isNewCommentOpen
-          ? 'bottom-0'
-          : 'bottom-12 sm:bottom-0 standalone:bottom-16 standalone:sm:bottom-0',
+        isComposerFullscreen
+          ? 'bottom-0 top-[var(--mobile-header-height)] z-20'
+          : showCommentBox && !composerMinimized
+            ? 'bottom-0 mt-2'
+            : 'bottom-14 mt-2 sm:bottom-0 standalone:bottom-[4.5rem] standalone:sm:bottom-0',
+        !showCommentBox || composerMinimized
+          ? 'border-t border-outline-gray-2 bg-surface-base sm:border-t-0 sm:bg-transparent'
+          : '',
       ]"
       ref="addComment"
     >
-      <div class="sm:ml-60">
-        <div class="discussion-container border-t sm:border-t-0 bg-surface-base sm:py-3">
-          <div v-show="!showCommentBox" class="py-3 sm:py-0">
+      <div class="pointer-events-auto" :class="{ 'h-full': isComposerFullscreen }">
+        <div
+          class="discussion-container bg-surface-base sm:bg-transparent"
+          :class="isComposerFullscreen ? 'h-full py-0' : 'py-3'"
+        >
+          <div v-if="!showCommentBox" class="sm:-mx-3">
             <button
-              class="flex w-full items-center rounded-lg bg-surface-gray-2 px-2 py-2 text-left text-base text-ink-gray-5 hover:bg-surface-gray-3"
-              @click="showCommentBox = true"
+              type="button"
+              class="flex w-full items-center gap-3 text-left sm:gap-0 sm:rounded-lg sm:border sm:bg-surface-base sm:px-2 sm:py-2 sm:text-base sm:text-ink-gray-5 sm:shadow-sm sm:hover:border-outline-gray-3 sm:hover:bg-surface-gray-1"
+              @click="openCommentBox"
             >
-              <UserAvatar class="mr-3" :user="$user().name" size="sm" />
-              Add a comment
+              <UserAvatar class="sm:hidden" :user="$user().name" size="xl" />
+              <UserAvatar class="mr-3 hidden sm:inline-block" :user="$user().name" size="sm" />
+              <span
+                class="flex h-8 min-w-0 flex-1 items-center rounded-md bg-surface-gray-2 px-3 text-md text-ink-gray-5 sm:hidden"
+              >
+                Add a comment
+              </span>
+              <span class="hidden sm:inline">Add a comment</span>
             </button>
           </div>
           <div
-            v-show="showCommentBox"
-            class="w-full sm:rounded-lg sm:border bg-surface-base py-3 sm:p-4 focus-within:border-outline-gray-3"
+            v-else-if="composerMinimized"
+            class="flex cursor-pointer items-center gap-3 text-left focus:outline-none sm:-mx-3 sm:gap-0 sm:rounded-lg sm:border sm:bg-surface-base sm:px-2 sm:py-2 sm:shadow-sm sm:hover:border-outline-gray-3 sm:hover:bg-surface-gray-1 sm:focus:border-outline-gray-3"
+            role="button"
+            tabindex="0"
+            @click="restoreComposer"
+            @keydown.enter.prevent="restoreComposer"
+            @keydown.space.prevent="restoreComposer"
+          >
+            <UserAvatar class="sm:hidden" :user="$user().name" size="xl" />
+            <UserAvatar class="mr-3 hidden sm:inline-block" :user="$user().name" size="sm" />
+            <span
+              class="flex h-8 min-w-0 flex-1 items-center truncate rounded-md bg-surface-gray-2 px-3 text-md text-ink-gray-5 sm:h-auto sm:bg-transparent sm:px-0 sm:text-base sm:text-ink-gray-6"
+            >
+              {{ minimizedLabel }}
+            </span>
+            <Tooltip text="Expand">
+              <Button
+                class="shrink-0"
+                variant="ghost"
+                icon="lucide-maximize-2"
+                aria-label="Expand comment box"
+                @click.stop="expandComposer"
+              />
+            </Tooltip>
+          </div>
+          <div
+            v-else
+            class="group/comment-composer relative -mx-3 bg-surface-base p-4 focus-within:border-outline-gray-3 sm:p-3"
+            :class="
+              isComposerFullscreen
+                ? 'flex h-full flex-col'
+                : 'border-t border-outline-gray-2 sm:rounded-lg sm:border sm:shadow-sm'
+            "
             @keydown.ctrl.enter.capture.stop="submitComment"
             @keydown.meta.enter.capture.stop="submitComment"
           >
-            <div class="mb-4 flex items-center">
-              <UserAvatar :user="$user().name" size="md" />
-              <span class="ml-2 text-base-medium text-ink-gray-8">
+            <button
+              type="button"
+              class="absolute left-1/2 top-0 z-10 hidden h-6 w-24 -translate-x-1/2 cursor-ns-resize touch-none items-center justify-center rounded-full opacity-60 transition-opacity hover:opacity-100 focus:opacity-100 group-hover/comment-composer:opacity-100 sm:flex"
+              aria-label="Resize comment box"
+              @pointerdown.stop="startComposerResize"
+            >
+              <span class="h-1 w-10 rounded-full bg-surface-gray-4" />
+            </button>
+            <div class="mb-3 flex items-center gap-2">
+              <UserAvatar class="sm:hidden" :user="$user().name" size="lg" />
+              <UserAvatar class="hidden sm:inline-block" :user="$user().name" size="md" />
+              <span
+                class="min-w-0 flex-1 truncate text-lg-medium text-ink-gray-8 sm:text-base-medium"
+              >
                 {{ $user().full_name }}
               </span>
-              <TabButtons
-                class="ml-auto"
-                :buttons="[{ label: 'Comment' }, { label: 'Poll' }]"
-                v-model="newCommentType"
-              />
+              <div class="hidden sm:block">
+                <TabButtons
+                  :buttons="[{ label: 'Comment' }, { label: 'Poll' }]"
+                  v-model="newCommentType"
+                />
+              </div>
+              <Tooltip :text="isComposerFullscreen ? 'Minimize' : 'Expand'">
+                <Button
+                  class="sm:hidden"
+                  variant="ghost"
+                  :icon="isComposerFullscreen ? 'lucide-minimize-2' : 'lucide-maximize-2'"
+                  :aria-label="isComposerFullscreen ? 'Minimize comment box' : 'Expand comment box'"
+                  @click="toggleMobileComposerFullscreen"
+                />
+              </Tooltip>
+              <Tooltip text="Minimize">
+                <Button
+                  class="hidden sm:inline-flex"
+                  variant="ghost"
+                  icon="lucide-minimize-2"
+                  aria-label="Minimize comment box"
+                  @click="minimizeComposer"
+                />
+              </Tooltip>
             </div>
             <CommentEditor
               ref="newCommentEditor"
-              v-if="showCommentBox && newCommentType == 'Comment'"
+              v-if="newCommentType == 'Comment'"
               :key="commentEditorKey"
-              :value="newComment"
+              :value="draftData.content"
               @change="onNewCommentChange"
               :submitButtonProps="{
                 variant: 'solid',
@@ -124,8 +200,18 @@
                 onClick: discardComment,
               }"
               :editable="true"
+              :max-height="activeComposerEditorMaxHeightStyle"
+              :min-height="activeComposerEditorMinHeightStyle"
+              v-model:toolbar-expanded="composerToolbarExpanded"
               placeholder="Add a comment..."
-            />
+            >
+              <template #actions-left>
+                <TabButtons
+                  :buttons="[{ label: 'Comment' }, { label: 'Poll' }]"
+                  v-model="newCommentType"
+                />
+              </template>
+            </CommentEditor>
             <PollEditor
               v-show="newCommentType == 'Poll'"
               v-model:poll="newPoll"
@@ -136,7 +222,14 @@
               :discardButtonProps="{
                 onClick: discardPoll,
               }"
-            />
+            >
+              <template #actions-left>
+                <TabButtons
+                  :buttons="[{ label: 'Comment' }, { label: 'Poll' }]"
+                  v-model="newCommentType"
+                />
+              </template>
+            </PollEditor>
             <ErrorMessage :message="polls.insert.error" />
           </div>
         </div>
@@ -157,8 +250,7 @@ import {
   useTemplateRef,
 } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { useList } from 'frappe-ui'
-import { TabButtons, ErrorMessage } from 'frappe-ui'
+import { useList, TabButtons, ErrorMessage, Button, Tooltip } from 'frappe-ui'
 import CommentEditor from '@/components/editor/CommentEditor.vue'
 import Comment from './Comment.vue'
 import Activity from './Activity.vue'
@@ -167,12 +259,16 @@ import Poll from './Poll.vue'
 import UserAvatar from './UserAvatar.vue'
 import { getScrollContainer } from '@/utils/scrollContainer'
 import { dialog } from 'frappe-ui'
-import { useSocket } from '@/socket'
+import { useSocket, type NewActivityEvent } from '@/socket'
 import { GPActivity, GPComment, GPPoll } from '@/types/doctypes'
 import type { Editor } from '@tiptap/vue-3'
 import { tags } from '@/data/tags'
 import { isNewCommentOpen } from '@/data/newComment'
-import { injectQuoteBacklinks } from '@/components/RichQuoteExtension/useQuoteBacklinks'
+import { useRichQuotes } from '@/components/RichQuoteExtension/useRichQuotes'
+import { useDraftSync } from '@/data/useDraftSync'
+import { useSessionUser } from '@/data/users'
+import { isMobile } from '@/composables/isMobile'
+import { needsMobileCommentGap } from '@/utils/commentTimeline'
 
 interface Props {
   doctype: string
@@ -180,10 +276,13 @@ interface Props {
   newCommentsFrom?: string
   readOnlyMode?: boolean
   disableNewComment?: boolean
+  // transient: hide the fixed comment bar while the post itself is being edited
+  hideNewComment?: boolean
 }
 
 interface NewPoll {
   title: string
+  anonymous: boolean
   multiple_answers: boolean
   options: Array<{
     title: string
@@ -191,27 +290,53 @@ interface NewPoll {
   }>
 }
 
+interface ComposerUiState {
+  open?: boolean
+  minimized?: boolean
+  toolbarExpanded?: boolean
+  editorMaxHeight?: number
+  editorMinHeight?: number | null
+  type?: 'Comment' | 'Poll'
+  poll?: NewPoll
+}
+
+const DEFAULT_COMPOSER_EDITOR_MAX_HEIGHT = 560
+const MIN_COMPOSER_EDITOR_MAX_HEIGHT = 260
+const MAX_COMPOSER_EDITOR_VIEWPORT_RATIO = 0.72
+
 const props = withDefaults(defineProps<Props>(), {
   readOnlyMode: false,
   disableNewComment: false,
+  hideNewComment: false,
 })
-
-defineEmits<{
-  (
-    e: 'rich-quote',
-    quote: { html: string; occurrence: number },
-    source: { id: string; author: string },
-  ): void
-  (e: 'rich-quote-click', payload: object): void
-}>()
 
 const router = useRouter()
 const route = useRoute()
 const socket = useSocket()
+const sessionUser = useSessionUser()
+const isMobileViewport = isMobile()
 
 const showCommentBox = ref(false)
+const composerMinimized = ref(false)
+const mobileComposerFullscreen = ref(false)
+const composerToolbarExpanded = ref(false)
+const composerEditorMaxHeight = ref(DEFAULT_COMPOSER_EDITOR_MAX_HEIGHT)
+const composerEditorMinHeight = ref<number | null>(null)
+const composerStateLoaded = ref(false)
 const newCommentType = ref<'Comment' | 'Poll'>('Comment')
-const newComment = ref(localStorage.getItem(draftCommentKey()) || '')
+
+// The new-comment composer is an auto-saved draft, keyed to this discussion so it
+// survives reloads and restores across tabs. One draft per (user, discussion).
+const draft = useDraftSync({
+  identity: () => ({
+    type: 'Comment',
+    mode: 'New',
+    referenceDoctype: props.doctype,
+    referenceName: props.name,
+  }),
+  initialPayload: () => ({ content: '' }),
+})
+const draftData = draft.data
 const newPoll = ref({
   title: '',
   multiple_answers: false,
@@ -225,11 +350,16 @@ const newMessagesFrom = ref(props.newCommentsFrom)
 const highlightedItem = ref<{ doctype: string; name: string } | null>(null)
 const addCommentHeight = ref(0)
 const newCommentEditor = useTemplateRef('newCommentEditor')
-const addComment = ref(null)
+const addComment = useTemplateRef('addComment')
 let mutationObserver: MutationObserver | undefined
+let resizeObserver: ResizeObserver | undefined
 const commentEditorKey = ref(0)
 
-const quoteBacklinks = injectQuoteBacklinks()
+const richQuotes = useRichQuotes()
+
+const composerStorageKey = computed(() => {
+  return ['gameplan', 'comment-composer', sessionUser.name, props.doctype, props.name].join(':')
+})
 
 const comments = useList<GPComment>({
   doctype: 'GP Comment',
@@ -316,8 +446,8 @@ const polls = useList<GPPoll>({
 })
 
 watchEffect(() => {
-  if (quoteBacklinks) {
-    quoteBacklinks.commentsData.value = comments.data ?? null
+  if (richQuotes) {
+    richQuotes.commentsData.value = comments.data ?? null
   }
 })
 
@@ -337,12 +467,50 @@ const timelineItems = computed(() => {
 })
 
 const commentEmpty = computed(() => {
-  return !newComment.value || newComment.value === '<p></p>'
+  return !draftData.value.content || draftData.value.content === '<p></p>'
 })
 
 const editorObject = computed<Editor | null>(() => {
   return newCommentEditor.value?.editor || null
 })
+
+const minimizedLabel = computed(() => {
+  if (newCommentType.value === 'Poll') return newPoll.value.title || 'Poll in progress'
+  return draftContentPreview.value || 'Add a comment'
+})
+
+const draftContentPreview = computed(() => {
+  const text = firstTextBlock(draftData.value.content ?? '')
+  return text ? `${text}...` : ''
+})
+
+const composerEditorMaxHeightStyle = computed(() => `${composerEditorMaxHeight.value}px`)
+const composerEditorMinHeightStyle = computed(() =>
+  composerEditorMinHeight.value == null ? undefined : `${composerEditorMinHeight.value}px`,
+)
+const mobileComposerEditorHeightStyle = 'calc(100dvh - var(--mobile-header-height) - 10.5rem)'
+const mobileComposerEditorShortHeightStyle = '12rem'
+const isComposerFullscreen = computed(
+  () =>
+    isMobileViewport.value &&
+    showCommentBox.value &&
+    !composerMinimized.value &&
+    mobileComposerFullscreen.value,
+)
+const activeComposerEditorMaxHeightStyle = computed(() =>
+  isMobileViewport.value
+    ? mobileComposerFullscreen.value
+      ? mobileComposerEditorHeightStyle
+      : mobileComposerEditorShortHeightStyle
+    : composerEditorMaxHeightStyle.value,
+)
+const activeComposerEditorMinHeightStyle = computed(() =>
+  isMobileViewport.value
+    ? mobileComposerFullscreen.value
+      ? mobileComposerEditorHeightStyle
+      : undefined
+    : composerEditorMinHeightStyle.value,
+)
 
 defineExpose({
   editorObject,
@@ -352,13 +520,53 @@ defineExpose({
   highlightComment,
 })
 
-function draftCommentKey(): string {
-  return `draft-comment-${props.doctype}-${props.name}`
-}
-
 function openCommentBox() {
   showCommentBox.value = true
+  composerMinimized.value = false
+  mobileComposerFullscreen.value = false
   newCommentType.value = 'Comment'
+}
+
+function minimizeComposer() {
+  if (isMobileViewport.value && mobileComposerFullscreen.value) {
+    mobileComposerFullscreen.value = false
+    return
+  }
+  composerMinimized.value = true
+  mobileComposerFullscreen.value = false
+}
+
+function restoreComposer() {
+  composerMinimized.value = false
+  mobileComposerFullscreen.value = false
+  nextTick(() => {
+    editorObject.value?.commands.focus()
+  })
+}
+
+function expandMobileComposer() {
+  showCommentBox.value = true
+  composerMinimized.value = false
+  mobileComposerFullscreen.value = true
+  nextTick(() => {
+    editorObject.value?.commands.focus()
+  })
+}
+
+function expandComposer() {
+  if (isMobileViewport.value) {
+    expandMobileComposer()
+  } else {
+    restoreComposer()
+  }
+}
+
+function toggleMobileComposerFullscreen() {
+  if (mobileComposerFullscreen.value) {
+    minimizeComposer()
+  } else {
+    expandMobileComposer()
+  }
 }
 
 function getCommentContentElement(id) {
@@ -382,9 +590,10 @@ function highlightComment(id: string) {
 }
 
 function resetCommentState() {
-  localStorage.removeItem(draftCommentKey())
-  newComment.value = ''
   showCommentBox.value = false
+  composerMinimized.value = false
+  mobileComposerFullscreen.value = false
+  composerToolbarExpanded.value = false
   commentEditorKey.value++
   newCommentType.value = 'Comment'
   newPoll.value = {
@@ -407,9 +616,10 @@ async function submitComment() {
     .submit({
       reference_doctype: props.doctype,
       reference_name: props.name,
-      content: newComment.value,
+      content: draftData.value.content,
     })
-    .then(() => {
+    .then(async () => {
+      await draft.commit()
       resetCommentState()
       tags.reload()
     })
@@ -503,29 +713,30 @@ function setItemRef($component: any, item: any) {
 }
 
 function onNewCommentChange(content: string) {
-  newComment.value = content
-  setTimeout(() => {
-    localStorage.setItem(draftCommentKey(), content)
-  }, 0)
+  draftData.value.content = content
 }
 
-function discardComment() {
+async function discardComment() {
   if (!editorObject.value?.isEmpty) {
     dialog.danger({
       title: 'Discard comment',
       message: 'Are you sure you want to discard your comment?',
       confirmLabel: 'Discard comment',
       cancelLabel: 'Keep comment',
-      onConfirm: resetCommentState,
+      onConfirm: async () => {
+        await draft.clear()
+        resetCommentState()
+      },
     })
   } else {
+    await draft.clear()
     resetCommentState()
   }
 }
 
 watch(showCommentBox, (val) => {
-  isNewCommentOpen.value = val
-  if (val) {
+  updateGlobalCommentState()
+  if (val && !composerMinimized.value) {
     nextTick(() => {
       editorObject.value?.commands.focus()
       scrollToEnd()
@@ -533,32 +744,214 @@ watch(showCommentBox, (val) => {
   }
 })
 
-onMounted(() => {
-  if (!commentEmpty.value) {
-    showCommentBox.value = true
+watch(composerMinimized, (minimized) => {
+  updateGlobalCommentState()
+  if (!minimized && showCommentBox.value) {
+    nextTick(() => {
+      editorObject.value?.commands.focus()
+    })
   }
-  socket.on('new_activity', (data) => {
+})
+
+watch(
+  [
+    showCommentBox,
+    composerMinimized,
+    composerToolbarExpanded,
+    composerEditorMaxHeight,
+    composerEditorMinHeight,
+    newCommentType,
+    newPoll,
+  ],
+  () => {
+    saveComposerState()
+  },
+  { deep: true },
+)
+
+watch(
+  composerStorageKey,
+  () => {
+    loadComposerState()
+  },
+  { immediate: true },
+)
+
+// Reopen the composer if a saved draft is restored for this discussion.
+watch(
+  () => draft.ready.value,
+  (ready) => {
+    if (ready && draft.restored.value) showCommentBox.value = true
+  },
+  { immediate: true },
+)
+
+onMounted(() => {
+  // Announce this area's reply box (quote insert target) and its comments (scroll
+  // targets) to the rich-quote controller, instead of being reached into.
+  richQuotes?.setReplyTarget({
+    open: openCommentBox,
+    getEditor: () => editorObject.value,
+  })
+  richQuotes?.setCommentNavigator({
+    getCommentEl: getCommentContentElement,
+    scrollToComment: scrollToCommentById,
+    highlightComment,
+  })
+  socket.on('new_activity', (data: NewActivityEvent) => {
     if (data.reference_doctype === props.doctype && data.reference_name === props.name) {
       activities.reload()
     }
   })
-  setupMutationObserver()
+  setupComposerMeasurement()
 })
 
 onUnmounted(() => {
+  richQuotes?.setReplyTarget(null)
+  richQuotes?.setCommentNavigator(null)
   socket.off('new_activity')
   mutationObserver?.disconnect()
+  resizeObserver?.disconnect()
+  stopComposerResize()
   isNewCommentOpen.value = false
 })
 
-function setupMutationObserver() {
+function setupComposerMeasurement() {
   const $el = addComment.value
   if (!$el) return
 
-  const observer = new MutationObserver(() => {
-    addCommentHeight.value = $el.clientHeight
-  })
-  observer.observe($el, { childList: true, subtree: true })
-  mutationObserver = observer
+  updateComposerHeight()
+
+  mutationObserver = new MutationObserver(updateComposerHeight)
+  mutationObserver.observe($el, { childList: true, subtree: true })
+
+  resizeObserver = new ResizeObserver(updateComposerHeight)
+  resizeObserver.observe($el)
+}
+
+function updateComposerHeight() {
+  addCommentHeight.value = addComment.value?.clientHeight ?? 0
+}
+
+function updateGlobalCommentState() {
+  isNewCommentOpen.value = showCommentBox.value && !composerMinimized.value
+}
+
+function loadComposerState() {
+  composerStateLoaded.value = false
+  const state = readComposerState()
+  showCommentBox.value = Boolean(state.open)
+  composerMinimized.value = Boolean(state.minimized)
+  composerToolbarExpanded.value = Boolean(state.toolbarExpanded)
+  composerEditorMaxHeight.value = normalizeComposerHeight(state.editorMaxHeight)
+  composerEditorMinHeight.value =
+    state.editorMinHeight == null ? null : normalizeComposerHeight(state.editorMinHeight)
+  newCommentType.value = state.type ?? 'Comment'
+  newPoll.value = normalizePoll(state.poll)
+  composerStateLoaded.value = true
+  updateGlobalCommentState()
+}
+
+function saveComposerState() {
+  if (!composerStateLoaded.value) return
+  localStorage.setItem(
+    composerStorageKey.value,
+    JSON.stringify({
+      open: showCommentBox.value,
+      minimized: composerMinimized.value,
+      toolbarExpanded: composerToolbarExpanded.value,
+      editorMaxHeight: composerEditorMaxHeight.value,
+      editorMinHeight: composerEditorMinHeight.value,
+      type: newCommentType.value,
+      poll: newPoll.value,
+    } satisfies ComposerUiState),
+  )
+}
+
+function readComposerState(): ComposerUiState {
+  try {
+    return JSON.parse(localStorage.getItem(composerStorageKey.value) || '{}')
+  } catch {
+    return {}
+  }
+}
+
+function normalizePoll(poll?: ComposerUiState['poll']): NewPoll {
+  return {
+    title: poll?.title ?? '',
+    multiple_answers: Boolean(poll?.multiple_answers),
+    anonymous: Boolean(poll?.anonymous),
+    options: poll?.options?.length
+      ? poll.options.map((option, index) => ({
+          title: option.title ?? '',
+          idx: option.idx || index + 1,
+        }))
+      : [
+          { title: '', idx: 1 },
+          { title: '', idx: 2 },
+        ],
+  }
+}
+
+function firstTextBlock(html: string) {
+  const doc = new DOMParser().parseFromString(html, 'text/html')
+  const blocks = Array.from(doc.body.querySelectorAll('p, li, blockquote, h1, h2, h3, h4, h5, h6'))
+  const firstBlock = blocks.find((block) => block.textContent?.trim())
+  return firstBlock?.textContent?.replace(/\s+/g, ' ').trim() ?? ''
+}
+
+let resizeStartY = 0
+let resizeStartHeight = DEFAULT_COMPOSER_EDITOR_MAX_HEIGHT
+let resizeHandle: HTMLElement | null = null
+let resizePointerId: number | null = null
+
+function startComposerResize(event: PointerEvent) {
+  event.preventDefault()
+  resizeHandle = event.currentTarget as HTMLElement
+  resizePointerId = event.pointerId
+  resizeHandle.setPointerCapture?.(event.pointerId)
+  resizeStartY = event.clientY
+  resizeStartHeight = composerEditorMaxHeight.value
+  document.body.style.cursor = 'ns-resize'
+  document.body.style.userSelect = 'none'
+  window.addEventListener('pointermove', resizeComposer)
+  window.addEventListener('pointerup', stopComposerResize)
+  window.addEventListener('pointercancel', stopComposerResize)
+}
+
+function resizeComposer(event: PointerEvent) {
+  const nextHeight = resizeStartHeight + resizeStartY - event.clientY
+  const normalizedHeight = normalizeComposerHeight(nextHeight)
+  composerEditorMaxHeight.value = normalizedHeight
+  composerEditorMinHeight.value = normalizedHeight
+}
+
+function stopComposerResize() {
+  if (
+    resizeHandle &&
+    resizePointerId != null &&
+    resizeHandle.hasPointerCapture?.(resizePointerId)
+  ) {
+    resizeHandle.releasePointerCapture(resizePointerId)
+  }
+  resizeHandle = null
+  resizePointerId = null
+  document.body.style.cursor = ''
+  document.body.style.userSelect = ''
+  window.removeEventListener('pointermove', resizeComposer)
+  window.removeEventListener('pointerup', stopComposerResize)
+  window.removeEventListener('pointercancel', stopComposerResize)
+}
+
+function normalizeComposerHeight(height?: number) {
+  const viewportMaxHeight = Math.floor(window.innerHeight * MAX_COMPOSER_EDITOR_VIEWPORT_RATIO)
+  const maxHeight = Math.max(MIN_COMPOSER_EDITOR_MAX_HEIGHT, viewportMaxHeight)
+  return Math.min(
+    Math.max(
+      Math.round(height || DEFAULT_COMPOSER_EDITOR_MAX_HEIGHT),
+      MIN_COMPOSER_EDITOR_MAX_HEIGHT,
+    ),
+    maxHeight,
+  )
 }
 </script>

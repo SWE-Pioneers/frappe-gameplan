@@ -1,7 +1,7 @@
 <template>
   <div class="mt-5 body-container">
     <SpaceHeaderActions>
-      <Button variant="solid" icon-left="lucide-plus" @click="createNewPage">
+      <Button v-if="canEditSpace" variant="solid" icon-left="lucide-plus" @click="createNewPage">
         <span class="whitespace-nowrap"> Add new </span>
       </Button>
     </SpaceHeaderActions>
@@ -43,24 +43,29 @@
     <PageGrid
       class="grid grid-cols-2 gap-x-5 gap-y-8 md:grid-cols-3 lg:grid-cols-4"
       :listOptions="{ filters: { project: spaceId }, orderBy: () => orderBy }"
+      :readOnly="!canEditSpace"
     />
   </div>
 </template>
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { Dropdown, useNewDoc, UseListOptions } from 'frappe-ui'
 import SpaceTabs from '@/components/SpaceTabs.vue'
 import SpaceHeaderActions from '@/components/SpaceHeaderActions.vue'
 import PageGrid from './PageGrid.vue'
 import { GPPage } from '@/types/doctypes'
+import { useSpace } from '@/data/spaces'
+import { readOnlyMode } from '@/data/readOnlyMode'
 
 const props = defineProps<{
   spaceId: string
 }>()
 
 const router = useRouter()
+const space = useSpace(() => props.spaceId)
 const orderBy: UseListOptions<GPPage>['orderBy'] = ref('modified desc')
+const canEditSpace = computed(() => !readOnlyMode && !space.value?.archived_at)
 
 const newPage = useNewDoc<GPPage>('GP Page', {
   project: props.spaceId,
@@ -72,7 +77,7 @@ function createNewPage() {
   newPage.submit().then((doc) => {
     router.push({
       name: 'SpacePage',
-      params: { spaceId: props.spaceId, pageId: doc.name },
+      params: { communityId: space.value?.team, spaceId: props.spaceId, pageId: doc.name },
     })
   })
 }

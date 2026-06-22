@@ -92,7 +92,6 @@ import {
   h,
   ref,
   computed,
-  onMounted,
   onBeforeUnmount,
   watch,
   nextTick,
@@ -100,6 +99,7 @@ import {
   useTemplateRef,
   type Component,
 } from 'vue'
+import { useEventListener } from '@vueuse/core'
 import { RouteLocationRaw, useRouter } from 'vue-router'
 import { dayjs, debounce } from 'frappe-ui'
 import { useCall, useNewDoc } from 'frappe-ui'
@@ -108,7 +108,10 @@ import { activeUsers, useUser } from '@/data/users'
 import ItemProject from './ItemProject.vue'
 import Item from './Item.vue'
 import UserAvatar from '../UserAvatar.vue'
-import { spaces, useSpace } from '@/data/spaces'
+import { getSpace, spaces, useSpace } from '@/data/spaces'
+import { communityState } from '@/data/communityState'
+import { activeCommunities } from '@/data/communities'
+import { readOnlyMode } from '@/data/readOnlyMode'
 import { hideCommandPalette, show, toggleCommandPalette } from './commandPalette'
 import KeyboardShortcut from '../KeyboardShortcut.vue'
 
@@ -123,6 +126,14 @@ const scrollContainerRef = useTemplateRef<HTMLDivElement>('scrollContainerRef')
 const activeItemRef = ref<HTMLDivElement | null>(null)
 
 const router = useRouter()
+const activeCommunityIds = computed(
+  () => new Set(activeCommunities.value.map((community) => community.name)),
+)
+const currentSpace = computed(() => {
+  const spaceId = router.currentRoute.value.params?.spaceId
+  return typeof spaceId === 'string' ? getSpace(spaceId) : null
+})
+const canCreateFromPalette = computed(() => !readOnlyMode && !currentSpace.value?.archived_at)
 
 interface SearchResult {
   title: string
@@ -136,6 +147,7 @@ interface SearchResultItem {
   id: string
   name: string
   project: string
+  team?: string
   reference_doctype?: string
   reference_name?: string
   score: number
@@ -174,40 +186,49 @@ const debouncedTitleSearch = debounce(() => titleSearch.submit({ query: query.va
 const transformedSearchResults = computed(() => {
   if (!titleSearch.data) return []
 
-  return titleSearch.data.map((group) => ({
-    title: group.title,
-    items: group.items.map((item) => {
-      const baseItem: CommandPaletteItem = { ...item, modified: dayjs.unix(item.modified) }
+  return titleSearch.data
+    .map((group) => ({
+      title: group.title,
+      items: group.items.filter(isSearchItemVisible).map((item) => {
+        const baseItem: CommandPaletteItem = { ...item, modified: dayjs.unix(item.modified) }
 
-      if (group.title === 'Discussions') {
-        baseItem.route = {
-          name: 'Discussion',
-          params: {
-            postId: item.name,
-            spaceId: item.project,
-          },
+        if (group.title === 'Discussions') {
+          baseItem.route = {
+            name: 'Discussion',
+            params: {
+              communityId: item.team || getSpace(item.project)?.team,
+              postId: item.name,
+              spaceId: item.project,
+            },
+          }
+        } else if (group.title === 'Tasks') {
+          baseItem.route = {
+            name: item.project ? 'SpaceTask' : 'Task',
+            params: item.project
+              ? {
+                  communityId: item.team || getSpace(item.project)?.team,
+                  taskId: item.name,
+                  spaceId: item.project,
+                }
+              : {
+                  taskId: item.name,
+                },
+          }
+        } else if (group.title === 'Pages') {
+          baseItem.route = {
+            name: 'SpacePage',
+            params: {
+              communityId: item.team || getSpace(item.project)?.team,
+              pageId: item.name,
+              spaceId: item.project,
+            },
+          }
         }
-      } else if (group.title === 'Tasks') {
-        baseItem.route = {
-          name: item.project ? 'SpaceTask' : 'Task',
-          params: {
-            taskId: item.name,
-            spaceId: item.project,
-          },
-        }
-      } else if (group.title === 'Pages') {
-        baseItem.route = {
-          name: 'SpacePage',
-          params: {
-            pageId: item.name,
-            spaceId: item.project,
-          },
-        }
-      }
 
-      return baseItem
-    }),
-  }))
+        return baseItem
+      }),
+    }))
+    .filter((group) => group.items.length > 0)
 })
 
 const shortcuts = computed((): CommandPaletteGroup[] => [
@@ -266,9 +287,17 @@ const shortcuts = computed((): CommandPaletteGroup[] => [
         name: 'add-discussion',
         search: 'Add Discussion New Discussion',
         icon: 'lucide-message-square-plus',
+        condition: () => canCreateFromPalette.value,
         onClick() {
           let spaceId = router.currentRoute.value.params?.spaceId ?? null
-          router.push({ name: 'NewDiscussion', query: { spaceId } })
+          let communityId = router.currentRoute.value.params?.communityId ?? communityState.id
+
+          if (!communityId) {
+            router.push({ name: 'LegacyNewDiscussion', query: { spaceId } })
+            return
+          }
+
+          router.push({ name: 'NewDiscussion', params: { communityId }, query: { spaceId } })
         },
       },
       {
@@ -276,6 +305,7 @@ const shortcuts = computed((): CommandPaletteGroup[] => [
         name: 'add-task',
         search: 'Add Task New Task',
         icon: 'lucide-square-plus',
+        condition: () => canCreateFromPalette.value,
         onClick() {
           let spaceId = router.currentRoute.value?.params?.spaceId ?? null
           showNewTaskDialog({
@@ -287,7 +317,11 @@ const shortcuts = computed((): CommandPaletteGroup[] => [
               if (doc.project) {
                 router.push({
                   name: 'SpaceTask',
-                  params: { taskId: doc.name, spaceId: doc.project },
+                  params: {
+                    communityId: getSpace(doc.project)?.team,
+                    taskId: doc.name,
+                    spaceId: doc.project,
+                  },
                 })
               } else {
                 router.push({ name: 'Task', params: { taskId: doc.name } })
@@ -301,6 +335,7 @@ const shortcuts = computed((): CommandPaletteGroup[] => [
         name: 'add-page',
         search: 'Add Page New Page',
         icon: 'lucide-file-plus',
+        condition: () => canCreateFromPalette.value,
         onClick() {
           let spaceId = router.currentRoute.value.params?.spaceId ?? null
 
@@ -317,13 +352,18 @@ const shortcuts = computed((): CommandPaletteGroup[] => [
             router.push({
               name: doc.project ? 'SpacePage' : 'Page',
               params: doc.project
-                ? { pageId: doc.name, slug: doc.slug, spaceId: doc.project }
+                ? {
+                    communityId: getSpace(doc.project)?.team,
+                    pageId: doc.name,
+                    slug: doc.slug,
+                    spaceId: doc.project,
+                  }
                 : { pageId: doc.name, slug: doc.slug },
             })
           })
         },
       },
-    ],
+    ].filter((item) => (item.condition ? item.condition() : true)),
   },
 ])
 
@@ -356,7 +396,7 @@ function generateSearchResults() {
     }))
     .filter((group) => group.items.length > 0)
 
-  let results = [...localResults, ...titleSearchResults]
+  let results = [...localResults, ...titleSearchResults].filter((group) => group.items.length > 0)
 
   let fullTextSearchItem: CommandPaletteItem = {
     title: `Search for "${query.value}"`,
@@ -399,6 +439,8 @@ watch([query, filteredOptions, transformedSearchResults], generateSearchResults,
 const searchList = computed(() => {
   let list: CommandPaletteItem[] = []
   for (const project of spaces.data || []) {
+    if (project.archived_at || !activeCommunityIds.value.has(project.team)) continue
+
     list.push({
       type: 'Project',
       group: 'Spaces',
@@ -408,7 +450,7 @@ const searchList = computed(() => {
       search: `${project.title} ${project.team}`,
       route: {
         name: 'Space',
-        params: { spaceId: project.name },
+        params: { communityId: project.team, spaceId: project.name },
       },
     })
   }
@@ -423,13 +465,20 @@ const searchList = computed(() => {
       search: `${user.full_name} ${user.email}`,
       icon: () => h(UserAvatar, { user: user.email, size: 'sm' }),
       route: {
-        name: 'PersonProfile',
+        name: 'PersonProfileProfile',
         params: { personId: user.user_profile },
       },
     })
   }
   return list
 })
+
+function isSearchItemVisible(item: SearchResultItem) {
+  if (!item.project) return true
+
+  const space = getSpace(item.project)
+  return Boolean(space && !space.archived_at && activeCommunityIds.value.has(space.team))
+}
 
 function onInput(e: Event) {
   query.value = (e.target as HTMLInputElement).value
@@ -531,21 +580,17 @@ watch(show, (value) => {
   }
 })
 
-function addKeyboardShortcut() {
-  window.addEventListener('keydown', (e) => {
-    if (
-      e.key === 'k' &&
-      (e.ctrlKey || e.metaKey) &&
-      !(e.target as HTMLElement).classList.contains('ProseMirror')
-    ) {
-      toggleCommandPalette()
-      e.preventDefault()
-    }
-  })
-}
-
-onMounted(() => {
-  addKeyboardShortcut()
+// useEventListener auto-removes on unmount, so remounting across the 640px
+// layout breakpoint can't stack duplicate keydown handlers (the V2 leak).
+useEventListener(window, 'keydown', (e: KeyboardEvent) => {
+  if (
+    e.key === 'k' &&
+    (e.ctrlKey || e.metaKey) &&
+    !(e.target as HTMLElement).classList.contains('ProseMirror')
+  ) {
+    toggleCommandPalette()
+    e.preventDefault()
+  }
 })
 
 onBeforeUnmount(() => {

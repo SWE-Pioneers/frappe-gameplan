@@ -1,15 +1,15 @@
 <template>
   <Dialog title="New Space" v-model:open="show">
     <p class="text-p-base text-ink-gray-6">
-      Spaces keep discussions, tasks, and pages in one place. Use them to group by team, project or
-      any topic.
+      Spaces keep discussions, tasks, and pages in one place. Use them to group by community,
+      project, or any topic.
     </p>
     <div class="mt-3 space-y-2">
       <div class="space-x-2 flex items-center w-full">
-        <IconPicker v-model="newSpace.doc.icon" v-slot="{ isOpen }">
-          <Button>
+        <IconPicker v-model="newSpace.doc.icon" v-slot="{ togglePopover }">
+          <Button @click="togglePopover()">
             <template #icon>
-              <span v-if="newSpace.doc.icon">{{ newSpace.doc.icon }}</span>
+              <SpaceIcon v-if="newSpace.doc.icon" :icon="newSpace.doc.icon" class="size-4" />
               <span v-else class="lucide-plus h-4 w-4" />
             </template>
           </Button>
@@ -22,10 +22,14 @@
           autofocus
         />
       </div>
-      <div class="flex gap-2">
+      <div v-if="!isCommunityLocked" class="flex gap-2">
         <div class="size-7 shrink-0"></div>
         <div class="w-full">
-          <Combobox placeholder="Category" :options="categoryOptions" v-model="selectedCategory" />
+          <Combobox
+            placeholder="Community"
+            :options="communityOptions"
+            v-model="selectedCommunity"
+          />
         </div>
       </div>
       <div class="flex items-center space-x-2">
@@ -61,15 +65,17 @@ import {
   type ComboboxOption,
 } from 'frappe-ui'
 import IconPicker from './IconPicker.vue'
+import SpaceIcon from './SpaceIcon.vue'
 import { useNewDoc } from 'frappe-ui'
 import { GPProject, GPTeam } from '@/types/doctypes'
 import { spaces } from '@/data/spaces'
 import { computed, h, ref, watch } from 'vue'
-import { activeTeams, teams } from '@/data/teams'
+import { activeCommunities, communities } from '@/data/communities'
 import { until } from '@vueuse/core'
 
 const props = defineProps<{
-  category?: string
+  // When set, the dialog always creates in this community and hides the community picker.
+  lockedCommunityId?: string
 }>()
 
 const show = defineModel<boolean>()
@@ -79,22 +85,24 @@ const newSpace = useNewDoc<GPProject>('GP Project', {
   team: '',
   is_private: 0,
 })
-const selectedCategory = ref<string | null>(null)
+const selectedCommunity = ref<string | null>(null)
+
+const isCommunityLocked = computed(() => Boolean(props.lockedCommunityId))
 
 watch(show, (value: boolean) => {
   if (value) {
-    if (props.category) {
-      selectCategory(props.category)
+    if (props.lockedCommunityId) {
+      selectCommunity(props.lockedCommunityId)
     } else {
-      selectedCategory.value = null
+      selectedCommunity.value = null
     }
   }
 })
 
-const categoryOptions = computed((): ComboboxOption[] => {
-  let categories = activeTeams.value.map((team) => ({
-    label: team.title,
-    value: team.name,
+const communityOptions = computed((): ComboboxOption[] => {
+  let options = activeCommunities.value.map((community) => ({
+    label: community.title,
+    value: community.name,
   }))
 
   const createNewOption = {
@@ -106,32 +114,36 @@ const categoryOptions = computed((): ComboboxOption[] => {
       label: ({ query }) => `Create New: ${query}`,
     },
     condition: ({ query }) =>
-      query.length > 0 && !activeTeams.value.map((team) => team.title).includes(query),
+      query.length > 0 &&
+      !activeCommunities.value.map((community) => community.title).includes(query),
     onClick: async ({ query }) => {
-      let currentActiveTeamsCount = activeTeams.value.length
-      const team = (await teams.insert.submit({ title: query })) as unknown as GPTeam
-      if (team) {
-        await until(() => activeTeams.value.length > currentActiveTeamsCount).toBeTruthy()
-        selectCategory(team.name)
+      let currentActiveCommunitiesCount = activeCommunities.value.length
+      const community = (await communities.insert.submit({ title: query })) as unknown as GPTeam
+      if (community) {
+        await until(
+          () => activeCommunities.value.length > currentActiveCommunitiesCount,
+        ).toBeTruthy()
+        selectCommunity(community.name)
       }
     },
   } as ComboboxOption
 
-  return [...categories, createNewOption]
+  return [...options, createNewOption]
 })
 
-function selectCategory(categoryId: string) {
-  let categoryOption = categoryOptions.value.find((option) =>
-    option.type === 'custom' ? option.key === categoryId : option.value === categoryId,
+function selectCommunity(communityId: string) {
+  let option = communityOptions.value.find((option) =>
+    option.type === 'custom' ? option.key === communityId : option.value === communityId,
   )
-  if (categoryOption && categoryOption.type !== 'custom') {
-    selectedCategory.value = categoryOption.value
+  if (option && option.type !== 'custom') {
+    selectedCommunity.value = option.value
   }
 }
 
 function submit() {
-  if (selectedCategory.value) {
-    newSpace.doc.team = selectedCategory.value
+  const community = props.lockedCommunityId || selectedCommunity.value
+  if (community) {
+    newSpace.doc.team = community
   }
   newSpace.submit().then(() => {
     // TODO: useNewDoc should automatically reload related resources

@@ -1,10 +1,11 @@
 <template>
   <div>
     <div>
-      <PageHeader>
+      <MobileHeader class="sm:hidden" title="Search" />
+      <PageHeader class="hidden sm:flex">
         <Breadcrumbs :items="[{ label: 'Search', route: { name: 'Search' } }]" />
       </PageHeader>
-      <div class="mt-6 body-container">
+      <div class="body-container pt-5 sm:mt-6 sm:pt-0">
         <div class="flex items-center space-x-2">
           <TextInput
             ref="searchInput"
@@ -24,6 +25,7 @@
                 <button
                   v-if="query"
                   @click="clearSearch"
+                  aria-label="Clear search"
                   class="p-1 size-6 grid place-content-center focus:outline-none focus:ring focus:ring-outline-gray-3 rounded"
                 >
                   <span class="lucide-x w-4 text-ink-gray-7" />
@@ -110,7 +112,7 @@
               :options="teamsFilterOptions"
               :model-value="activeFilters.team || []"
               @update:model-value="(values) => updateFilter('team', values)"
-              placeholder="Category"
+              placeholder="Community"
             >
               <template #item-suffix="{ item }">
                 <span v-if="(item.count ?? 0) > 0" class="text-xs text-ink-gray-5">{{
@@ -172,9 +174,7 @@
             <template v-else-if="searchResponse?.summary">
               <div class="space-y-1">
                 <p class="text-ink-gray-6">
-                  {{ searchResponse.summary.filtered_matches }} matches ({{
-                    searchResponse.summary.duration
-                  }}s)
+                  {{ visibleSearchResults.length }} matches ({{ searchResponse.summary.duration }}s)
                   <span v-if="hasActiveFilters()">
                     •
                     {{ Object.keys(searchResponse.summary.applied_filters || {}).length }} filter(s)
@@ -192,10 +192,7 @@
           </div>
 
           <!-- Inline Feedback Section -->
-          <div
-            v-if="searchResponse?.results?.length && !feedbackGiven"
-            class="flex items-center gap-2"
-          >
+          <div v-if="visibleSearchResults.length && !feedbackGiven" class="flex items-center gap-2">
             <span class="text-ink-gray-6">Helpful?</span>
             <div class="flex items-center gap-1">
               <Tooltip text="Yes, results were helpful">
@@ -220,7 +217,7 @@
         </div>
 
         <div class="mt-5 -mx-2.5">
-          <template v-for="item in searchResponse?.results" :key="item.id">
+          <template v-for="item in visibleSearchResults" :key="item.id">
             <router-link
               :to="getItemRoute(item)"
               class="flex space-x-2 overflow-hidden sm:rounded px-2.5 py-3 touch-pan-y select-none transition-colors duration-150 active:bg-surface-gray-2 sm:hover:bg-surface-gray-2"
@@ -274,12 +271,14 @@ import {
   usePageMeta,
 } from 'frappe-ui'
 import PageHeader from '@/components/PageHeader.vue'
+import MobileHeader from '@/components/MobileHeader.vue'
 import { useCall, useNewDoc } from 'frappe-ui'
 import { GPSearchFeedback } from '@/types/doctypes'
 import { useSessionUser } from '@/data/users'
 import UserAvatarWithHover from '@/components/UserAvatarWithHover.vue'
 import { useGroupedSpaceOptions } from '@/data/groupedSpaces'
-import { activeTeams } from '@/data/teams'
+import { getSpace } from '@/data/spaces'
+import { activeCommunities } from '@/data/communities'
 import { activeUsers } from '@/data/users'
 import { vFocus } from '@/directives'
 
@@ -360,6 +359,12 @@ const searchInput = useTemplateRef<typeof TextInput>('searchInput')
 const router = useRouter()
 const route = useRoute()
 const groupedSpaces = useGroupedSpaceOptions()
+const activeCommunityIds = computed(
+  () => new Set(activeCommunities.value.map((community) => community.name)),
+)
+const visibleSearchResults = computed(() => {
+  return (searchResponse.value?.results || []).filter(isSearchResultVisible)
+})
 
 // API Calls Setup
 const search = useCall<SearchResponse, SearchParams>({
@@ -392,11 +397,11 @@ const spacesFilterOptions = computed(() => {
   if (filterOptions.data?.projects) {
     Object.entries(filterOptions.data.projects).forEach(([projectName, count]) => {
       projectCounts.set(projectName, count)
-      // Also handle numeric conversion for project IDs
-      try {
-        projectCounts.set(Number(projectName), count)
-      } catch (e) {
-        // Ignore conversion errors
+      // Project IDs are looked up numerically elsewhere; add a numeric key only
+      // when the name actually parses (Number() returns NaN, it never throws).
+      const numericKey = Number(projectName)
+      if (!Number.isNaN(numericKey)) {
+        projectCounts.set(numericKey, count)
       }
     })
   }
@@ -439,10 +444,10 @@ const teamsFilterOptions = computed(() => {
     })
   }
 
-  return activeTeams.value.map((team) => ({
-    value: team.name,
-    label: team.title,
-    count: teamCounts.get(team.name) || 0,
+  return activeCommunities.value.map((community) => ({
+    value: community.name,
+    label: community.title,
+    count: teamCounts.get(community.name) || 0,
   }))
 })
 
@@ -625,7 +630,7 @@ function removeFilter(type: keyof SearchFilters, value: string) {
 
 // Search State Persistence
 function getStorageKey(query: string) {
-  return `${STORAGE_KEY_PREFIX}${query}`
+  return `${STORAGE_KEY_PREFIX}${useSessionUser().name}:${query}`
 }
 
 function loadSearchState(searchQuery: string) {
@@ -673,6 +678,7 @@ function getItemRoute(item: SearchResultItem) {
       return {
         name: 'Discussion',
         params: {
+          communityId: item.team || getSpace(item.project)?.team,
           spaceId: item.project,
           postId: item.name,
         },
@@ -684,6 +690,7 @@ function getItemRoute(item: SearchResultItem) {
       return {
         name: 'SpaceTask',
         params: {
+          communityId: item.team || getSpace(item.project)?.team,
           spaceId: item.project,
           taskId: item.name,
         },
@@ -692,6 +699,7 @@ function getItemRoute(item: SearchResultItem) {
       return {
         name: 'SpacePage',
         params: {
+          communityId: item.team || getSpace(item.project)?.team,
           spaceId: item.project,
           pageId: item.name,
         },
@@ -701,6 +709,7 @@ function getItemRoute(item: SearchResultItem) {
         return {
           name: 'Discussion',
           params: {
+            communityId: item.team || getSpace(item.project)?.team,
             spaceId: item.project,
             postId: item.reference_name,
           },
@@ -711,6 +720,7 @@ function getItemRoute(item: SearchResultItem) {
         return {
           name: 'SpaceTask',
           params: {
+            communityId: item.team || getSpace(item.project)?.team,
             spaceId: item.project,
             taskId: item.reference_name,
           },
@@ -721,6 +731,13 @@ function getItemRoute(item: SearchResultItem) {
     default:
       return {}
   }
+}
+
+function isSearchResultVisible(item: SearchResultItem) {
+  if (!item.project) return true
+
+  const space = getSpace(item.project)
+  return Boolean(space && !space.archived_at && activeCommunityIds.value.has(space.team))
 }
 
 // Feedback System

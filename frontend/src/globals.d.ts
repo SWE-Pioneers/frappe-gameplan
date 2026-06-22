@@ -17,7 +17,6 @@ declare module '@vue/runtime-core' {
     FeatherIcon: (typeof import('frappe-ui'))['FeatherIcon']
     Alert: (typeof import('frappe-ui'))['Alert']
     Badge: (typeof import('frappe-ui'))['Badge']
-    UserInfo: (typeof import('frappe-ui'))['UserInfo']
     UserAvatar: typeof import('./components/UserAvatar.vue')
   }
 }
@@ -27,6 +26,12 @@ declare module 'vue' {
     $platform: ReturnType<typeof getPlatform>
     $user: typeof useUser
     $isSessionUser: typeof isSessionUser
+  }
+}
+
+declare global {
+  interface Window {
+    site_name: string
   }
 }
 

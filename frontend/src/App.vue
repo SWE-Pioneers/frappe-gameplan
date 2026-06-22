@@ -2,7 +2,7 @@
   <FrappeUIProvider>
     <ScrollAreaRoot class="h-full overflow-hidden">
       <router-view v-if="['Onboarding', 'Login'].includes($route.name)" />
-      <Layout class="hello" v-else-if="$session.isLoggedIn">
+      <Layout v-else-if="$session.isLoggedIn">
         <router-view />
       </Layout>
     </ScrollAreaRoot>
@@ -16,9 +16,11 @@ import { FrappeUIProvider } from 'frappe-ui'
 import { ScrollAreaRoot } from 'reka-ui'
 import { users } from '@/data/users'
 import { useScreenSize } from '@/composables/useScreenSize'
+import { useTheme } from '@/utils/useTheme'
 import NewTaskDialog from './components/NewTaskDialog/NewTaskDialog.vue'
 
 const screenSize = useScreenSize()
+useTheme()
 const MobileLayout = defineAsyncComponent(() => import('./components/MobileLayout.vue'))
 const DesktopLayout = defineAsyncComponent(() => import('./components/DesktopLayout.vue'))
 const Layout = computed(() => {

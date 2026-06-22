@@ -1,33 +1,40 @@
 <template>
-  <PageHeader>
-    <Breadcrumbs class="h-7" :items="[{ label: 'Discussions', route: { name: 'Discussions' } }]" />
-    <Button variant="solid" icon-left="lucide-plus" :route="{ name: 'NewDiscussion' }">
-      Add new
-    </Button>
+  <MobileHeader v-if="communityState.doc" class="sm:hidden" :title="feedTitle">
+    <template #left>
+      <MobileBackButton
+        :to="{ name: 'MobileCommunityMenu', params: { communityId } }"
+        label="Community menu"
+      />
+    </template>
+  </MobileHeader>
+  <PageHeader class="hidden sm:flex">
+    <Breadcrumbs
+      class="h-7"
+      :items="[
+        { label: feedTitle, route: { name: 'DiscussionsTab', params: { communityId, feedType } } },
+      ]"
+    />
+    <div class="flex items-center gap-2">
+      <Select class="shrink-0 !w-fit" :options="orderOptions" v-model="orderBy" />
+      <Button
+        variant="solid"
+        icon-left="lucide-plus"
+        :route="{ name: 'NewDiscussion', params: { communityId } }"
+      >
+        Add new
+      </Button>
+    </div>
   </PageHeader>
   <div class="body-container pt-5 pb-40">
     <LastPostReminder class="mb-3" />
 
-    <div class="overflow-x-auto flex gap-2 py-1 mb-3 items-center -mx-3 px-3">
-      <TabButtons :options="feedOptions" v-model="currentFeedType" />
-      <div class="ml-auto flex space-x-2" v-if="currentFeedType !== 'drafts'">
-        <Button
-          v-if="discussionListRef?.discussions?.loading"
-          :loading="discussionListRef?.discussions?.loading"
-        >
-          Loading...
-        </Button>
-        <Select class="shrink-0 !w-fit" :options="orderOptions" v-model="orderBy" />
-      </div>
-    </div>
     <KeepAlive>
       <DiscussionList
         class="-mx-3"
         ref="discussionListRef"
-        routeName="ProjectDiscussion"
         :filters="filters"
         :orderBy="() => orderBy"
-        :cacheKey="`HomeDiscussions-${currentFeedType}`"
+        :cacheKey="`Discussions-${communityId}-${feedType}`"
         :key="JSON.stringify(filters)"
       />
     </KeepAlive>
@@ -36,16 +43,19 @@
 
 <script setup lang="ts">
 import { computed, ref, useTemplateRef } from 'vue'
-import { Breadcrumbs, Select, TabButtons, usePageMeta } from 'frappe-ui'
+import { Breadcrumbs, Button, Select, usePageMeta } from 'frappe-ui'
 import type { OrderBy } from 'frappe-ui'
 import DiscussionList from '@/components/DiscussionList.vue'
 import PageHeader from '@/components/PageHeader.vue'
 import LastPostReminder from '@/components/LastPostReminder.vue'
-import { useRouter } from 'vue-router'
+import MobileBackButton from '@/components/MobileBackButton.vue'
+import MobileHeader from '@/components/MobileHeader.vue'
+import { communityState } from '@/data/communityState'
 
-type FeedType = 'following' | 'participating' | 'recent' | 'bookmarks' | 'unread'
+type FeedType = 'recent' | 'unread' | 'participating'
 
 interface Props {
+  communityId: string
   feedType?: FeedType
 }
 
@@ -53,43 +63,21 @@ const props = withDefaults(defineProps<Props>(), {
   feedType: 'recent',
 })
 
-const router = useRouter()
 const orderBy = ref<OrderBy>('last_post_at desc')
 const discussionListRef = useTemplateRef('discussionListRef')
 
-const currentFeedType = computed({
-  get: () => props.feedType,
-  set: (value: FeedType) => {
-    router.push({ name: 'DiscussionsTab', params: { feedType: value } })
-  },
-})
+const filters = computed(() => ({
+  team: props.communityId,
+  feed_type: props.feedType,
+}))
 
-const filters = computed(() => {
-  return currentFeedType.value ? { feed_type: currentFeedType.value } : undefined
-})
+const feedTitles: Record<FeedType, string> = {
+  recent: 'All Discussions',
+  unread: 'Unread',
+  participating: 'Participating',
+}
 
-const feedOptions = [
-  {
-    label: 'All',
-    value: 'recent',
-  },
-  {
-    label: 'Unread',
-    value: 'unread',
-  },
-  {
-    label: 'Following',
-    value: 'following',
-  },
-  {
-    label: 'Participating',
-    value: 'participating',
-  },
-  {
-    label: 'Bookmarks',
-    value: 'bookmarks',
-  },
-]
+const feedTitle = computed(() => feedTitles[props.feedType])
 
 const orderOptions = [
   {
@@ -111,9 +99,5 @@ const orderOptions = [
   },
 ]
 
-usePageMeta(() => {
-  return {
-    title: 'Discussions',
-  }
-})
+usePageMeta(() => ({ title: feedTitle.value }))
 </script>

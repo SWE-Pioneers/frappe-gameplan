@@ -10,14 +10,19 @@
   <div v-else>
     <div class="relative" v-for="d in pages.data" :key="d.name">
       <router-link
-        :to="{
-          name: d.project ? 'SpacePage' : 'Page',
-          params: {
-            pageId: d.name,
-            slug: d.slug,
-            spaceId: d.project,
-          },
-        }"
+        :to="
+          d.project
+            ? {
+                name: 'SpacePage',
+                params: {
+                  communityId: d.team || getSpace(d)?.team,
+                  pageId: d.name,
+                  slug: d.slug,
+                  spaceId: d.project,
+                },
+              }
+            : { name: 'Page', params: { pageId: d.name, slug: d.slug } }
+        "
       >
         <section class="group">
           <div
@@ -40,13 +45,11 @@
                 v-if="d.project"
                 :set="(space = getSpace(d))"
               >
-                <div>
-                  {{ space?.icon }}
-                </div>
+                <SpaceIcon :icon="space?.icon" class="size-4 text-ink-gray-6" />
                 <div>{{ space?.title }}</div>
               </div>
             </div>
-            <div class="shrink-0 ml-1 invisible group-hover:visible">
+            <div v-if="!readOnly" class="shrink-0 ml-1 invisible group-hover:visible">
               <Dropdown
                 :button="{
                   icon: 'lucide-more-horizontal',
@@ -67,6 +70,7 @@
 <script setup lang="ts">
 import { Dropdown, useList, UseListOptions, dialog } from 'frappe-ui'
 import EmptyStateBox from '@/components/EmptyStateBox.vue'
+import SpaceIcon from '@/components/SpaceIcon.vue'
 import { GPPage } from '@/types/doctypes'
 import { useSpace } from '@/data/spaces'
 
@@ -75,6 +79,7 @@ const props = defineProps<{
     filters: UseListOptions<GPPage>['filters']
     orderBy?: UseListOptions<GPPage>['orderBy']
   }
+  readOnly?: boolean
 }>()
 
 interface Page

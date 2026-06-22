@@ -1,9 +1,26 @@
 <template>
   <div class="relative flex h-full flex-col" v-if="postId">
+    <MobileHeader class="sm:hidden" :title="mobileHeaderTitle">
+      <template #left>
+        <MobileBackButton :to="backRoute" />
+      </template>
+    </MobileHeader>
+    <PageHeader class="hidden sm:flex">
+      <SpaceBreadcrumbs
+        class="flex"
+        :spaceId="currentSpaceId"
+        :items="[{ label: discussion.doc?.title || postId, onClick: scrollToTop }]"
+      />
+    </PageHeader>
     <div class="discussion-container">
       <div v-if="discussion.loading">
-        <div class="pb-2 pt-14 flex w-full items-center sticky top-0 z-[1] bg-surface-base">
-          <Avatar size="lg" label="A" class="mr-3 animate-pulse shrink-0">
+        <div
+          class="sticky -top-px z-[1] flex w-full items-center bg-surface-base pb-2 pt-2 sm:top-0 sm:pt-14"
+        >
+          <Avatar size="xl" label="A" class="mr-3 shrink-0 animate-pulse sm:hidden">
+            <div></div>
+          </Avatar>
+          <Avatar size="lg" label="A" class="mr-3 hidden shrink-0 animate-pulse sm:inline-flex">
             <div></div>
           </Avatar>
           <div class="flex flex-col md:block">
@@ -26,21 +43,40 @@
         </div>
       </div>
       <template v-else-if="discussion.doc">
-        <div>
-          <div class="pb-2 pt-14 flex w-full items-center sticky top-0 z-[1] bg-surface-base">
+        <div
+          :class="{
+            'rounded-lg border mt-14 py-4 px-3 sm:px-5 -mx-3 sm:-mx-5 focus-within:border-outline-gray-3':
+              editingPost,
+          }"
+          @keydown.ctrl.enter.capture.stop="updatePost"
+          @keydown.meta.enter.capture.stop="updatePost"
+          @keydown.esc="cancelEdit"
+        >
+          <div
+            class="flex w-full items-center bg-surface-base pb-2 pt-2"
+            :class="editingPost ? 'sm:pt-0' : 'sticky -top-px z-[1] sm:top-0 sm:pt-14'"
+          >
             <UserProfileLink class="mr-3" :user="discussion.doc.owner">
-              <UserAvatarWithHover size="lg" :user="discussion.doc.owner" />
+              <UserAvatarWithHover class="sm:hidden" size="xl" :user="discussion.doc.owner" />
+              <UserAvatarWithHover
+                class="hidden sm:inline-flex"
+                size="lg"
+                :user="discussion.doc.owner"
+              />
             </UserProfileLink>
             <div class="flex flex-col md:block">
               <UserProfileLink
-                class="text-base-medium text-ink-gray-8 hover:text-ink-blue-8"
+                class="text-md-medium text-ink-gray-8 hover:text-ink-blue-8 sm:text-base-medium"
                 :user="discussion.doc.owner"
               >
                 {{ $user(discussion.doc.owner).full_name }}
                 <span class="hidden md:inline text-ink-gray-7">&nbsp;&middot;&nbsp;</span>
               </UserProfileLink>
               <Tooltip :text="dayjsLocal(discussion.doc.creation).format('D MMM YYYY [at] h:mm A')">
-                <time class="text-base text-ink-gray-5" :datetime="discussion.doc.creation">
+                <time
+                  class="text-p-base text-ink-gray-5 sm:text-base"
+                  :datetime="discussion.doc.creation"
+                >
                   {{ dayjsLocal(discussion.doc.creation).fromNow() }}
                 </time>
               </Tooltip>
@@ -61,7 +97,7 @@
           </div>
           <div :class="{ 'pb-4 mt-1': !editingPost }">
             <div class="flex items-start justify-between space-x-1">
-              <h1 v-if="!editingPost" class="flex items-center text-4xl-semibold">
+              <h1 v-if="!editingPost" class="flex items-center text-4xl-semibold" ref="postTitleEl">
                 <Tooltip v-if="discussion.doc.closed_at" text="This discussion is closed">
                   <span class="lucide-lock mr-2 h-4 w-4 text-ink-gray-6" />
                 </Tooltip>
@@ -84,12 +120,7 @@
               </template>
             </div>
           </div>
-          <div
-            :class="{
-              'rounded-lg border p-4 focus-within:border-outline-gray-3': editingPost,
-            }"
-            ref="mainPostContentEl"
-          >
+          <div ref="mainPostContentEl">
             <div v-if="editingPost" class="w-full">
               <div class="mb-2">
                 <input
@@ -97,37 +128,25 @@
                   type="text"
                   class="w-full rounded border-0 text-ink-gray-8 px-0 py-0.5 text-4xl-semibold focus:ring-0"
                   ref="title"
-                  v-model="discussion.doc.title"
+                  v-model="postDraftData.title"
                   placeholder="Title"
-                  v-focus
                 />
               </div>
             </div>
-            <CommentEditor
-              :value="discussion.doc.content"
-              :quote-source-id="`discussion:${discussion.doc.name}`"
-              @change="discussion.doc.content = $event"
-              @rich-quote="
-                handleRichQuote($event, {
-                  id: `discussion:${discussion.doc.name}`,
-                  author: discussion.doc.owner,
-                })
-              "
-              :submitButtonProps="{
-                variant: 'solid',
-                onClick: updatePost,
-                loading: discussion.setValue.loading,
-              }"
-              :discardButtonProps="{
-                onClick: () => {
-                  editingPost = false
-                  discussion.reload()
-                },
-              }"
+            <DiscussionViewEditor
+              ref="postEditor"
+              :content="editingPost ? postDraftData.content : discussion.doc.content"
               :editable="editingPost"
+              :saving="discussion.setValue.loading"
+              :can-save="canSavePost"
+              :quote-source-id="`discussion:${discussion.doc.name}`"
+              :author="discussion.doc.owner"
+              @change="onPostEditorChange"
+              @save="updatePost"
+              @discard="cancelEdit"
             />
           </div>
-          <div class="mt-3">
+          <div class="mt-3" v-show="!editingPost">
             <Reactions
               doctype="GP Discussion"
               :name="discussion.doc.name"
@@ -142,11 +161,10 @@
           :newCommentsFrom="discussion.doc.last_unread_comment?.toString()"
           :read-only-mode="readOnlyMode"
           :disable-new-comment="Boolean(discussion.doc.closed_at)"
-          @rich-quote="handleRichQuote"
-          @rich-quote-click="handleRichQuoteClick"
+          :hide-new-comment="editingPost"
           ref="commentsArea"
         />
-        <QuoteBacklinksPopover :store="quoteBacklinks" @select="scrollToQuotingComment" />
+        <QuoteBacklinksPopover :store="richQuotes" @select="scrollToQuotingComment" />
         <Dialog
           title="Move discussion to another space"
           @close="
@@ -185,7 +203,7 @@
           @close="
             () => {
               pinDialog.show = false
-              pinDialog.pinGlobally = false
+              pinDialog.pinToCategory = false
             }
           "
           v-model:open="pinDialog.show"
@@ -197,13 +215,13 @@
           <div class="space-y-2">
             <label class="flex items-center justify-between">
               <div>
-                <div class="text-base-medium text-ink-gray-9 mb-1">Pin Globally</div>
-                <div class="text-sm text-ink-gray-5" v-if="pinDialog.pinGlobally">
-                  Show in all discussions
+                <div class="text-base-medium text-ink-gray-9 mb-1">Pin to Community</div>
+                <div class="text-sm text-ink-gray-5" v-if="pinDialog.pinToCategory">
+                  Show in all {{ communityTitle }} discussions
                 </div>
                 <div class="text-sm text-ink-gray-5" v-else>Show in {{ space?.title }} only</div>
               </div>
-              <Switch size="sm" v-model="pinDialog.pinGlobally" />
+              <Switch size="sm" v-model="pinDialog.pinToCategory" />
             </label>
           </div>
           <template #actions>
@@ -215,10 +233,10 @@
                 @click="
                   () => {
                     discussion.pinDiscussion
-                      .submit({ pin_scope: pinDialog.pinGlobally ? 'Global' : 'Space' })
+                      .submit({ pin_scope: pinDialog.pinToCategory ? 'Category' : 'Space' })
                       .then(() => {
                         pinDialog.show = false
-                        pinDialog.pinGlobally = false
+                        pinDialog.pinToCategory = false
                       })
                   }
                 "
@@ -237,7 +255,7 @@
       </template>
     </div>
     <div
-      v-if="!isMobile"
+      v-if="!isMobileViewport && !editingPost"
       class="fixed bottom-3 h-9 grid place-content-center right-3 z-[2] print:hidden"
     >
       <Button variant="ghost" v-show="isScrolled" @click="scrollToTop">
@@ -251,8 +269,18 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, nextTick, onMounted, reactive, useTemplateRef } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
+import {
+  ref,
+  computed,
+  defineAsyncComponent,
+  nextTick,
+  onMounted,
+  onBeforeUnmount,
+  reactive,
+  watch,
+  useTemplateRef,
+} from 'vue'
+import { useRouter, useRoute, type RouteLocationRaw } from 'vue-router'
 import {
   Combobox,
   Avatar,
@@ -265,22 +293,28 @@ import {
   dialog,
 } from 'frappe-ui'
 import { until } from '@vueuse/core'
+import type { Editor } from '@tiptap/vue-3'
 import Reactions from './Reactions.vue'
 import UserAvatarWithHover from './UserAvatarWithHover.vue'
 import CommentsArea from '@/components/CommentsArea.vue'
-import CommentEditor from './editor/CommentEditor.vue'
+import DiscussionViewEditor from './editor/DiscussionViewEditor.vue'
 import UserProfileLink from './UserProfileLink.vue'
-import RevisionsDialog from './RevisionsDialog.vue'
-import { vFocus } from '@/directives'
+// Lazy: htmldiff-js + motion-v only load when a viewer opens edit history.
+const RevisionsDialog = defineAsyncComponent(() => import('./RevisionsDialog.vue'))
+import MobileBackButton from './MobileBackButton.vue'
+import MobileHeader from './MobileHeader.vue'
+import PageHeader from './PageHeader.vue'
+import SpaceBreadcrumbs from './SpaceBreadcrumbs.vue'
 import { copyToClipboard } from '@/utils'
-import { useSpace } from '@/data/spaces'
+import { getSpace, useSpace } from '@/data/spaces'
+import { useCommunity } from '@/data/communities'
 import { useGroupedSpaceOptions } from '@/data/groupedSpaces'
 import { useDiscussion } from '@/data/discussions'
+import { useDraftSync } from '@/data/useDraftSync'
 import { tags } from '@/data/tags'
-import { useScrollPosition } from '@/utils/scrollContainer'
-import { isMobile } from '@/composables/isMobile'
-import { useRichQuoteHandler } from '@/components/RichQuoteExtension/useRichQuoteHandler'
-import { provideQuoteBacklinks } from '@/components/RichQuoteExtension/useQuoteBacklinks'
+import { getScrollContainer, useScrollPosition } from '@/utils/scrollContainer'
+import { isMobile as useIsMobile } from '@/composables/isMobile'
+import { provideRichQuotes } from '@/components/RichQuoteExtension/useRichQuotes'
 import QuoteBacklinksPopover from '@/components/RichQuoteExtension/QuoteBacklinksPopover.vue'
 import { refreshUnreadCountForProjects } from '@/data/unreadCount'
 import { isSessionUser } from '@/data/session'
@@ -292,23 +326,30 @@ const props = defineProps<{
 
 const router = useRouter()
 const route = useRoute()
+const isMobileViewport = useIsMobile()
 const commentsArea = useTemplateRef('commentsArea')
+const postEditor = useTemplateRef<{ editor: Editor | null }>('postEditor')
 const mainPostContentEl = ref<HTMLElement | null>(null)
+const postTitleEl = useTemplateRef<HTMLElement>('postTitleEl')
 
 const { isScrolled, scrollToTop } = useScrollPosition()
-
-const { handleRichQuote, handleRichQuoteClick } = useRichQuoteHandler(
-  commentsArea,
-  mainPostContentEl,
+const discussion = useDiscussion(() => props.postId)
+const showTitleInMobileHeader = ref(false)
+const mobileHeaderTitle = computed(() =>
+  showTitleInMobileHeader.value ? discussion.doc?.title || 'Discussion' : 'Discussion',
 )
 
-const quoteBacklinks = provideQuoteBacklinks()
+const richQuotes = provideRichQuotes()
+richQuotes.setPostContentEl(() => mainPostContentEl.value)
 
 function scrollToQuotingComment(commentId: string) {
   commentsArea.value?.scrollToCommentById(commentId)
 }
 
 const editingPost = ref(false)
+// snapshot of title/content captured when edit mode opens, so we can detect
+// unsaved changes and confirm before discarding them
+const editSnapshot = ref<{ title: string; content: string } | null>(null)
 const discussionMoveDialog = reactive<{
   show: boolean
   project: string | null
@@ -318,17 +359,70 @@ const discussionMoveDialog = reactive<{
 })
 const pinDialog = reactive<{
   show: boolean
-  pinGlobally: boolean
+  pinToCategory: boolean
 }>({
   show: false,
-  pinGlobally: false,
+  pinToCategory: false,
 })
 const showRevisionsDialog = ref(false)
 
-const discussion = useDiscussion(() => props.postId)
+// While the post is being edited, its title/body live in an auto-saved draft instead of
+// being mutated on discussion.doc directly. The draft survives reloads and navigation, and
+// silently restores if the edit is reopened. Dormant until editingPost flips true.
+const postDraft = useDraftSync({
+  identity: () => ({
+    type: 'Discussion',
+    mode: 'Edit',
+    referenceDoctype: 'GP Discussion',
+    referenceName: props.postId,
+  }),
+  enabled: editingPost,
+  initialPayload: () => ({
+    title: discussion.doc?.title ?? '',
+    content: discussion.doc?.content ?? '',
+  }),
+})
+const postDraftData = postDraft.data
+
+function onPostEditorChange(value: string) {
+  if (editingPost.value) postDraftData.value.content = value
+}
 
 onMounted(() => {
+  const scrollContainer = getScrollContainer()
+  scrollContainer.addEventListener('scroll', updateMobileHeaderTitle)
+  updateMobileHeaderTitle()
   scrollToUnread()
+})
+
+onBeforeUnmount(() => {
+  getScrollContainer().removeEventListener('scroll', updateMobileHeaderTitle)
+})
+
+function updateMobileHeaderTitle() {
+  if (!isMobileViewport.value) {
+    showTitleInMobileHeader.value = false
+    return
+  }
+
+  const titleElement = postTitleEl.value
+  if (!titleElement || editingPost.value) {
+    showTitleInMobileHeader.value = false
+    return
+  }
+
+  const scrollContainer = getScrollContainer()
+  const containerTop = scrollContainer.getBoundingClientRect().top
+  const mobileHeaderHeight = parseFloat(
+    getComputedStyle(document.documentElement).getPropertyValue('--mobile-header-height'),
+  )
+
+  showTitleInMobileHeader.value =
+    titleElement.getBoundingClientRect().bottom <= containerTop + mobileHeaderHeight
+}
+
+watch([() => discussion.doc?.title, editingPost, isMobileViewport], () => {
+  nextTick(updateMobileHeaderTitle)
 })
 
 async function scrollToUnread() {
@@ -374,6 +468,24 @@ function copyLink() {
   copyToClipboard(url)
 }
 
+// Undefined falls through to MobileBackButton's router.back() fallback.
+const backRoute = computed<RouteLocationRaw | undefined>(() => {
+  const communityId = routeParam(route.params.communityId)
+  const spaceId = routeParam(route.params.spaceId)
+
+  if (communityId && spaceId) {
+    return { name: 'SpaceDiscussions', params: { communityId, spaceId } }
+  }
+  if (communityId) {
+    return { name: 'Discussions', params: { communityId } }
+  }
+  return undefined
+})
+
+function routeParam(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value
+}
+
 function moveToSpace() {
   if (discussionMoveDialog.project) {
     discussion.moveToProject
@@ -385,9 +497,14 @@ function moveToSpace() {
           discussionMoveDialog.show = false
           discussionMoveDialog.project = null
 
+          const communityId = discussion.doc?.project
+            ? getSpace(discussion.doc.project)?.team
+            : null
+
           router.replace({
             name: 'Discussion',
             params: {
+              communityId,
               spaceId: discussion.doc?.project,
               postId: discussion.doc?.name,
             },
@@ -400,16 +517,75 @@ function moveToSpace() {
   }
 }
 
+const canSavePost = computed(() => Boolean(postDraftData.value.title?.trim()))
+
+// Read content from the editor's own serializer rather than discussion.doc.content:
+// the editor re-normalizes HTML on load and writes it back, so the stored value
+// drifts from the server copy without any user edit. Comparing getHTML() to
+// getHTML() keeps both sides on the same normalization.
+function currentPostContent() {
+  return postEditor.value?.editor?.getHTML() ?? discussion.doc?.content ?? ''
+}
+
+function startEditingPost() {
+  editSnapshot.value = {
+    title: discussion.doc?.title ?? '',
+    content: currentPostContent(),
+  }
+  editingPost.value = true
+  // The options dropdown restores focus to its trigger as it closes, which would
+  // otherwise swallow the editor focus (and the Esc/⌘+Enter shortcuts). Focus the
+  // editor on the next frame, after that restore has settled.
+  nextTick(() => {
+    requestAnimationFrame(() => postEditor.value?.editor?.commands.focus())
+  })
+}
+
+function isPostDirty() {
+  if (!editSnapshot.value) return false
+  return (
+    (postDraftData.value.title ?? '') !== editSnapshot.value.title ||
+    currentPostContent() !== editSnapshot.value.content
+  )
+}
+
+function closeEditor() {
+  editingPost.value = false
+  editSnapshot.value = null
+  // Explicit discard throws the draft away (navigating away would keep it instead).
+  postDraft.clear()
+  discussion.reload()
+}
+
+function cancelEdit() {
+  if (!editingPost.value) return
+  if (isPostDirty()) {
+    dialog.danger({
+      title: 'Discard changes',
+      message: 'You have unsaved changes. Are you sure you want to discard them?',
+      confirmLabel: 'Discard changes',
+      cancelLabel: 'Keep editing',
+      onConfirm: closeEditor,
+    })
+  } else {
+    closeEditor()
+  }
+}
+
 function updatePost() {
+  if (!editingPost.value || !canSavePost.value) return
   discussion.setValue
     .submit({
-      title: discussion.doc?.title,
-      content: discussion.doc?.content,
+      title: postDraftData.value.title,
+      content: postDraftData.value.content,
     })
-    .then(() => {
+    .then(async () => {
+      // Content is saved onto the post; migrate the draft's attachments and delete it.
+      await postDraft.commit()
       tags.reload()
     })
   editingPost.value = false
+  editSnapshot.value = null
 }
 
 function updateUrlSlug() {
@@ -427,6 +603,13 @@ function updateUrlSlug() {
 }
 
 const space = useSpace(() => discussion.doc?.project)
+const community = useCommunity(() => discussion.doc?.team)
+const communityTitle = computed(() => community.value?.title ?? '')
+const currentSpaceId = computed(() => {
+  if (discussion.doc?.project) return discussion.doc.project
+  if (typeof route.params.spaceId === 'string') return route.params.spaceId
+  return ''
+})
 
 const spaceOptions = useGroupedSpaceOptions({
   filterFn: (space) => !space.archived_at && space.name !== discussion.doc?.project,
@@ -436,9 +619,7 @@ const actions = computed(() => [
   {
     label: 'Edit',
     icon: 'lucide-edit',
-    onClick: () => {
-      editingPost.value = true
-    },
+    onClick: startEditingPost,
   },
   {
     label: 'Revisions',
@@ -480,9 +661,10 @@ const actions = computed(() => [
     icon: 'lucide-arrow-down-left',
     condition: () => !!discussion.doc?.pinned_at,
     onClick: () => {
+      const pinScope = discussion.doc?.pin_scope
       const scopeText =
-        discussion.doc?.pin_scope === 'Global'
-          ? 'This discussion is pinned globally across all spaces.'
+        pinScope === 'Category'
+          ? `This discussion is pinned across the ${communityTitle.value} community.`
           : `This discussion is pinned in ${space.value?.title} only.`
 
       dialog.confirm({
@@ -546,7 +728,13 @@ const actions = computed(() => [
         message: 'Are you sure you want to delete this post? This is irreversible!',
         onConfirm: async () => {
           await discussion.delete.submit()
-          router.replace({ name: 'Space' })
+          router.replace({
+            name: 'Space',
+            params: {
+              communityId: route.params.communityId,
+              spaceId: route.params.spaceId,
+            },
+          })
         },
       })
     },

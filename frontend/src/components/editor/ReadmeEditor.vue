@@ -2,21 +2,22 @@
   <div
     class="relative"
     :class="{
-      'rounded-lg border px-3 py-3': border || editReadme,
       'max-h-[150px] overflow-hidden': !expand && collapsible,
     }"
   >
-    <GPEditor
-      ref="readme"
-      :extensions="extensions"
-      editor-class="prose-v3"
-      :content="resource.doc[fieldname]"
-      :placeholder="placeholder"
-      @change="(val) => (resource.doc[fieldname] = val)"
-      :bubble-menu="gameplanToolbar"
-      :floating-menu="gameplanFloatingToolbar"
-      :editable="editReadme"
-    />
+    <div ref="readmeElement">
+      <GPEditor
+        ref="readme"
+        :extensions="extensions"
+        editor-class="prose-v3"
+        :content="resource.doc[fieldname]"
+        :placeholder="placeholder"
+        @change="(val) => (resource.doc[fieldname] = val)"
+        :bubble-menu="gameplanToolbar"
+        :floating-menu="gameplanFloatingToolbar"
+        :editable="editReadme"
+      />
+    </div>
     <div
       class="absolute right-0 top-0 flex space-x-2"
       :class="{ 'mr-3 mt-3': border || editReadme }"
@@ -111,10 +112,12 @@ export default {
   },
   setup() {
     const readme = ref(null)
-    const { height } = useElementSize(readme)
+    const readmeElement = ref(null)
+    const { height } = useElementSize(readmeElement)
 
     return {
       readme,
+      readmeElement,
       readmeHeight: height,
     }
   },

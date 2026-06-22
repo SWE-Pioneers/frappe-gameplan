@@ -1,9 +1,9 @@
 describe('Project', () => {
-  it('project creation, move to team and archive', () => {
+  it('moves a space to another community and archives it', () => {
     cy.login()
     cy.request({
       method: 'POST',
-      url: '/api/method/gameplan.test_api.clear_data?onboard=1',
+      url: '/api/method/gameplan.test_api.clear_data',
     })
     cy.request('POST', '/api/method/frappe.client.insert_many', {
       docs: [
@@ -15,39 +15,69 @@ describe('Project', () => {
           doctype: 'GP Team',
           title: 'DevOps',
         },
+        {
+          doctype: 'GP Project',
+          title: 'Project 1',
+          team: 'engineering',
+        },
       ],
     })
+      .its('body.message')
+      .then((names) => {
+        const projectName = String(names[2])
 
-    cy.visit('/g/spaces')
+        // Every space now belongs to a community, and scoped routes only resolve a
+        // joined community, so join both teams before navigating to their spaces.
+        cy.request('POST', '/api/v2/method/GP Team/update_joined_teams', {
+          teams: ['engineering', 'devops'],
+        })
 
-    cy.intercept('POST', '/api/v2/document/GP%20Project').as('project')
-    cy.button('Add new').click()
-    cy.get('input[placeholder="Space name"]').type('Project 1')
-    cy.get('button').contains('Submit').click()
-    cy.get('a:contains("Project 1")').click()
-    cy.get('header a:contains("Project 1")').should('exist')
-    cy.wait('@project')
-      .its('response.body.data')
-      .then((project) => {
-        cy.url().should('include', `/g/space/${project.name}`)
-
-        // move to category
-        cy.visit('/g/spaces')
-        cy.selectDropdownOption(`${project.title} Space Options`, 'Change Category')
-        cy.selectCombobox('Select a category', 'DevOps')
+        // move to community
+        cy.visit('/g/configure/engineering')
+        cy.selectDropdownOption('Project 1 Space Options', 'Change Community')
+        cy.selectCombobox('Select a community', 'DevOps')
         cy.button('Move to DevOps').click()
-        cy.scope('body').find('a:contains("Project 1")').click()
-        cy.get('header a:contains("DevOps")').should('exist')
+        cy.request('POST', '/api/method/frappe.client.get_value', {
+          doctype: 'GP Project',
+          filters: { name: projectName },
+          fieldname: ['team'],
+        })
+          .its('body.message.team')
+          .should('eq', 'devops')
 
-        // archive
-        cy.visit('/g/spaces')
-        cy.selectDropdownOption(`${project.title} Space Options`, 'Archive')
+        cy.visit(`/g/community/devops/space/${projectName}`)
+        cy.url().should('include', `/g/community/devops/space/${projectName}`)
+        cy.get('header').contains('Project 1').should('exist')
+
+        // archive while pinned; this exercises the backend cleanup path that
+        // removes current-user pins for archived spaces.
+        cy.request('POST', '/api/method/frappe.client.insert', {
+          doc: {
+            doctype: 'GP Pinned Project',
+            project: projectName,
+          },
+        })
+
+        cy.visit('/g/configure/devops')
+        cy.selectDropdownOption('Project 1 Space Options', 'Archive')
         cy.scope('dialog').button('Archive').click()
-        cy.contains('div', 'Archived').should('exist')
-        cy.visit('/g/spaces')
-        cy.contains('a', 'Project 1').should('not.exist')
-        cy.get('button:contains("Archived")').click()
-        cy.contains('a', 'Project 1').should('exist')
+        // The confirm dialog dismisses once the archive completes server-side.
+        cy.get('[role=dialog]').should('not.exist')
+        // Archiving removes the current user's pin for the space (backend cleanup).
+        cy.request('POST', '/api/method/frappe.client.get_list', {
+          doctype: 'GP Pinned Project',
+          filters: { project: projectName },
+          fields: ['name'],
+        })
+          .its('body.message')
+          .should('have.length', 0)
+        // Re-visit for fresh data. The community keeps its auto-created "General"
+        // space active; archived spaces are hidden until "Show archived" is on and
+        // render a disabled title input (archived spaces are read-only).
+        cy.visit('/g/configure/devops')
+        cy.get('input[aria-label="Space title"]:disabled').should('not.exist')
+        cy.contains('Show archived').click()
+        cy.get('input[aria-label="Space title"]:disabled').should('have.value', 'Project 1')
       })
   })
 })

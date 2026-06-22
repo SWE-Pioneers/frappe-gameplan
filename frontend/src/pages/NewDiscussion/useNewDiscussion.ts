@@ -1,202 +1,112 @@
-import { ref, computed, nextTick, onMounted, provide, inject, watch, type InjectionKey } from 'vue'
+import { ref, computed, onMounted, provide, inject, watch, type InjectionKey } from 'vue'
 import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'
-import { useLocalStorage } from '@vueuse/core'
-import { useDoc, useNewDoc, useDoctype, dialog } from 'frappe-ui'
-import { debounce } from 'frappe-ui'
+import { call, useDoctype, dialog } from 'frappe-ui'
+import { useDraftSync, type DraftPayload } from '@/data/useDraftSync'
 import { useGroupedSpaceOptions } from '@/data/groupedSpaces'
+import { getSpace } from '@/data/spaces'
 import { useSessionUser, useUser } from '@/data/users'
 import { tags } from '@/data/tags'
-import type { TextEditorRef, DraftDocument, DraftMethods, DraftData } from './types'
-import type { GPDraft, GPDiscussion } from '@/types/doctypes'
+import type { GPDiscussion } from '@/types/doctypes'
 
-export function useNewDiscussion(textEditorRef?: TextEditorRef) {
-  const currentRoute = useRoute()
+const PUBLISH_DRAFT = 'gameplan.gameplan.doctype.gp_draft.gp_draft.publish_draft'
+
+/** Title or non-empty body — the threshold for persisting a draft at all. */
+function hasMeaningfulContent(payload: Partial<DraftPayload>): boolean {
+  const body = (payload.content ?? '').trim()
+  const title = (payload.title ?? '').trim()
+  return title.length > 0 || (body.length > 0 && body !== '<p></p>')
+}
+
+export function useNewDiscussion() {
+  const route = useRoute()
   const router = useRouter()
   const sessionUser = useSessionUser()
   const discussions = useDoctype<GPDiscussion>('GP Discussion')
-  const draftId = currentRoute.query.draft as string
 
-  // Core reactive state
-  const getStorageKey = () => (draftId ? `draft_discussion_${draftId}` : 'new_discussion')
+  // The canonical composer route carries the community; the legacy route does not.
+  const communityId = computed(() => optionalParam(route.params.communityId))
+  const isScoped = computed(() => Boolean(communityId.value))
 
-  const draftData = useLocalStorage(
-    getStorageKey(),
-    {
+  const errorMessage = ref<string | null>(null)
+  const publishError = ref<string | null>(null)
+  const publishing = ref(false)
+  const isPublishingSuccessfully = ref(false)
+  const isDeletingDraft = ref(false)
+  const hasInteracted = ref(false)
+
+  // Bound to the URL so a reload — or a draft opened from the Drafts list — resumes the
+  // same row. The composable assigns this (via onCreate) the moment it creates the draft,
+  // which is what keeps two new-discussion tabs from sharing one row.
+  const draftName = computed(() => (route.query.draft as string) || null)
+
+  const draft = useDraftSync({
+    identity: { type: 'Discussion', mode: 'New' },
+    draftName,
+    canSave: hasMeaningfulContent,
+    initialPayload: () => ({
       title: '',
       content: '',
-      project: null as string | null,
-    },
-    { deep: true },
-  )
+      project: (route.query.spaceId as string) || null,
+    }),
+    onCreate: (name) => syncDraftToRoute(name),
+  })
 
-  const draftDoc = ref<DraftDocument>(null)
-  const errorMessage = ref<string | null>(null)
-  const publishing = ref(false)
-  const isDeletingDraft = ref(false)
-  const isPublishingSuccessfully = ref(false)
-  const hasInteracted = ref(false)
-  const persistedDraftData = ref<DraftData | null>(null)
-  const isApplyingPersistedDraft = ref(false)
+  const draftData = draft.data
+  const isPersisted = computed(() => Boolean(draft.serverName.value))
 
-  // Computed values
-  const isDraftChanged = computed(() => {
-    const currentTitle = draftData.value.title
-    const currentContent = draftData.value.content
-    const currentProject = draftData.value.project
+  // Drafts are owner-scoped on the server, so the author is always the current user.
+  const author = computed(() => useUser(sessionUser.name))
 
-    if (persistedDraftData.value) {
-      return (
-        currentTitle !== persistedDraftData.value.title ||
-        currentContent !== persistedDraftData.value.content ||
-        currentProject !== persistedDraftData.value.project
-      )
+  // In scoped mode the picker only offers spaces from the route's community; the
+  // legacy route keeps the full grouped list.
+  const spaceOptions = useGroupedSpaceOptions({
+    filterFn: (space) =>
+      !space.archived_at && (!isScoped.value || space.team === communityId.value),
+  })
+
+  const immediateSave = () => draft.flush()
+
+  function syncDraftToRoute(name: string) {
+    if (communityId.value) {
+      router.replace({
+        name: 'NewDiscussion',
+        params: { communityId: communityId.value },
+        query: draftRouteQuery(name, draftData.value.project),
+      })
     } else {
-      return !!(currentTitle || currentContent || currentProject)
+      router.replace({
+        name: 'LegacyNewDiscussion',
+        query: draftRouteQuery(name, draftData.value.project),
+      })
     }
-  })
-
-  // Auto-save functionality
-  const savingDraft = ref(false)
-
-  const canAutoSave = computed(() => {
-    return !savingDraft.value && (draftData.value.title.trim().length > 0 || hasBodyContent())
-  })
-
-  function hasBodyContent() {
-    return !!draftData.value.content && draftData.value.content !== '<p></p>'
   }
 
-  async function _updateDraft() {
-    if (!draftDoc.value) return
-    const doc = (await draftDoc.value.setValue.submit({
-      title: draftData.value.title,
-      content: draftData.value.content,
-      project: draftData.value.project || undefined,
-    })) as GPDraft | null
-    persistedDraftData.value = doc ? getDraftData(doc) : getCurrentDraftData()
-  }
-
-  async function _createDraft() {
-    const draft = useNewDoc<GPDraft>('GP Draft', {
-      title: draftData.value.title,
-      content: draftData.value.content,
-      project: draftData.value.project || undefined,
-      type: 'Discussion',
+  // A draft opened on the legacy route that already belongs to a space is moved onto the
+  // canonical scoped route. Drafts with no resolvable community stay on the legacy route.
+  function normalizeDraftRoute() {
+    if (isScoped.value) return false
+    const project = draftData.value.project
+    if (!project) return false
+    const targetCommunityId = getSpace(project)?.team
+    if (!targetCommunityId) return false
+    router.replace({
+      name: 'NewDiscussion',
+      params: { communityId: targetCommunityId },
+      query: draftRouteQuery(draft.serverName.value || draftName.value, project),
     })
-
-    const doc = await draft.submit()
-    persistedDraftData.value = getDraftData(doc)
-    router.replace({ name: 'NewDiscussion', query: { draft: doc.name } })
-    fetchDraftDoc(doc.name)
+    return true
   }
 
-  async function performAutoSave() {
-    if (!canAutoSave.value) return
+  function syncSelectedSpaceToRoute(spaceId: string | null | undefined) {
+    if (routeQueryString(route.query.spaceId) === (spaceId || null)) return
 
-    savingDraft.value = true
-    try {
-      if (draftDoc.value) {
-        await _updateDraft()
-      } else {
-        await _createDraft()
-      }
-    } catch (error) {
-      console.error('Auto-save failed:', error)
-    } finally {
-      savingDraft.value = false
+    const query = { ...route.query }
+    if (spaceId) {
+      query.spaceId = spaceId
+    } else {
+      delete query.spaceId
     }
-  }
-
-  const debouncedAutoSave = debounce(performAutoSave, 300)
-  const immediateSave = performAutoSave
-
-  // Watch for changes and auto-save
-  watch(
-    () => [draftData.value.title, draftData.value.content, draftData.value.project],
-    () => {
-      if (!isApplyingPersistedDraft.value && canAutoSave.value) {
-        debouncedAutoSave()
-      }
-    },
-    { flush: 'post' },
-  )
-
-  const saveStatus = computed(() => ({
-    isSaving: savingDraft.value,
-    lastSaved: null,
-    hasUnsavedChanges: isDraftChanged.value,
-    error: null,
-  }))
-
-  // Space options and formatting
-  const spaceOptions = useGroupedSpaceOptions({ filterFn: (space) => !space.archived_at })
-
-  const formattedSpaceOptions = computed(() => {
-    return spaceOptions.value.map((d) => {
-      if ('group' in d && 'items' in d) {
-        return { group: d.group, options: d.items }
-      }
-      return d
-    })
-  })
-
-  const author = computed(() => {
-    return useUser(draftDoc.value ? draftDoc.value.doc?.owner : sessionUser.name)
-  })
-
-  // Core functions
-  function fetchDraftDoc(draftId: string) {
-    draftDoc.value = useDoc<GPDraft, DraftMethods>({
-      doctype: 'GP Draft',
-      name: draftId,
-      methods: {
-        publish: 'publish',
-      },
-    })
-    return draftDoc.value.onSuccess((doc) => updateLocalDraft(doc))
-  }
-
-  function getDraftData(doc: GPDraft): DraftData {
-    return {
-      title: doc.title || '',
-      content: doc.content || '',
-      project: doc.project ? doc.project.toString() : null,
-    }
-  }
-
-  function getCurrentDraftData(): DraftData {
-    return {
-      title: draftData.value.title,
-      content: draftData.value.content,
-      project: draftData.value.project,
-    }
-  }
-
-  function updateLocalDraft(doc = draftDoc.value?.doc) {
-    if (!doc) return
-    const data = getDraftData(doc)
-    isApplyingPersistedDraft.value = true
-    persistedDraftData.value = data
-    draftData.value = { ...data }
-    nextTick(() => {
-      isApplyingPersistedDraft.value = false
-    })
-  }
-
-  function resetValues() {
-    draftData.value.project = null
-    draftData.value.title = ''
-    draftData.value.content = ''
-    persistedDraftData.value = null
-    localStorage.removeItem(getStorageKey())
-  }
-
-  function initializeFromRoute() {
-    if (!draftId) {
-      draftData.value.title = ''
-      draftData.value.content = ''
-      draftData.value.project = (currentRoute.query.spaceId as string) || null
-    }
+    router.replace({ query })
   }
 
   // Validation
@@ -219,7 +129,8 @@ export function useNewDiscussion(textEditorRef?: TextEditorRef) {
   const handleTitleInput = (e: Event) => {
     const target = e.target as HTMLTextAreaElement
     draftData.value.title = target.value
-    target.style.height = target.scrollHeight + 'px'
+    target.style.height = 'auto'
+    target.style.height = `${target.scrollHeight}px`
     hasInteracted.value = true
   }
 
@@ -233,203 +144,159 @@ export function useNewDiscussion(textEditorRef?: TextEditorRef) {
     immediateSave()
   }
 
-  // Publish functionality
-  function publish() {
+  // Publish: flush the latest content, then turn the draft into a discussion. The draft
+  // row is deleted server-side by publish, so we only forget the local copy afterwards.
+  async function publish() {
     hasInteracted.value = true
-    if (!validateDraft(true)) {
-      return
-    }
+    publishError.value = null
+    if (!validateDraft(true)) return
+
     publishing.value = true
+    try {
+      await draft.flush()
 
-    const projectValue = draftData.value.project || undefined
-
-    if (draftDoc.value) {
-      return draftDoc.value.setValue
-        .submit({
+      let discussionId: string | undefined
+      if (draft.serverName.value) {
+        isPublishingSuccessfully.value = true
+        discussionId = await call(PUBLISH_DRAFT, { name: draft.serverName.value })
+      } else {
+        // No server row (e.g. the flush failed) — publish directly so nothing is lost.
+        isPublishingSuccessfully.value = true
+        const doc = await discussions.insert.submit({
           title: draftData.value.title,
           content: draftData.value.content,
-          project: projectValue,
+          project: draftData.value.project || undefined,
         })
-        .then(() => {
-          isPublishingSuccessfully.value = true
-          return draftDoc.value?.publish.submit()
-        })
-        .then((discussionId: any) => {
-          if (discussionId) {
-            const spaceId = draftData.value.project
-            resetValues()
-            router
-              .replace({
-                name: 'Discussion',
-                params: {
-                  spaceId: spaceId,
-                  postId: discussionId,
-                },
-              })
-              .finally(() => {
-                isPublishingSuccessfully.value = false
-              })
-            tags.reload()
-          }
-        })
-        .catch(() => {
-          publishing.value = false
-        })
-    }
+        discussionId = doc?.name
+      }
 
-    return discussions.insert
-      .submit({
-        title: draftData.value.title,
-        content: draftData.value.content,
-        project: projectValue,
-      })
-      .then((doc) => {
-        if (doc) {
-          isPublishingSuccessfully.value = true
-          resetValues()
-          router
-            .replace({
-              name: 'Discussion',
-              params: {
-                spaceId: doc.project,
-                postId: doc.name,
-              },
-            })
-            .finally(() => {
-              isPublishingSuccessfully.value = false
-            })
-        }
-      })
-      .catch(() => {
-        publishing.value = false
-      })
+      await draft.forget()
+
+      if (discussionId) {
+        const spaceId = draftData.value.project
+        const targetCommunityId = communityId.value || (spaceId ? getSpace(spaceId)?.team : null)
+        await router.replace({
+          name: 'Discussion',
+          params: { communityId: targetCommunityId, spaceId, postId: discussionId },
+        })
+        tags.reload()
+      }
+    } catch (error: any) {
+      publishError.value = error?.message || String(error)
+      publishing.value = false
+    } finally {
+      isPublishingSuccessfully.value = false
+    }
   }
 
-  function deleteDraft() {
+  async function deleteDraft() {
+    if (!hasMeaningfulContent(draftData.value)) {
+      isDeletingDraft.value = true
+      await draft.clear()
+      leaveDraft()
+      return
+    }
+
     dialog.danger({
-      title: 'Delete draft',
-      message: 'Are you sure you want to delete this draft?',
+      title: 'Delete this draft?',
+      message: 'This will permanently delete the draft and cannot be undone.',
       confirmLabel: 'Delete draft',
       onConfirm: async () => {
-        await draftDoc.value?.delete.submit()
-        resetValues()
         isDeletingDraft.value = true
-        router.back()
+        await draft.clear()
+        leaveDraft()
       },
     })
   }
 
-  function discard() {
-    if (!textEditorRef?.value?.editor?.isEmpty || draftData.value.title) {
-      dialog.danger({
-        title: 'Discard post',
-        message: 'Are you sure you want to discard your post?',
-        confirmLabel: 'Discard post',
-        onConfirm: () => {
-          resetValues()
-          router.back()
-        },
-      })
-    } else {
-      router.back()
-    }
+  function leaveDraft() {
+    router.replace({ name: 'Drafts' })
   }
 
-  // Editor setup
-  const setupEditorListeners = (editorRef: TextEditorRef) => {
-    setTimeout(() => {
-      const editor = editorRef.value?.editor
-      if (editor) {
-        editor.on('update', () => {
-          // Trigger auto-save when editor content changes
-          debouncedAutoSave()
-        })
-      }
-    }, 100)
-  }
-
-  // Lifecycle management
   function initialize() {
-    // Initialize draft document if we have a draft ID
-    if (draftId) {
-      fetchDraftDoc(draftId)
-    } else {
-      initializeFromRoute()
-    }
-
     onMounted(() => {
-      if (textEditorRef) {
-        setupEditorListeners(textEditorRef)
-      }
+      // Move legacy-route drafts onto the canonical scoped route once their space is known.
+      watch(
+        () => draft.ready.value,
+        (ready) => {
+          if (!ready) return
+          if (!normalizeDraftRoute()) syncSelectedSpaceToRoute(draftData.value.project)
+        },
+        { immediate: true },
+      )
+      watch(
+        () => draftData.value.project,
+        (spaceId) => {
+          if (!draft.ready.value) return
+          if (!normalizeDraftRoute()) syncSelectedSpaceToRoute(spaceId)
+        },
+      )
     })
 
-    // Navigation guard
-    onBeforeRouteLeave((_, __, next) => {
-      if (isDeletingDraft.value || isPublishingSuccessfully.value || publishing.value) {
-        next()
-        return
+    // Frictionless leave: drafts auto-save, so navigating away just flushes any pending
+    // change instead of prompting. Explicit Delete still removes the draft.
+    onBeforeRouteLeave(async () => {
+      if (isDeletingDraft.value || isPublishingSuccessfully.value) return true
+      if (draft.dirty.value) {
+        try {
+          await draft.flush()
+        } catch (error) {
+          console.error('Failed to save draft before leaving:', error)
+        }
       }
-      if (isDraftChanged.value) {
-        // Save Draft → onConfirm; Discard / Escape / outside-click → onCancel.
-        dialog.confirm({
-          title: 'Unsaved Changes',
-          message: 'You have unsaved changes. Do you want to save them before leaving?',
-          confirmLabel: 'Save Draft',
-          cancelLabel: 'Discard',
-          onConfirm: async () => {
-            try {
-              await immediateSave()
-            } catch (e) {
-              console.error('Failed to save draft before leaving:', e)
-            }
-            next()
-          },
-          onCancel: () => {
-            resetValues()
-            next()
-          },
-        })
-      } else {
-        next()
-      }
+      return true
     })
   }
 
   return {
     // Data
     draftData,
-    draftDoc,
+    isPersisted,
+    publishError,
     errorMessage,
     sessionUser,
     author,
-    formattedSpaceOptions,
+    spaceOptions,
 
     // State
-    isDraftChanged,
     publishing,
     isPublishingSuccessfully,
     isDeletingDraft,
-    saveStatus,
 
     // Actions
     publish,
     deleteDraft,
-    discard,
     handleTitleInput,
     handleTitleBlur,
     handleSpaceChange,
-    immediateSave,
 
     // Lifecycle
     initialize,
   }
 }
 
+function optionalParam(value: string | string[] | undefined): string | undefined {
+  const resolved = Array.isArray(value) ? value[0] : value
+  return resolved || undefined
+}
+
+function routeQueryString(value: unknown): string | null {
+  const resolved = Array.isArray(value) ? value[0] : value
+  return typeof resolved === 'string' && resolved.length > 0 ? resolved : null
+}
+
+function draftRouteQuery(draftName: string | null | undefined, spaceId: string | null | undefined) {
+  return {
+    draft: draftName || undefined,
+    spaceId: spaceId || undefined,
+  }
+}
+
 export type NewDiscussionContext = ReturnType<typeof useNewDiscussion>
 export const NewDiscussionKey: InjectionKey<NewDiscussionContext> = Symbol('NewDiscussion')
 
-export function provideNewDiscussion(textEditorRef?: TextEditorRef) {
-  const context = useNewDiscussion(textEditorRef)
+export function provideNewDiscussion() {
+  const context = useNewDiscussion()
   provide(NewDiscussionKey, context)
   return context
 }

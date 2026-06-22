@@ -1,9 +1,9 @@
 <template>
-  <Dialog title="Change Category" @after-leave="setCurrentTeam" v-model:open="show">
+  <Dialog title="Change Community" @after-leave="setCurrentTeam" v-model:open="show">
     <Combobox
       :options="teamOptions"
       v-model="selectedTeam"
-      placeholder="Select a category"
+      placeholder="Select a community"
       class="w-full"
       open-on-click
       autofocus
@@ -25,8 +25,8 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { Combobox } from 'frappe-ui'
-import { activeTeams } from '@/data/teams'
-import { useSpace } from '@/data/spaces'
+import { activeCommunities } from '@/data/communities'
+import { spaces as spacesList, useSpace } from '@/data/spaces'
 import { useDoctype } from 'frappe-ui'
 import { GPProject } from '@/types/doctypes'
 
@@ -39,7 +39,7 @@ const space = useSpace(() => props.spaceId)
 const spaces = useDoctype<GPProject>('GP Project')
 
 const teamOptions = computed(() => {
-  return activeTeams.value.map((team) => ({
+  return activeCommunities.value.map((team) => ({
     label: team.title,
     value: team.name,
   }))
@@ -69,6 +69,9 @@ function submit() {
       },
     })
     .then(() => {
+      // Refresh the cached spaces so denormalized fields like team_title (shown in
+      // the space breadcrumb) reflect the new community.
+      spacesList.reload()
       if (selectedTeam.value) {
         show.value = false
       }

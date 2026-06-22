@@ -10,11 +10,12 @@ from frappe.model.document import Document
 from pypika.terms import ExistsCriterion
 
 import gameplan
-from gameplan.api import invite_by_email
+from gameplan.api import _invite_by_email
 from gameplan.gameplan.doctype.gp_unread_record.gp_unread_record import GPUnreadRecord
-from gameplan.gemoji import get_random_gemoji
 from gameplan.mixins.archivable import Archivable
 from gameplan.mixins.manage_members import ManageMembersMixin
+
+DEFAULT_SPACE_ICON = "lucide-hash"
 
 
 class GPProject(ManageMembersMixin, Archivable, Document):
@@ -78,9 +79,11 @@ class GPProject(ManageMembersMixin, Archivable, Document):
 		d = super().as_dict(*args, **kwargs)
 		return d
 
+	def before_validate(self):
+		if not self.icon or not self.icon.startswith("lucide-"):
+			self.icon = DEFAULT_SPACE_ICON
+
 	def before_insert(self):
-		if not self.icon:
-			self.icon = get_random_gemoji().emoji
 		self.append("members", {"user": frappe.session.user})
 
 	def on_trash(self):
@@ -100,11 +103,16 @@ class GPProject(ManageMembersMixin, Archivable, Document):
 			return
 		self.team = team
 		self.save()
+		# Repoint child discussions/tasks in one statement each. Loading + saving every
+		# doc would needlessly re-run their full on_update (notify_mentions, etc.); only
+		# the denormalized `team` column changes here.
 		for doctype in ["GP Task", "GP Discussion"]:
-			for name in frappe.db.get_all(doctype, {"project": self.name}, pluck="name"):
-				doc = frappe.get_doc(doctype, name)
-				doc.team = self.team
-				doc.save()
+			DocType = frappe.qb.DocType(doctype)
+			(
+				frappe.qb.update(DocType)
+				.set(DocType.team, self.team)
+				.where(DocType.project == str(self.name))
+			).run()
 
 	@frappe.whitelist()
 	def merge_with_project(self, project=None):
@@ -118,7 +126,9 @@ class GPProject(ManageMembersMixin, Archivable, Document):
 
 	@frappe.whitelist()
 	def invite_guest(self, email):
-		invite_by_email(email, role="Gameplan Guest", projects=[self.name])
+		# Trusted path: a space member invites a guest to this space. The role is
+		# hardcoded (non-escalating), so it bypasses invite_by_email's admin gate.
+		_invite_by_email(email, role="Gameplan Guest", projects=[self.name])
 
 	@frappe.whitelist()
 	def remove_guest(self, email):
@@ -187,7 +197,7 @@ class GPProject(ManageMembersMixin, Archivable, Document):
 		for pin in frappe.db.get_all(
 			"GP Pinned Project", filters={"project": self.name, "user": frappe.session.user}, pluck="name"
 		):
-			frappe.delete_doc("GP Pinned Project", pin.name, ignore_permissions=True)
+			frappe.delete_doc("GP Pinned Project", pin, ignore_permissions=True)
 
 	@frappe.whitelist()
 	def mark_all_as_read(self):
