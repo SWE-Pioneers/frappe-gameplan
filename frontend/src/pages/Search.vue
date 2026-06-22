@@ -509,11 +509,34 @@ const tagsFilterOptions = computed(() => {
 
 // Keyboard shortcut handler
 function handleKeyPress(event: KeyboardEvent) {
-  // Focus search input when "/" is pressed
-  if (event.key === '/' && !isInputFocused()) {
-    event.preventDefault()
-    searchInput.value?.el?.focus()
+  if (isInputFocused()) {
+    return
   }
+
+  if (event.key === '/') {
+    event.preventDefault()
+    focusSearchInput()
+    return
+  }
+
+  if (!isSearchCharacter(event)) {
+    return
+  }
+
+  event.preventDefault()
+  focusSearchInput()
+  newSearch.value = true
+  updateQuery(`${query.value}${event.key}`)
+}
+
+function focusSearchInput() {
+  searchInput.value?.el?.focus()
+}
+
+function isSearchCharacter(event: KeyboardEvent) {
+  return (
+    event.key.length === 1 && event.key !== ' ' && !event.ctrlKey && !event.metaKey && !event.altKey
+  )
 }
 
 function isInputFocused() {

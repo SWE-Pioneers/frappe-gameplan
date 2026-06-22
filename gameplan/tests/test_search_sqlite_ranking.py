@@ -105,8 +105,8 @@ class TestGameplanSearchRanking(FrappeTestCase):
 	def track_doc(self, doc):
 		frappe.flags.gameplan_search_test_docnames[doc.doctype].append(doc.name)
 
-	def test_dense_body_match_beats_shallow_recent_body_match(self):
-		relevant = self.create_discussion(
+	def test_recency_breaks_close_body_match_ties(self):
+		old = self.create_discussion(
 			"Ranking Handbook",
 			"rankwise sqlite relevance " * 30,
 		)
@@ -116,7 +116,7 @@ class TestGameplanSearchRanking(FrappeTestCase):
 		)
 		frappe.db.set_value(
 			"GP Discussion",
-			relevant.name,
+			old.name,
 			"last_post_at",
 			"2021-01-01 00:00:00",
 			update_modified=False,
@@ -132,7 +132,37 @@ class TestGameplanSearchRanking(FrappeTestCase):
 		results = self.search_results("rankwise sqlite relevance")
 
 		self.assertGreater(len(results), 1)
-		self.assertEqual(results[0]["id"], f"GP Discussion:{relevant.name}")
+		self.assertEqual(results[0]["id"], f"GP Discussion:{recent.name}")
+
+	def test_recency_boost_applies_to_indexed_sqlite_rows(self):
+		old = self.create_discussion(
+			"Recency Anchor",
+			"recencyanchor appears once",
+		)
+		recent = self.create_discussion(
+			"Recency Anchor",
+			"recencyanchor appears once",
+		)
+		frappe.db.set_value(
+			"GP Discussion",
+			old.name,
+			"last_post_at",
+			"2021-01-01 00:00:00",
+			update_modified=False,
+		)
+		frappe.db.set_value(
+			"GP Discussion",
+			recent.name,
+			"last_post_at",
+			frappe.utils.now(),
+			update_modified=False,
+		)
+
+		results = self.search_results("recencyanchor")
+
+		self.assertGreater(len(results), 1)
+		self.assertEqual(results[0]["id"], f"GP Discussion:{recent.name}")
+		self.assertGreater(results[0]["score"], results[1]["score"])
 
 	def test_exact_title_match_beats_noisy_body_match(self):
 		expected = self.create_discussion(
@@ -148,6 +178,16 @@ class TestGameplanSearchRanking(FrappeTestCase):
 
 		self.assertGreater(len(results), 1)
 		self.assertEqual(results[0]["id"], f"GP Discussion:{expected.name}")
+
+	def test_title_boost_prefers_demo_token_over_democracy_prefix(self):
+		self.assertEqual(
+			self.search._get_title_boost({"original_title": "Demo Planning"}, "demo", ["demo"]),
+			3.0,
+		)
+		self.assertEqual(
+			self.search._get_title_boost({"original_title": "Democracy Planning"}, "demo", ["demo"]),
+			1.0,
+		)
 
 	def test_parent_discussion_title_beats_dense_child_comment(self):
 		discussion = self.create_discussion(

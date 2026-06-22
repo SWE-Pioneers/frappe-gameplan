@@ -1,9 +1,19 @@
 # Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and Contributors
 # MIT License. See license.txt
 import re
+import time
 
 import frappe
-from frappe.search.sqlite_search import SQLiteSearch, SQLiteSearchIndexMissingError
+from frappe.search.sqlite_search import (
+	MIN_RECENCY_BOOST,
+	RECENCY_DECAY_RATE,
+	RECENT_HOURS_BOOST,
+	RECENT_MONTH_BOOST,
+	RECENT_QUARTER_BOOST,
+	RECENT_WEEK_BOOST,
+	SQLiteSearch,
+	SQLiteSearchIndexMissingError,
+)
 from frappe.utils import cstr
 
 import gameplan
@@ -219,20 +229,79 @@ class GameplanSearch(SQLiteSearch):
 		return 1.0 / (1.0 + bm25_score)
 
 	def _get_title_boost(self, row, query, query_words):
-		original_title = (row["original_title"] or "").lower()
-		query_lower = query.lower()
-		if query_lower in original_title:
+		title_words = self._get_words(row["original_title"])
+		query_words = self._get_words(query)
+
+		if self._has_title_phrase_match(title_words, query_words):
 			return 3.0
 
 		if not query_words:
 			return 1.0
 
-		title_tokens = set(re.findall(r"\w+", original_title))
-		matched_words = sum(1 for word in query_words if word.lower() in title_tokens)
+		matched_words = sum(1 for word in query_words if self._has_matching_title_word(title_words, word))
 		if not matched_words:
 			return 1.0
 
 		return 1.0 + (0.5 * matched_words / len(query_words))
+
+	def _get_recency_boost(self, row, query):
+		modified = self._get_row_value(row, "modified")
+		if modified in (None, ""):
+			return 1.0
+
+		try:
+			doc_timestamp = float(modified)
+		except (TypeError, ValueError):
+			return 1.0
+
+		hours_old = (time.time() - doc_timestamp) / 3600
+		days_old = hours_old / 24
+
+		if hours_old <= 24:
+			return RECENT_HOURS_BOOST
+		if days_old <= 7:
+			return RECENT_WEEK_BOOST
+		if days_old <= 30:
+			return RECENT_MONTH_BOOST
+		if days_old <= 90:
+			return RECENT_QUARTER_BOOST
+
+		days_beyond_90 = days_old - 90
+		return max(MIN_RECENCY_BOOST, RECENT_QUARTER_BOOST - (days_beyond_90 * RECENCY_DECAY_RATE))
+
+	def _get_row_value(self, row, field, default=None):
+		if hasattr(row, "keys") and field not in row.keys():
+			return default
+
+		try:
+			return row[field]
+		except (KeyError, IndexError, TypeError):
+			return default
+
+	def _get_words(self, text):
+		return re.findall(r"\w+", (text or "").lower())
+
+	def _has_title_phrase_match(self, title_words, query_words):
+		if not query_words or len(query_words) > len(title_words):
+			return False
+
+		for index in range(len(title_words) - len(query_words) + 1):
+			phrase_words = title_words[index : index + len(query_words)]
+			if all(
+				self._is_matching_title_word(title_word, query_word)
+				for title_word, query_word in zip(phrase_words, query_words, strict=True)
+			):
+				return True
+
+		return False
+
+	def _has_matching_title_word(self, title_words, query_word):
+		return any(self._is_matching_title_word(title_word, query_word) for title_word in title_words)
+
+	def _is_matching_title_word(self, title_word, query_word):
+		if title_word == query_word:
+			return True
+		return len(query_word) > 2 and title_word == f"{query_word}s"
 
 	def search(self, query, title_only=False, filters=None):
 		"""
