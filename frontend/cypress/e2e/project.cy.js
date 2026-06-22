@@ -61,7 +61,9 @@ describe('Project', () => {
         cy.visit('/g/configure/devops')
         cy.selectDropdownOption('Project 1 Space Options', 'Archive')
         cy.scope('dialog').button('Archive').click()
-        cy.contains('div', 'Archived').should('exist')
+        // The confirm dialog dismisses once the archive completes server-side.
+        cy.get('[role=dialog]').should('not.exist')
+        // Archiving removes the current user's pin for the space (backend cleanup).
         cy.request('POST', '/api/method/frappe.client.get_list', {
           doctype: 'GP Pinned Project',
           filters: { project: projectName },
@@ -69,10 +71,13 @@ describe('Project', () => {
         })
           .its('body.message')
           .should('have.length', 0)
+        // Re-visit for fresh data. The community keeps its auto-created "General"
+        // space active; archived spaces are hidden until "Show archived" is on and
+        // render a disabled title input (archived spaces are read-only).
         cy.visit('/g/configure/devops')
-        cy.get('input[aria-label="Space title"]').should('not.exist')
-        cy.get('button:contains("Archived")').click()
-        cy.get('input[aria-label="Space title"]').should('have.value', 'Project 1')
+        cy.get('input[aria-label="Space title"]:disabled').should('not.exist')
+        cy.contains('Show archived').click()
+        cy.get('input[aria-label="Space title"]:disabled').should('have.value', 'Project 1')
       })
   })
 })

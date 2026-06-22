@@ -50,10 +50,11 @@ describe('Comment', () => {
       times: 1,
     }).as('comment')
     cy.button('Add a comment').click()
-    // Wait for the comment editor to mount and receive focus before typing
-    // (a just-mounted contenteditable drops the first keystroke), and submit via
-    // the explicit button instead of {enter} to avoid a premature submit.
-    cy.focused().should('be.visible').type('This is the first comment')
+    // Click the editor to settle focus before typing — relying on the auto-focus
+    // via cy.focused() races the just-mounted ProseMirror view and drops the
+    // first keystroke. Submit via the button (not {enter}) to avoid a premature
+    // submit of partial text.
+    cy.get('[contenteditable=true]').should('be.visible').click().type('This is the first comment')
     cy.button('Submit').click()
     cy.wait('@comment')
       .its('response.body.data.content')
