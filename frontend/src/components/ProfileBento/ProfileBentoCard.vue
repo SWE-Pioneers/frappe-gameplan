@@ -11,6 +11,19 @@
     @keydown.space.prevent="selectCard"
     @pointerdown="startPointerDrag"
   >
+    <div>
+      <Button
+        v-if="interactive"
+        class="absolute right-3 top-3 z-10 opacity-0 transition-opacity group-hover:opacity-100"
+        variant="outline"
+        size="xs"
+        icon="lucide-x"
+        :label="`Remove ${card.type} card`"
+        @click.stop="$emit('remove')"
+        @pointerdown.stop
+      />
+    </div>
+
     <div v-if="card.type === 'Blank'" class="h-full" />
 
     <div v-else-if="card.type === 'Text'" class="flex h-full flex-col justify-between p-3 sm:p-4">
@@ -39,6 +52,50 @@
           :style="imageStyle"
           @load="loadImageDimensions"
         />
+        <FileUploader
+          v-else-if="interactive"
+          class="block h-full"
+          :fileTypes="['image/png', 'image/jpeg']"
+          :uploadArgs="{ optimize: true }"
+          :validateFile="validateImageFile"
+          @success="uploadImage"
+        >
+          <template #default="{ progress, uploading, error, openFileSelector }">
+            <button
+              type="button"
+              class="flex h-full w-full flex-col items-center justify-center gap-2 p-3 text-center text-ink-gray-5 transition hover:bg-surface-gray-2 sm:p-4"
+              :class="{ 'border border-outline-red-2 bg-surface-red-1': error }"
+              @click.stop="openFileSelector"
+              @pointerdown.stop
+            >
+              <div
+                class="grid size-10 place-items-center rounded-lg border border-dashed bg-surface-base"
+                :class="
+                  error
+                    ? 'border-outline-red-2 text-ink-red-3'
+                    : 'border-outline-gray-3 text-ink-gray-6'
+                "
+              >
+                <Spinner v-if="uploading" class="size-5" />
+                <span
+                  v-else
+                  class="size-5"
+                  :class="error ? 'lucide-image-off' : 'lucide-image-plus'"
+                  aria-hidden="true"
+                />
+              </div>
+              <div v-if="error" class="text-xs font-medium leading-snug text-ink-red-3 sm:text-sm">
+                {{ error }}
+              </div>
+              <div v-else-if="showImageEmptyCopy" class="space-y-0.5">
+                <div class="text-xs font-medium text-ink-gray-7 sm:text-sm">
+                  {{ uploading ? `Uploading ${progress}%` : 'Add image' }}
+                </div>
+                <div class="text-xs leading-snug text-ink-gray-5 sm:text-sm">Click to upload</div>
+              </div>
+            </button>
+          </template>
+        </FileUploader>
         <div
           v-else
           class="flex h-full flex-col items-center justify-center gap-2 p-3 text-center text-ink-gray-5 sm:p-4"
@@ -50,9 +107,6 @@
           </div>
           <div v-if="showImageEmptyCopy" class="space-y-0.5">
             <div class="text-xs font-medium text-ink-gray-7 sm:text-sm">Add image</div>
-            <div class="text-xs leading-snug text-ink-gray-5 sm:text-sm">
-              Upload from the edit panel
-            </div>
           </div>
         </div>
         <div class="absolute inset-x-0 top-0 p-3 sm:p-4" :class="imageCaptionClass">
@@ -97,7 +151,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import type { ProfileBentoCard } from './types'
-import { Badge, Button } from 'frappe-ui'
+import { Badge, Button, FileUploader, Spinner } from 'frappe-ui'
 import { getImgDimensions } from '@/utils'
 
 const props = defineProps<{
@@ -113,12 +167,19 @@ const props = defineProps<{
 const emit = defineEmits<{
   cancelImageReposition: []
   pointerDown: [event: PointerEvent]
+  remove: []
   saveImagePosition: [position: number]
   select: []
+  uploadImage: [fileUrl: string]
 }>()
+
+interface UploadedFile {
+  file_url: string
+}
 
 const imageGradientClassBySize: Record<ProfileBentoCard['size'], string> = {
   '1x1': 'h-16',
+  '1x2': 'h-20',
   '2x1': 'h-20',
   '2x2': 'h-28',
   '4x1': 'h-20',
@@ -226,6 +287,17 @@ const textCardBody = computed(() => {
 function selectCard() {
   if (!props.interactive) return
   emit('select')
+}
+
+function uploadImage(file: UploadedFile) {
+  emit('uploadImage', file.file_url)
+}
+
+function validateImageFile(file: File) {
+  const extension = file.name.split('.').pop()?.toLowerCase()
+  if (!extension || !['png', 'jpg', 'jpeg'].includes(extension)) {
+    return 'Only PNG and JPG images are allowed'
+  }
 }
 
 function startPointerDrag(event: PointerEvent) {

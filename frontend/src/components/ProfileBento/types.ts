@@ -1,5 +1,5 @@
 export type ProfileCardType = 'Text' | 'Image' | 'Blank'
-export type ProfileCardSize = '1x1' | '2x1' | '2x2' | '4x1' | '4x2'
+export type ProfileCardSize = '1x1' | '1x2' | '2x1' | '2x2' | '4x1' | '4x2'
 export type ProfileImageRendering = 'Cover' | 'Natural' | 'Fit'
 
 export interface ProfileBentoCard {
@@ -14,7 +14,7 @@ export interface ProfileBentoCard {
   imagePosition?: number
 }
 
-export const profileCardSizes: ProfileCardSize[] = ['1x1', '2x1', '2x2', '4x1', '4x2']
+export const profileCardSizes: ProfileCardSize[] = ['1x1', '1x2', '2x1', '2x2', '4x1', '4x2']
 export const profileImageRenderingOptions: Array<{
   label: string
   value: ProfileImageRendering

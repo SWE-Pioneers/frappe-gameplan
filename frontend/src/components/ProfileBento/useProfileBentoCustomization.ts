@@ -35,7 +35,7 @@ export function useProfileBentoCustomization(source: ProfileBentoCardSource) {
     let loadResult = await source.load()
     let loadedCards = getLoadedCards(loadResult)
     cards.value = cloneCards(loadedCards)
-    selectedCardId.value = cards.value[0]?.id || ''
+    selectedCardId.value = ''
     savedSnapshot.value = isDefaultLoadResult(loadResult) ? '' : serializeCards(cards.value)
   }
 
@@ -55,12 +55,21 @@ export function useProfileBentoCustomization(source: ProfileBentoCardSource) {
     selectedCardId.value = card.id
   }
 
-  function removeSelectedCard() {
-    let index = cards.value.findIndex((card) => card.id === selectedCardId.value)
+  function removeCard(cardId: string) {
+    let index = cards.value.findIndex((card) => card.id === cardId)
     if (index === -1) return
 
     cards.value.splice(index, 1)
-    selectedCardId.value = cards.value[Math.max(0, index - 1)]?.id || ''
+    // Keep the selection meaningful: clear it if the removed card was selected,
+    // otherwise leave whatever was already selected untouched.
+    if (selectedCardId.value === cardId) {
+      selectedCardId.value = ''
+    }
+  }
+
+  function removeSelectedCard() {
+    if (!selectedCardId.value) return
+    removeCard(selectedCardId.value)
   }
 
   function reorderCards(cardIds: string[]) {
@@ -90,6 +99,13 @@ export function useProfileBentoCustomization(source: ProfileBentoCardSource) {
     selectedCard.value.image = imageUrl
   }
 
+  function setCardImage(cardId: string, imageUrl: string) {
+    let card = cards.value.find((card) => card.id === cardId)
+    if (!card || card.type !== 'Image') return
+    card.image = imageUrl
+    selectedCardId.value = cardId
+  }
+
   return {
     cards,
     selectedCardId,
@@ -101,10 +117,12 @@ export function useProfileBentoCustomization(source: ProfileBentoCardSource) {
     saveDraft,
     addCard,
     reorderCards,
+    removeCard,
     removeSelectedCard,
     updateSelectedText,
     updateSelectedCard,
     updateSelectedImage,
+    setCardImage,
   }
 }
 

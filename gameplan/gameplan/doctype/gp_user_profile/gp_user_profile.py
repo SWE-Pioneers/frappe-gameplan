@@ -17,7 +17,7 @@ from gameplan.extends.client import check_permissions
 from gameplan.mixins.attachments import HasAttachments
 
 PROFILE_BENTO_CARD_TYPES = {"Text", "Image", "Blank"}
-PROFILE_BENTO_CARD_SIZES = {"1x1", "2x1", "2x2", "4x1", "4x2"}
+PROFILE_BENTO_CARD_SIZES = {"1x1", "1x2", "2x1", "2x2", "4x1", "4x2"}
 PROFILE_BENTO_IMAGE_RENDERING = {"Cover", "Natural", "Fit"}
 PROFILE_BENTO_CARD_ID_PATTERN = re.compile(r"^[A-Za-z0-9_-]{1,80}$")
 PROFILE_BENTO_URL_CONTROL_CHAR_PATTERN = re.compile(r"[\x00-\x20\x7f]")

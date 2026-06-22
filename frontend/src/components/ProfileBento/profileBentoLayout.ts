@@ -107,6 +107,7 @@ function rectForItem(
 function cardUnits(size: ProfileCardSize): ProfileBentoUnits {
   return {
     '1x1': { columns: 1, rows: 1 },
+    '1x2': { columns: 1, rows: 2 },
     '2x1': { columns: 2, rows: 1 },
     '2x2': { columns: 2, rows: 2 },
     '4x1': { columns: 4, rows: 1 },

@@ -18,8 +18,10 @@
         :show-size="showSize"
         @cancel-image-reposition="$emit('cancelImageReposition')"
         @pointer-down="startPointerDrag(card.id, $event)"
+        @remove="$emit('remove', card.id)"
         @save-image-position="$emit('saveImagePosition', $event)"
         @select="$emit('select', card.id)"
+        @upload-image="$emit('uploadImage', { cardId: card.id, fileUrl: $event })"
       />
     </motion.div>
 
@@ -66,9 +68,11 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   cancelImageReposition: []
+  remove: [cardId: string]
   reorder: [cardIds: string[]]
   saveImagePosition: [position: number]
   select: [cardId: string]
+  uploadImage: [payload: { cardId: string; fileUrl: string }]
 }>()
 
 const addCardLayoutId = '__profile-add-card__'

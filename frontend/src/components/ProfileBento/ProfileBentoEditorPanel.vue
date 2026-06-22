@@ -1,12 +1,15 @@
 <template>
   <aside class="hidden w-[320px] shrink-0 lg:block">
     <div class="sticky top-5 space-y-4">
-      <div v-if="card" class="rounded-lg border border-outline-gray-2 bg-surface-base p-5">
+      <div
+        v-if="card"
+        class="rounded-lg border border-outline-gray-2 bg-surface-base p-5"
+        data-profile-keep-selection
+      >
         <div class="flex items-center justify-between gap-3">
           <div>
             <h2 class="text-base font-medium text-ink-gray-9">{{ card.type }} card</h2>
           </div>
-          <Button icon="lucide-trash-2" @click="$emit('remove')" />
         </div>
 
         <div class="mt-4 space-y-3">
@@ -92,6 +95,13 @@
             </div>
           </div>
         </div>
+      </div>
+
+      <div
+        v-else
+        class="flex min-h-32 items-center justify-center rounded-lg border border-dashed border-outline-gray-2 p-5 text-center text-base text-ink-gray-5"
+      >
+        Select a card to start editing
       </div>
     </div>
   </aside>

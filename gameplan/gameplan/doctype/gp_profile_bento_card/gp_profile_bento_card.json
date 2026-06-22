@@ -37,7 +37,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Size",
-   "options": "1x1\n2x1\n2x2\n4x1\n4x2",
+   "options": "1x1\n1x2\n2x1\n2x2\n4x1\n4x2",
    "reqd": 1
   },
   {

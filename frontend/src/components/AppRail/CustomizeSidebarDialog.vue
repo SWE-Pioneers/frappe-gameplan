@@ -24,7 +24,7 @@
                     :key="community.name"
                     data-sortable-section="shown"
                     :data-sortable-id="community.name"
-                    class="group relative flex min-h-8 w-full touch-none cursor-grab select-none items-center gap-2 rounded-md px-1.5 py-0.5 text-left text-ink-gray-8 hover:bg-surface-gray-1"
+                    class="group relative flex min-h-8 w-full touch-none cursor-grab select-none items-center gap-2 rounded px-1.5 py-0.5 text-left text-ink-gray-8 hover:bg-surface-gray-1"
                     :class="getCommunityRowClasses(community.name)"
                     :style="getItemStyle(community.name, 'shown')"
                     @pointerdown="startPointerDrag($event, community.name, 'shown')"
@@ -51,7 +51,7 @@
                     </span>
                     <Button
                       variant="ghost"
-                      size="sm"
+                      size="xs"
                       icon="lucide-arrow-down"
                       :label="`Hide ${community.title} from sidebar`"
                       tooltip="Hide from sidebar"
@@ -107,7 +107,7 @@
                   </span>
                   <Button
                     variant="ghost"
-                    size="sm"
+                    size="xs"
                     icon="lucide-arrow-up"
                     :label="`Show ${community.title} in sidebar`"
                     tooltip="Show in sidebar"
@@ -272,7 +272,7 @@ function getCommunityRowClasses(communityName: string) {
 
 function getCommunityListClasses(section: SidebarSection) {
   return [
-    'min-h-16 rounded-lg border border-outline-gray-2 p-1 transition-colors',
+    'min-h-16 rounded-lg border border-outline-gray-2 px-1.5 py-2 transition-colors',
     activeSection.value === section ? 'border-outline-gray-4' : '',
   ]
 }

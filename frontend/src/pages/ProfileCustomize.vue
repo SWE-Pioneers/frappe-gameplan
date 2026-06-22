@@ -2,7 +2,7 @@
   <div class="min-h-full bg-surface-base">
     <PageHeader>
       <Breadcrumbs class="h-7" :items="profileCustomizeBreadcrumbs" />
-      <div class="flex shrink-0 items-center gap-2">
+      <div class="flex shrink-0 items-center gap-2" data-profile-keep-selection>
         <Button
           v-for="option in profileCardTypeOptions"
           :key="option.type"
@@ -32,16 +32,17 @@
           :repositioning-card-id="repositioningCardId"
           show-size
           @cancel-image-reposition="repositioningCardId = ''"
+          @remove="removeCard"
           @reorder="reorderCards"
           @save-image-position="saveImagePosition"
           @select="selectedCardId = $event"
+          @upload-image="({ cardId, fileUrl }) => setCardImage(cardId, fileUrl)"
         />
       </main>
 
       <ProfileBentoEditorPanel
         :card="selectedCard"
         :text-characters-left="selectedTextCharactersLeft"
-        @remove="removeSelectedCard"
         @reposition-image="beginImageReposition"
         @upload-image="updateSelectedImage"
         @update-image-rendering="(imageRendering) => updateSelectedCard({ imageRendering })"
@@ -91,14 +92,17 @@ const {
   saveDraft,
   addCard,
   reorderCards,
+  removeCard,
   removeSelectedCard,
   updateSelectedCard,
   updateSelectedImage,
+  setCardImage,
   updateSelectedText,
 } = useProfileBentoCustomization(profileBentoSource)
 
 onMounted(loadDraft)
 useEventListener(window, 'keydown', handleCustomizeKeydown)
+useEventListener(document, 'click', clearSelectionOnOutsideClick)
 
 usePageMeta(() => {
   return {
@@ -107,7 +111,8 @@ usePageMeta(() => {
 })
 
 function handleCustomizeKeydown(event: KeyboardEvent) {
-  if (event.key !== 'Delete') return
+  // On Mac the "delete" key emits "Backspace"; "Delete" is the forward-delete.
+  if (event.key !== 'Delete' && event.key !== 'Backspace') return
   if (event.metaKey || event.ctrlKey || event.altKey || isEditableTarget(event.target)) return
   if (!selectedCard.value) return
 
@@ -122,6 +127,16 @@ async function saveProfileBentoDraft() {
   } catch (error) {
     toast.error(getSaveErrorMessage(error))
   }
+}
+
+function clearSelectionOnOutsideClick(event: MouseEvent) {
+  if (!selectedCardId.value) return
+  if (!(event.target instanceof HTMLElement)) return
+
+  // Keep the selection for clicks on a card or on regions that intentionally
+  // drive it (the editor panel, the add-card buttons). Everything else clears.
+  if (event.target.closest('[data-profile-card-id], [data-profile-keep-selection]')) return
+  selectedCardId.value = ''
 }
 
 function beginImageReposition() {
@@ -143,10 +158,31 @@ function isEditableTarget(target: EventTarget | null) {
 }
 
 function getSaveErrorMessage(error: unknown) {
-  if (error instanceof Error && error.message.includes('PermissionError')) {
+  if (error instanceof Error && error.exc_type === 'PermissionError') {
     return 'You do not have permission to save this profile layout'
   }
-  if (error instanceof Error && error.message) return error.message
-  return 'Could not save profile layout'
+
+  let message = extractServerMessage(error)
+  return message || 'Could not save profile layout'
+}
+
+/**
+ * frappe-ui's `frappeRequest` puts the clean `frappe.throw()` text on the
+ * error's `messages` array (parsed out of `_server_messages`). The plain
+ * `message` is the noisy "<method> <ExcType>" string, so prefer `messages`.
+ */
+function extractServerMessage(error: unknown): string {
+  if (error instanceof Error && Array.isArray((error as { messages?: unknown }).messages)) {
+    let messages = (error as { messages: unknown[] }).messages.filter(
+      (message): message is string => typeof message === 'string',
+    )
+    if (messages.length) return stripHtml(messages.join('\n'))
+  }
+  if (error instanceof Error && error.message) return stripHtml(error.message)
+  return typeof error === 'string' ? error : ''
+}
+
+function stripHtml(value: string) {
+  return value.replace(/<[^>]*>/g, '').trim()
 }
 </script>
