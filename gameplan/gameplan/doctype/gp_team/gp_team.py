@@ -90,7 +90,7 @@ class GPTeam(Archivable, Document):
 
 @frappe.whitelist(methods=["POST"])
 @validate_type
-def update_joined_teams(teams: list = None):
+def update_joined_teams(teams: list = None, sidebar_badge_style: str | None = None):
 	if gameplan.is_guest():
 		frappe.throw("Guests cannot manage communities")
 
@@ -115,16 +115,24 @@ def update_joined_teams(teams: list = None):
 			team.remove(member)
 			team.save(ignore_permissions=True)
 
-	save_session_user_community_order(ordered_team_names)
+	save_session_user_sidebar_preferences(ordered_team_names, sidebar_badge_style)
 	return ordered_team_names
 
 
-def save_session_user_community_order(team_names: list[str]):
+def save_session_user_sidebar_preferences(team_names: list[str], sidebar_badge_style: str | None = None):
 	from gameplan.gameplan.doctype.gp_user_profile.gp_user_profile import get_session_user_profile
 
 	profile = get_session_user_profile()
 	profile.community_order = frappe.as_json(team_names)
+	if sidebar_badge_style is not None:
+		profile.sidebar_badge_style = get_valid_sidebar_badge_style(sidebar_badge_style)
 	profile.save(ignore_permissions=True)
+
+
+def get_valid_sidebar_badge_style(sidebar_badge_style: str):
+	if sidebar_badge_style not in {"Unread count", "Dot"}:
+		frappe.throw("Invalid sidebar badge style")
+	return sidebar_badge_style
 
 
 def get_accessible_team_names():

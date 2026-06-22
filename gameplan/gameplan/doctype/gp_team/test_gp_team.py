@@ -54,3 +54,22 @@ class TestGPTeam(FrappeTestCase):
 
 		self.assertEqual(update_joined_teams(ordered_teams), ordered_teams)
 		self.assertEqual(frappe.parse_json(get_session_user_profile().community_order), ordered_teams)
+
+	def test_update_joined_teams_saves_profile_sidebar_badge_style(self):
+		user = create_member("sidebar-badge-style@example.com", "Sidebar Badge Style")
+		team = frappe.get_doc(doctype="GP Team", title="Badge Style Team").insert(ignore_permissions=True)
+
+		frappe.set_user(user.name)
+
+		self.assertEqual(update_joined_teams([team.name], "Dot"), [team.name])
+		self.assertEqual(get_session_user_profile().sidebar_badge_style, "Dot")
+
+	def test_update_joined_teams_rejects_invalid_sidebar_badge_style(self):
+		user = create_member("invalid-sidebar-badge-style@example.com", "Invalid Badge Style")
+		team = frappe.get_doc(doctype="GP Team", title="Invalid Badge Style Team").insert(
+			ignore_permissions=True
+		)
+
+		frappe.set_user(user.name)
+
+		self.assertRaises(frappe.ValidationError, update_joined_teams, [team.name], "Banner")

@@ -54,12 +54,23 @@
                         class="absolute -left-[11px] top-1/2 h-7 w-1 -translate-y-1/2 rounded-r bg-surface-gray-8"
                       />
                       <CommunityImage :community="community" class="size-7 transition" />
-                      <UnreadBadge :count="getCommunityUnreadCount(community.name)" />
+                      <UnreadBadge
+                        :count="getCommunityUnreadCount(community.name)"
+                        :style="currentSidebarBadgeStyle"
+                      />
                     </button>
                   </TooltipTrigger>
                   <TooltipBubble side="right">
                     <template #content>
-                      <div class="text-base">{{ community.title }}</div>
+                      <div class="leading-relaxed">
+                        <div class="text-base">{{ community.title }}</div>
+                        <div
+                          v-if="showTooltipUnreadCount(getCommunityUnreadCount(community.name))"
+                          class="text-p-sm text-ink-gray-5"
+                        >
+                          {{ tooltipUnreadCount(getCommunityUnreadCount(community.name)) }}
+                        </div>
+                      </div>
                     </template>
                   </TooltipBubble>
                 </TooltipRoot>
@@ -95,6 +106,7 @@
           :icon="item.icon"
           :is-active="item.isActive"
           :unread-count="item.unreadCount"
+          :badge-style="currentSidebarBadgeStyle"
           @click="goTo(item)"
         />
       </div>
@@ -110,6 +122,7 @@
           :icon="item.icon"
           :is-active="item.isActive"
           :unread-count="item.unreadCount"
+          :badge-style="currentSidebarBadgeStyle"
           @click="goTo(item)"
         />
       </div>
@@ -141,9 +154,10 @@ import { communityState } from '@/data/communityState'
 import { activeCommunities } from '@/data/communities'
 import type { Community } from '@/data/communities'
 import { unreadNotifications } from '@/data/notifications'
+import { currentSidebarBadgeStyle } from '@/data/sidebarPreferences'
 import { getSpaceUnreadCount, spaces } from '@/data/spaces'
 import { isGameplanAdmin, useSessionUser } from '@/data/users'
-import { unreadAriaLabel } from '@/utils/formatters'
+import { formatUnreadCount, unreadAriaLabel } from '@/utils/formatters'
 import CommunityImage from '../CommunityImage.vue'
 import GameplanLogo from '../GameplanLogo.vue'
 import CustomizeSidebarDialog from './CustomizeSidebarDialog.vue'
@@ -289,6 +303,14 @@ function getCommunityUnreadCount(communityId: string) {
 
 function communityAriaLabel(community: Community) {
   return unreadAriaLabel(community.title, getCommunityUnreadCount(community.name))
+}
+
+function showTooltipUnreadCount(unreadCount: number) {
+  return currentSidebarBadgeStyle.value === 'Dot' && unreadCount > 0
+}
+
+function tooltipUnreadCount(unreadCount: number) {
+  return `${formatUnreadCount(unreadCount)} unread`
 }
 
 function goHome() {

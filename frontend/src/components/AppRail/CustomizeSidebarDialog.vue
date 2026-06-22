@@ -15,6 +15,11 @@
       <ScrollAreaRoot class="relative min-h-0 flex-1">
         <ScrollAreaViewport class="h-full w-full overflow-y-auto px-4 py-3">
           <div v-if="manageableCommunities.length > 0" class="space-y-4">
+            <section class="flex items-center justify-between gap-3">
+              <h3 class="text-base font-medium text-ink-gray-8">Badge style</h3>
+              <Select class="w-40" :options="badgeStyleOptions" v-model="selectedBadgeStyle" />
+            </section>
+
             <section class="space-y-1.5">
               <h3 class="text-base font-medium text-ink-gray-8">Shown in sidebar</h3>
               <div ref="shownSection" :class="getCommunityListClasses('shown')">
@@ -153,13 +158,18 @@
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ScrollAreaRoot, ScrollAreaViewport } from 'reka-ui'
-import { Button, Dialog, toast, useCall } from 'frappe-ui'
+import { Button, Dialog, Select, toast, useCall } from 'frappe-ui'
 import { communityState } from '@/data/communityState'
 import { activeCommunities, availableCommunities, communities } from '@/data/communities'
 import type { Community } from '@/data/communities'
 import { setCommunityOrder } from '@/data/communityOrder'
+import {
+  currentSidebarBadgeStyle,
+  setSidebarBadgeStyle,
+  type SidebarBadgeStyle,
+} from '@/data/sidebarPreferences'
 import { sessionUser } from '@/data/session'
-import { isGameplanAdmin } from '@/data/users'
+import { isGameplanAdmin, useSessionUser } from '@/data/users'
 import {
   usePointerSortableSections,
   type PointerSortableCommit,
@@ -169,6 +179,16 @@ import CommunityImage from '../CommunityImage.vue'
 import ScrollBar from '../ScrollBar.vue'
 
 type SidebarSection = 'shown' | 'hidden'
+
+interface SidebarPreferencesPayload {
+  teams: string[]
+  sidebar_badge_style: SidebarBadgeStyle
+}
+
+const badgeStyleOptions: Array<{ label: SidebarBadgeStyle; value: SidebarBadgeStyle }> = [
+  { label: 'Unread count', value: 'Unread count' },
+  { label: 'Dot', value: 'Dot' },
+]
 
 const props = defineProps<{
   modelValue: boolean
@@ -182,7 +202,10 @@ const route = useRoute()
 const router = useRouter()
 const selectedCommunityNames = ref<string[]>([])
 const initialCommunityNames = ref<string[]>([])
+const selectedBadgeStyle = ref<SidebarBadgeStyle>('Dot')
+const initialBadgeStyle = ref<SidebarBadgeStyle>('Dot')
 const isSaving = ref(false)
+const user = useSessionUser()
 
 const show = computed({
   get: () => props.modelValue,
@@ -218,14 +241,17 @@ const hiddenSortableCommunities = computed<PointerSortableItem[]>(() => {
   return hiddenManageableCommunities.value.map((community) => ({ id: community.name }))
 })
 
-const updateJoinedTeams = useCall<string[], { teams: string[] }>({
+const updateJoinedTeams = useCall<string[], SidebarPreferencesPayload>({
   url: '/api/v2/method/GP Team/update_joined_teams',
   method: 'POST',
   immediate: false,
 })
 
 const hasUnsavedChanges = computed(() => {
-  return !haveSameOrderedCommunityNames(selectedCommunityNames.value, initialCommunityNames.value)
+  return (
+    selectedBadgeStyle.value !== initialBadgeStyle.value ||
+    !haveSameOrderedCommunityNames(selectedCommunityNames.value, initialCommunityNames.value)
+  )
 })
 
 const {
@@ -262,6 +288,8 @@ watch(
 function initializeSelection() {
   selectedCommunityNames.value = activeCommunities.value.map((community) => community.name)
   initialCommunityNames.value = [...selectedCommunityNames.value]
+  selectedBadgeStyle.value = currentSidebarBadgeStyle.value
+  initialBadgeStyle.value = selectedBadgeStyle.value
 }
 
 function getCommunityRowClasses(communityName: string) {
@@ -337,8 +365,13 @@ async function saveChanges() {
   isSaving.value = true
 
   try {
-    await updateJoinedTeams.submit({ teams: selectedCommunityNames.value })
+    await updateJoinedTeams.submit({
+      teams: selectedCommunityNames.value,
+      sidebar_badge_style: selectedBadgeStyle.value,
+    })
     setCommunityOrder(selectedCommunityNames.value)
+    setSidebarBadgeStyle(selectedBadgeStyle.value)
+    user.sidebar_badge_style = selectedBadgeStyle.value
     updateLocalCommunityMembership()
 
     if (previousCommunityId && !selectedCommunityNames.value.includes(previousCommunityId)) {
@@ -356,10 +389,11 @@ async function saveChanges() {
     }
 
     initialCommunityNames.value = [...selectedCommunityNames.value]
+    initialBadgeStyle.value = selectedBadgeStyle.value
     show.value = false
-    toast.success('Communities updated')
+    toast.success('Sidebar updated')
   } catch {
-    toast.error('Failed to update communities')
+    toast.error('Failed to update sidebar')
   } finally {
     isSaving.value = false
   }

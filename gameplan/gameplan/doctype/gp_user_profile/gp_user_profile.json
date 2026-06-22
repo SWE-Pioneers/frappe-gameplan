@@ -10,6 +10,7 @@
   "enabled",
   "full_name",
   "community_order",
+  "sidebar_badge_style",
   "bio",
   "readme",
   "bento_section",
@@ -114,6 +115,13 @@
    "fieldname": "community_order",
    "fieldtype": "JSON",
    "label": "Community Order"
+  },
+  {
+   "default": "Dot",
+   "fieldname": "sidebar_badge_style",
+   "fieldtype": "Select",
+   "label": "Sidebar Badge Style",
+   "options": "Unread count\nDot"
   }
  ],
  "index_web_pages_for_search": 1,

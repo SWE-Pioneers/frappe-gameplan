@@ -59,6 +59,10 @@ export interface GPUserProfile extends DocType {
   cover_image_position?: number
   /** Bio: Data */
   bio?: string
+  /** Community Order: JSON */
+  community_order?: unknown
+  /** Sidebar Badge Style: Select */
+  sidebar_badge_style?: 'Unread count' | 'Dot'
   /** Image: Attach Image */
   image?: string
   /** Is Image Background Removed: Check */
