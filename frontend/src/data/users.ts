@@ -14,6 +14,7 @@ interface UserInfo {
   user_image: string
   full_name: string
   user_type: string
+  creation: string
   user_profile: string
   image_background_color: string
   is_image_background_removed: number
