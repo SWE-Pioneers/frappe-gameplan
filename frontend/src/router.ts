@@ -111,21 +111,12 @@ const routes: RouteRecordRaw[] = [
     }),
   },
   {
-    name: 'MobileCommunityMenu',
+    // Legacy path: the community menu is now a bottom sheet on the discussions header.
     path: '/community/:communityId/menu',
-    component: () => import('@/pages/MobileCommunityMenu.vue'),
-    props: true,
-    meta: { communityScope: true },
-    async beforeEnter(to) {
-      await ensureCommunityDataLoaded()
-
-      if (!isMobileViewport()) {
-        return {
-          name: 'Discussions',
-          params: { communityId: routeParam(to.params.communityId) },
-        }
-      }
-    },
+    redirect: (to) => ({
+      name: 'Discussions',
+      params: { communityId: routeParam(to.params.communityId) },
+    }),
   },
   {
     name: 'Discussions',

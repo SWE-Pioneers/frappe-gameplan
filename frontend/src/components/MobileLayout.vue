@@ -72,7 +72,7 @@ const sessionUser = useSessionUser()
 
 const onCommunityRoute = computed(() => route.matched.some((record) => record.meta?.communityScope))
 const isHomeRoute = computed(() => {
-  return route.name === 'Home' || route.name === 'MobileCommunityMenu' || onCommunityRoute.value
+  return route.name === 'Home' || onCommunityRoute.value
 })
 
 const tabs = computed<MobileTab[]>(() => [

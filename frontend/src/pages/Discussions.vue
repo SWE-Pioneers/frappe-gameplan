@@ -1,12 +1,26 @@
 <template>
   <MobileHeader v-if="communityState.doc" class="sm:hidden" :title="feedTitle">
     <template #left>
-      <MobileBackButton
-        :to="{ name: 'MobileCommunityMenu', params: { communityId } }"
-        label="Community menu"
-      />
+      <MobileBackButton :to="{ name: 'Home' }" label="Communities" />
     </template>
+    <button
+      type="button"
+      class="inline-flex max-w-full items-center gap-1 transition active:opacity-60"
+      @click="menuOpen = true"
+    >
+      <MobileHeaderTitle :title="feedTitle" />
+      <span class="size-4 shrink-0 text-ink-gray-5 lucide-chevron-down" aria-hidden="true" />
+    </button>
   </MobileHeader>
+
+  <BottomSheet v-model="menuOpen" :title="community?.title || 'Community'">
+    <CommunityMenu
+      class="pb-6"
+      :communityId="communityId"
+      :activeFeedType="feedType"
+      @navigate="menuOpen = false"
+    />
+  </BottomSheet>
   <PageHeader class="hidden sm:flex">
     <Breadcrumbs class="h-7" :items="breadcrumbs" />
     <div class="flex items-center gap-2">
@@ -40,11 +54,14 @@
 import { computed, ref, useTemplateRef } from 'vue'
 import { Breadcrumbs, Button, Select, usePageMeta } from 'frappe-ui'
 import type { OrderBy } from 'frappe-ui'
+import BottomSheet from '@/components/BottomSheet.vue'
+import CommunityMenu from '@/components/CommunityMenu.vue'
 import DiscussionList from '@/components/DiscussionList.vue'
 import PageHeader from '@/components/PageHeader.vue'
 import LastPostReminder from '@/components/LastPostReminder.vue'
 import MobileBackButton from '@/components/MobileBackButton.vue'
 import MobileHeader from '@/components/MobileHeader.vue'
+import MobileHeaderTitle from '@/components/MobileHeaderTitle.vue'
 import { communityState } from '@/data/communityState'
 import { useCommunity } from '@/data/communities'
 
@@ -60,6 +77,7 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const orderBy = ref<OrderBy>('last_post_at desc')
+const menuOpen = ref(false)
 const discussionListRef = useTemplateRef('discussionListRef')
 
 const filters = computed(() => ({
