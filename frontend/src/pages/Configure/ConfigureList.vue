@@ -1,5 +1,5 @@
 <template>
-  <div class="mt-3 divide-y divide-outline-gray-1">
+  <div class="mt-3 divide-y">
     <div :class="headerClass">
       <slot name="header" />
     </div>

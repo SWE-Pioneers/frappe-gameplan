@@ -43,6 +43,7 @@
           <Button
             v-if="canManage"
             variant="ghost"
+            size="xs"
             icon="lucide-x"
             :label="guest.pending ? 'Delete invite' : 'Remove guest'"
             @click="removeGuest(guest)"

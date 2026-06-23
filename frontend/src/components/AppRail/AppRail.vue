@@ -85,7 +85,7 @@
                 size="sm"
                 icon="lucide-settings-2"
                 label="Customize sidebar"
-                class="mt-3 shrink-0 text-ink-gray-5"
+                class="mt-3"
                 @click="showCustomizeSidebar = true"
               />
             </TooltipTrigger>

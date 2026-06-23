@@ -66,6 +66,7 @@
           <span class="text-base text-ink-gray-8">{{ user.label }}</span>
           <Button
             variant="ghost"
+            size="xs"
             icon="lucide-x"
             @click="membersToAdd = membersToAdd.filter((member) => member.value !== user.value)"
           />
