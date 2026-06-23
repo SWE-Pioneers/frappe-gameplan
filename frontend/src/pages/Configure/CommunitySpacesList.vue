@@ -2,6 +2,12 @@
   <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
     <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
       <TabButtons :options="visibilityButtons" v-model="visibilityFilter">
+        <template #prefix="{ button }">
+          <span
+            v-if="visibilityFilterIcon(button.modelValue)"
+            :class="[visibilityFilterIcon(button.modelValue), 'size-3.5 shrink-0']"
+          />
+        </template>
         <template #suffix="{ button }">
           <span class="rounded-full bg-surface-gray-3 px-1.5 text-xs text-ink-gray-6">
             {{ getVisibilityCount(button.modelValue) }}
@@ -14,12 +20,11 @@
 
   <ConfigureList
     v-if="filteredSpaces.length"
-    header-class="hidden grid-cols-[minmax(8rem,1fr)_15.25rem_6.5rem_3rem] gap-24 items-center h-7 text-sm text-ink-gray-6 md:grid"
+    header-class="hidden grid-cols-[minmax(8rem,1fr)_15.25rem_3rem] gap-12 items-center h-7 text-sm text-ink-gray-6 md:grid"
   >
     <template #header>
       <div>Space</div>
       <div>Content</div>
-      <div>Visibility</div>
       <div />
     </template>
     <SpaceRow
@@ -37,7 +42,12 @@
     description="Create the first space for discussions, pages, and tasks in this community."
   >
     <template #actions>
-      <Button icon-left="lucide-plus" variant="solid" @click="emit('create-space')">
+      <Button
+        v-if="canCreateSpace"
+        icon-left="lucide-plus"
+        variant="solid"
+        @click="emit('create-space')"
+      >
         New space
       </Button>
     </template>
@@ -71,6 +81,7 @@ import { computed, ref, watch } from 'vue'
 import { Button, Switch, TabButtons, useList } from 'frappe-ui'
 import { spaces, type Space } from '@/data/spaces'
 import type { GPPage } from '@/types/doctypes'
+import { visibilityFilterIcon } from '@/utils/visibility'
 import ConfigureEmptyState from './ConfigureEmptyState.vue'
 import ConfigureList from './ConfigureList.vue'
 import SpaceRow from './SpaceRow.vue'
@@ -80,6 +91,7 @@ type PageRecord = Pick<GPPage, 'project'>
 
 const props = defineProps<{
   communityId: string
+  canCreateSpace: boolean
 }>()
 const emit = defineEmits<{
   (event: 'create-space'): void

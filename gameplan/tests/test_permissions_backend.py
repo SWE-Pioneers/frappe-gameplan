@@ -177,26 +177,44 @@ class TestContentPermissions(PermissionBackendTestCase):
 		self.assert_can_read_doc("GP Discussion", discussion.name, self.alice.name)
 		self.assert_cannot_read_doc("GP Discussion", discussion.name, self.bob.name)
 
-	def test_member_can_edit_own_content_but_not_other_members_content(self):
+	def test_members_can_edit_each_others_content_but_not_delete_it(self):
 		team = self.create_community("Content Ownership Community", members=[self.alice.name, self.bob.name])
 		space = self.create_space("Content Ownership Space", team.name)
 		discussion = self.create_discussion("Owned Discussion", space.name, owner=self.alice.name)
 
+		# Community-driven: any space member can edit content (incl. lifecycle
+		# actions like pin/close), not just the author.
 		self.assertTrue(
 			frappe.has_permission("GP Discussion", "write", doc=discussion.name, user=self.alice.name)
 		)
+		self.assertTrue(
+			frappe.has_permission("GP Discussion", "write", doc=discussion.name, user=self.bob.name)
+		)
+		# Deleting another member's content stays gated (destructive action).
+		self.assertFalse(
+			frappe.has_permission("GP Discussion", "delete", doc=discussion.name, user=self.bob.name)
+		)
+
+	def test_non_space_member_cannot_edit_private_space_content(self):
+		team = self.create_community("Private Edit Community", members=[self.alice.name, self.bob.name])
+		private_space = self.create_space(
+			"Private Edit Space", team.name, is_private=1, members=[self.alice.name]
+		)
+		discussion = self.create_discussion("Private Discussion", private_space.name, owner=self.alice.name)
+
+		# Bob can't see the private space, so he can't edit its content either.
 		self.assertFalse(
 			frappe.has_permission("GP Discussion", "write", doc=discussion.name, user=self.bob.name)
 		)
 
-	def test_community_admin_can_moderate_but_not_edit_other_members_content(self):
+	def test_community_admin_can_edit_and_delete_other_members_content(self):
 		team = self.create_community(
 			"Content Moderator Community", members=[self.alice.name, self.bob.name], admins=[self.bob.name]
 		)
 		space = self.create_space("Content Moderator Space", team.name)
 		discussion = self.create_discussion("Moderated Discussion", space.name, owner=self.alice.name)
 
-		self.assertFalse(
+		self.assertTrue(
 			frappe.has_permission("GP Discussion", "write", doc=discussion.name, user=self.bob.name)
 		)
 		self.assertTrue(
@@ -319,12 +337,135 @@ class TestCommunityManagement(PermissionBackendTestCase):
 		team.reload()
 		self.assertTrue(any(row.user == self.bob.name for row in team.members))
 
+	def test_remove_community_member_removes_private_space_membership(self):
+		team = self.create_community(
+			"Cascade Removed Community",
+			members=[self.alice.name, self.bob.name],
+			admins=[self.alice.name],
+		)
+		private_space = self.create_space(
+			"Cascade Removed Space", team.name, is_private=1, members=[self.bob.name]
+		)
+		other_team = self.create_community("Cascade Other Community", members=[self.alice.name])
+		other_private_space = self.create_space(
+			"Cascade Other Space", other_team.name, is_private=1, members=[self.bob.name]
+		)
+
+		frappe.set_user(self.alice.name)
+		team.remove_member(self.bob.name)
+
+		team.reload()
+		private_space.reload()
+		other_private_space.reload()
+		self.assertFalse(any(row.user == self.bob.name for row in team.members))
+		self.assertFalse(any(row.user == self.bob.name for row in private_space.members))
+		self.assertTrue(any(row.user == self.bob.name for row in other_private_space.members))
+
+	def test_cannot_remove_last_community_admin(self):
+		frappe.set_user(self.alice.name)
+		team = frappe.get_doc(doctype="GP Team", title="Last Admin Removal Community").insert()
+
+		with self.assertRaises(frappe.ValidationError):
+			team.remove_member(self.alice.name)
+
+		team.reload()
+		self.assertTrue(any(row.user == self.alice.name and row.is_admin for row in team.members))
+
+	def test_community_admin_can_promote_and_demote_members_in_own_community(self):
+		team = self.create_community(
+			"Managed Admin Community",
+			members=[self.alice.name, self.bob.name],
+			admins=[self.alice.name],
+		)
+
+		frappe.set_user(self.alice.name)
+		team.set_member_admin(self.bob.name, 1)
+
+		team.reload()
+		self.assertTrue(any(row.user == self.bob.name and row.is_admin for row in team.members))
+
+		team.set_member_admin(self.bob.name, 0)
+
+		team.reload()
+		self.assertFalse(any(row.user == self.bob.name and row.is_admin for row in team.members))
+
+	def test_cannot_demote_last_community_admin(self):
+		frappe.set_user(self.alice.name)
+		team = frappe.get_doc(doctype="GP Team", title="Last Admin Demotion Community").insert()
+
+		with self.assertRaises(frappe.ValidationError):
+			team.set_member_admin(self.alice.name, 0)
+
+		team.reload()
+		self.assertTrue(any(row.user == self.alice.name and row.is_admin for row in team.members))
+
 	def test_member_cannot_add_members_to_community(self):
 		team = self.create_community("Unmanaged Community", members=[self.alice.name])
 
 		frappe.set_user(self.alice.name)
 		with self.assertRaises(frappe.PermissionError):
 			team.add_members([self.bob.name])
+
+	def test_member_cannot_promote_members_in_community(self):
+		team = self.create_community("Unmanaged Admin Community", members=[self.alice.name, self.bob.name])
+
+		frappe.set_user(self.alice.name)
+		with self.assertRaises(frappe.PermissionError):
+			team.set_member_admin(self.bob.name, 1)
+
+	def test_community_admin_can_remove_guest_access_from_own_community(self):
+		team = self.create_community(
+			"Managed Guest Community",
+			members=[self.alice.name],
+			admins=[self.alice.name],
+		)
+		space = self.create_space("Managed Guest Space", team.name, is_private=1)
+		other_team = self.create_community("Other Guest Community", members=[self.alice.name])
+		other_space = self.create_space("Other Guest Space", other_team.name, is_private=1)
+		grant_guest_access(self.guest.name, space.name)
+		grant_guest_access(self.guest.name, other_space.name)
+
+		frappe.set_user(self.alice.name)
+		team.remove_guest_access(self.guest.name)
+
+		self.assertFalse(
+			frappe.db.exists("GP Guest Access", {"user": self.guest.name, "project": space.name})
+		)
+		self.assertTrue(
+			frappe.db.exists("GP Guest Access", {"user": self.guest.name, "project": other_space.name})
+		)
+
+	def test_community_admin_removes_only_own_projects_from_guest_invitation(self):
+		team = self.create_community(
+			"Managed Guest Invitation Community",
+			members=[self.alice.name],
+			admins=[self.alice.name],
+		)
+		space = self.create_space("Managed Guest Invitation Space", team.name, is_private=1)
+		other_team = self.create_community("Other Guest Invitation Community", members=[self.alice.name])
+		other_space = self.create_space("Other Guest Invitation Space", other_team.name, is_private=1)
+		with patch("frappe.sendmail"):
+			invitation = frappe.get_doc(
+				doctype="GP Invitation",
+				email="pending-community-guest@example.com",
+				role="Gameplan Guest",
+				projects=frappe.as_json([space.name, other_space.name]),
+			).insert(ignore_permissions=True)
+
+		frappe.set_user(self.alice.name)
+		team.remove_guest_invitation(invitation.name)
+
+		invitation.reload()
+		self.assertEqual(frappe.parse_json(invitation.projects), [other_space.name])
+
+	def test_member_cannot_remove_guest_access_from_community(self):
+		team = self.create_community("Unmanaged Guest Community", members=[self.alice.name])
+		space = self.create_space("Unmanaged Guest Space", team.name, is_private=1)
+		grant_guest_access(self.guest.name, space.name)
+
+		frappe.set_user(self.alice.name)
+		with self.assertRaises(frappe.PermissionError):
+			team.remove_guest_access(self.guest.name)
 
 	def test_community_admin_cannot_manage_another_community(self):
 		own_team = self.create_community(

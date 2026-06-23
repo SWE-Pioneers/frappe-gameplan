@@ -19,13 +19,13 @@ UI/product language is **Community** and **Space**; the schema still uses old na
 
 ## Commands
 
-Local dev site is `gameplan.frappe.test` (CI uses `gameplan.test`).
+Local dev site is `gameplan-demo.test` (CI uses `gameplan.test`).
 
 - `yarn dev` — Vite frontend on :8080 (unlinks local frappe-ui, uses published package)
 - `yarn dev:frappe-ui` — same, but symlinks `node_modules/frappe-ui` → `./frappe-ui/` for library work
 - `yarn build` / `bench start` (from `frappe-bench/`) — build frontend / run backend
-- Backend tests: `bench --site gameplan.frappe.test run-tests --app gameplan` (or `--module <path>`, `--test <method>`).
-- E2E: `cd frontend && yarn test` (Cypress, specs in `frontend/cypress/e2e/`). **Always run Cypress against the demo site `gameplan-demo.test`, never `gameplan.frappe.test`** — specs call `gameplan.test_api.clear_data`, which deletes ALL Gameplan data on whichever site the request resolves to. Requires `enable_ui_tests: 1` in that site's `site_config.json`. Before running, confirm the local `frappe serve` actually resolves `gameplan-demo.test:8000` to the demo site (host aliasing can route it to the default/dev site and wipe real data).
+- Backend tests: `bench --site gameplan-demo.test run-tests --app gameplan` (or `--module <path>`, `--test <method>`).
+- E2E: `cd frontend && yarn test` (Cypress, specs in `frontend/cypress/e2e/`). **Always run Cypress against the demo site `gameplan-demo.test`, never another local site** — specs call `gameplan.test_api.clear_data`, which deletes ALL Gameplan data on whichever site the request resolves to. Requires `enable_ui_tests: 1` in that site's `site_config.json`. Before running, confirm the local `frappe serve` actually resolves `gameplan-demo.test:8000` to the demo site (host aliasing can route it to the default/dev site and wipe real data).
 - frappe-ui units: `cd frappe-ui && yarn test` (Vitest)
 - Lint: `pre-commit run --all-files` (ruff for Python — tabs, double quotes, line 110; Prettier for frontend)
 
@@ -41,7 +41,7 @@ Local dev site is `gameplan.frappe.test` (CI uses `gameplan.test`).
 
 - Prefer `frappe.qb.get_query()` over `frappe.db.get_all()` (pass `ignore_permissions=False` when checks are needed).
 - Permissions: `has_permission` hooks in `hooks.py` (e.g. `GP Page`); community/space membership gates access.
-- Debugging: add `def execute():` to a file like `gameplan/debug.py`, run via `bench --site gameplan.frappe.test execute gameplan.debug.execute`.
+- Debugging: add `def execute():` to a file like `gameplan/debug.py`, run via `bench --site gameplan-demo.test execute gameplan.debug.execute`.
 
 ## Code comments
 

@@ -8,10 +8,11 @@ import {
 import { until } from '@vueuse/core'
 import { session } from './data/session'
 import { isGameplanAdmin, users, useSessionUser } from './data/users'
-import { communities, getActiveCommunity } from './data/communities'
+import { communities, getActiveCommunity, getCommunity } from './data/communities'
 import { spaces, getSpace } from './data/spaces'
 import type { Space } from './data/spaces'
 import { communityState } from './data/communityState'
+import { canManageCommunity, getManageableCommunities } from './utils/permissions'
 import { getScrollContainer, scrollTo } from './utils/scrollContainer'
 
 declare const __FRONTEND_ROUTE__: string
@@ -38,10 +39,23 @@ function optionalRouteParam(value: RouteParamValue | undefined): string | undefi
   return resolvedValue || undefined
 }
 
-async function ensureConfigureAccess() {
+async function ensureConfigureAccess(to: RouteLocationNormalized) {
   await ensureCommunityDataLoaded()
 
-  if (!isGameplanAdmin()) {
+  if (isGameplanAdmin()) {
+    return
+  }
+
+  const communityId = optionalRouteParam(to.params.communityId)
+  if (!communityId) {
+    if (getManageableCommunities(communities.data || [], useSessionUser()).length) {
+      return
+    }
+
+    return getHomeRoute()
+  }
+
+  if (!canManageCommunity(getCommunity(communityId), useSessionUser())) {
     return getHomeRoute()
   }
 }

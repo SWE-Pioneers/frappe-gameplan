@@ -8,7 +8,7 @@
         :label="ariaLabel"
         :aria-current="isActive ? 'page' : undefined"
         class="relative"
-        :class="isActive ? '!bg-surface-base shadow-sm' : ''"
+        :class="isActive ? '!bg-surface-elevation-3 shadow-sm' : ''"
         @click="emit('click')"
       >
         <template #suffix>

@@ -133,6 +133,12 @@ def can_edit_content(user, doc):
 		return True
 	if not can_view_content(user, doc):
 		return False
+	# Gameplan is community-driven: content inside a space is owned by the
+	# community, so any member who can access the space may edit it (and run
+	# lifecycle actions like pin/close that route through the write gate).
+	# Personal content with no space stays editable only by its owner.
+	if get_content_project(doc):
+		return True
 	return get_doc_value(doc, "owner") == user
 
 
@@ -248,6 +254,20 @@ def apply_accessible_project_filter(query, project_field, user=None):
 	if criterion is None:
 		return query
 	return query.where(criterion)
+
+
+def apply_team_query_filter(query, user=None):
+	"""Restrict a GP Team list query to the teams the user may see."""
+	Team = frappe.qb.DocType("GP Team")
+	criterion = team_access_criterion(Team, user)
+	return query.where(criterion) if criterion is not None else query
+
+
+def apply_project_query_filter(query, user=None):
+	"""Restrict a GP Project list query to the projects the user may see."""
+	Project = frappe.qb.DocType("GP Project")
+	criterion = project_access_criterion(Project, user)
+	return query.where(criterion) if criterion is not None else query
 
 
 def accessible_project_query(user=None):

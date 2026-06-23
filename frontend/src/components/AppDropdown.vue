@@ -4,7 +4,7 @@
       <button
         type="button"
         class="flex w-full min-w-0 items-center justify-between rounded px-2 py-1 text-ink-gray-7 transition"
-        :class="open ? 'bg-surface-elevation-3 shadow-sm' : 'hover:bg-surface-gray-2'"
+        :class="open ? 'bg-surface-elevation-2 shadow-sm' : 'hover:bg-surface-gray-2'"
       >
         <span class="truncate text-lg-medium">Gameplan</span>
         <div class="grid size-7 place-content-center">

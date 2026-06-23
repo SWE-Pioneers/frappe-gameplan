@@ -19,7 +19,7 @@
       <div
         v-for="guest in communityGuests"
         :key="guest.key"
-        class="grid h-10 grid-cols-[1.25rem_minmax(0,1fr)] items-center gap-2 md:grid-cols-[1.25rem_minmax(12rem,1fr)_minmax(12rem,1fr)_8rem_3rem]"
+        class="grid h-10 grid-cols-[1.25rem_minmax(0,1fr)_2rem] items-center gap-2 md:grid-cols-[1.25rem_minmax(12rem,1fr)_minmax(12rem,1fr)_8rem_3rem]"
       >
         <UserAvatar :user="guest.user" size="sm" class="shrink-0" />
 
@@ -39,30 +39,52 @@
         <div class="hidden truncate text-base text-ink-gray-5 md:block">
           {{ guest.spacesLabel }}
         </div>
-        <div class="hidden md:block" />
+        <div class="flex justify-end">
+          <Button
+            v-if="canManage"
+            variant="ghost"
+            icon="lucide-x"
+            :label="guest.pending ? 'Delete invite' : 'Remove guest'"
+            @click="removeGuest(guest)"
+          />
+        </div>
       </div>
     </ConfigureList>
+    <ErrorMessage class="mt-2" :message="teams.runDocMethod.error" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useList } from 'frappe-ui'
+import { Button, dialog, ErrorMessage, useDoctype, useList } from 'frappe-ui'
 import UserAvatar from '@/components/UserAvatar.vue'
 import type { Community } from '@/data/communities'
 import { getSpace, spaces } from '@/data/spaces'
 import { useUser } from '@/data/users'
-import type { GPGuestAccess, GPInvitation } from '@/types/doctypes'
+import type { GPGuestAccess, GPInvitation, GPTeam } from '@/types/doctypes'
 import ConfigureList from './ConfigureList.vue'
 
 const props = defineProps<{
   community: Community
+  canManage: boolean
 }>()
+
+const teams = useDoctype<GPTeam>('GP Team')
+const communitySpaceNames = computed(() => {
+  return new Set(
+    (spaces.data || [])
+      .filter((space) => space.team === props.community.name)
+      .map((space) => space.name),
+  )
+})
 
 const guestAccess = useList<GPGuestAccess>({
   doctype: 'GP Guest Access',
   fields: ['name', 'user', 'project', 'team'],
-  filters: () => ({ team: props.community.name }),
+  filters: () => {
+    const projectNames = Array.from(communitySpaceNames.value)
+    return projectNames.length ? { project: ['in', projectNames] } : { project: '__no-space__' }
+  },
 })
 
 const pendingGuestInvitations = useList<GPInvitation>({
@@ -72,14 +94,6 @@ const pendingGuestInvitations = useList<GPInvitation>({
     role: 'Gameplan Guest',
     status: 'Pending',
   },
-})
-
-const communitySpaceNames = computed(() => {
-  return new Set(
-    (spaces.data || [])
-      .filter((space) => space.team === props.community.name)
-      .map((space) => space.name),
-  )
 })
 
 const communityGuests = computed(() => {
@@ -92,6 +106,8 @@ const communityGuests = computed(() => {
       fullName: useUser(access.user).full_name,
       email: useUser(access.user).email,
       projectNames: [access.project],
+      pending: false,
+      invitationNames: [],
     })
   }
 
@@ -107,6 +123,8 @@ const communityGuests = computed(() => {
       fullName: invitation.email,
       email: invitation.email,
       projectNames,
+      pending: true,
+      invitationNames: [invitation.name],
     })
   }
 
@@ -124,6 +142,8 @@ type GuestSummary = {
   fullName: string
   email: string
   projectNames: string[]
+  pending: boolean
+  invitationNames: string[]
 }
 
 function addGuestSummary(guests: Map<string, GuestSummary>, guest: GuestSummary) {
@@ -140,6 +160,53 @@ function addGuestSummary(guests: Map<string, GuestSummary>, guest: GuestSummary)
     ...existingGuest.projectNames,
     ...guest.projectNames,
   ])
+  existingGuest.invitationNames = uniqueProjectNames([
+    ...existingGuest.invitationNames,
+    ...guest.invitationNames,
+  ])
+}
+
+function removeGuest(guest: GuestSummary) {
+  if (!props.canManage) return
+
+  if (guest.pending) {
+    deletePendingInvitation(guest)
+    return
+  }
+
+  dialog.confirm({
+    title: 'Remove guest',
+    message: `${guest.fullName} will lose access to spaces in this community.`,
+    confirmLabel: 'Remove',
+    onConfirm: async () => {
+      await teams.runDocMethod.submit({
+        name: props.community.name,
+        method: 'remove_guest_access',
+        params: { user: guest.user },
+      })
+      await guestAccess.reload()
+    },
+  })
+}
+
+function deletePendingInvitation(guest: GuestSummary) {
+  dialog.confirm({
+    title: 'Delete invitation',
+    message: `${guest.email} will no longer be able to accept this guest invitation.`,
+    confirmLabel: 'Delete',
+    onConfirm: async () => {
+      await Promise.all(
+        guest.invitationNames.map((invitation) =>
+          teams.runDocMethod.submit({
+            name: props.community.name,
+            method: 'remove_guest_invitation',
+            params: { invitation },
+          }),
+        ),
+      )
+      await pendingGuestInvitations.reload()
+    },
+  })
 }
 
 function parseProjectNames(projects?: string) {

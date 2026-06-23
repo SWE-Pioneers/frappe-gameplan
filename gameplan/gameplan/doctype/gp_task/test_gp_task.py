@@ -26,6 +26,7 @@ class TestGPTaskPermissions(FrappeTestCase):
 
 	def test_member_can_access(self):
 		self.assertTrue(has_permission(self._task(), "read", self.member.name))
+		self.assertTrue(has_permission(self._task(), "write", self.member.name))
 
 	def test_guest_without_access_denied(self):
 		self.assertFalse(has_permission(self._task(), "read", self.guest.name))

@@ -4,11 +4,12 @@
 import frappe
 from frappe.model.document import Document
 from frappe.model.naming import append_number_if_name_exists
+from frappe.utils import cint
 from pypika.terms import ExistsCriterion
 
 import gameplan
 from gameplan.mixins.archivable import Archivable
-from gameplan.permissions import require_can_manage_community, team_access_criterion
+from gameplan.permissions import apply_team_query_filter, require_can_manage_community
 from gameplan.utils import validate_type
 
 
@@ -26,7 +27,7 @@ class GPTeam(Archivable, Document):
 
 	@staticmethod
 	def get_list_query(query):
-		return apply_permission_query(query)
+		return apply_team_query_filter(query)
 
 	def before_insert(self):
 		if not self.name:
@@ -71,11 +72,99 @@ class GPTeam(Archivable, Document):
 	@frappe.whitelist()
 	def remove_member(self, user):
 		require_can_manage_community(self)
-		for member in self.members:
-			if member.user == user:
-				self.remove(member)
-				self.save()
-				break
+		member = self.get_member(user)
+		if not member:
+			return
+
+		self.ensure_can_remove_member(member)
+		self.remove(member)
+		self.remove_private_space_memberships(user)
+		self.save()
+
+	@frappe.whitelist()
+	def remove_guest_access(self, user):
+		require_can_manage_community(self)
+		for access_name in self.get_guest_access_names(user):
+			frappe.delete_doc("GP Guest Access", access_name, ignore_permissions=True)
+
+	@frappe.whitelist()
+	def remove_guest_invitation(self, invitation):
+		require_can_manage_community(self)
+		invitation = frappe.get_doc("GP Invitation", invitation)
+		if invitation.role != "Gameplan Guest" or invitation.status != "Pending":
+			frappe.throw("Invalid guest invitation")
+
+		project_names = set(self.get_project_names())
+		invitation_projects = [str(project) for project in frappe.parse_json(invitation.projects or "[]")]
+		remaining_projects = [project for project in invitation_projects if project not in project_names]
+		if len(remaining_projects) == len(invitation_projects):
+			frappe.throw("Not permitted", frappe.PermissionError)
+
+		if remaining_projects:
+			invitation.projects = frappe.as_json(remaining_projects)
+			invitation.save(ignore_permissions=True)
+			return
+
+		frappe.delete_doc("GP Invitation", invitation.name, ignore_permissions=True)
+
+	@frappe.whitelist()
+	def set_member_admin(self, user, is_admin):
+		require_can_manage_community(self)
+		member = self.get_member(user)
+		if not member:
+			frappe.throw("Member not found")
+
+		if member.is_admin and not cint(is_admin):
+			self.ensure_can_remove_admin(member)
+
+		member.is_admin = cint(is_admin)
+		self.save()
+
+	def get_member(self, user):
+		return next((member for member in self.members if member.user == user), None)
+
+	def ensure_can_remove_member(self, member):
+		if member.is_admin:
+			self.ensure_can_remove_admin(member)
+
+	def ensure_can_remove_admin(self, member):
+		if self.count_admins(excluding_user=member.user) == 0:
+			frappe.throw("A community must have at least one admin")
+
+	def count_admins(self, excluding_user=None):
+		return len(
+			[
+				member
+				for member in self.members
+				if member.is_admin and member.user and member.user != excluding_user
+			]
+		)
+
+	def remove_private_space_memberships(self, user):
+		for project_name in self.get_project_names(is_private=1):
+			project = frappe.get_doc("GP Project", project_name)
+			member = next((member for member in project.members if member.user == user), None)
+			if member:
+				project.remove(member)
+				project.save(ignore_permissions=True)
+
+	def get_guest_access_names(self, user):
+		project_names = self.get_project_names()
+		if not project_names:
+			return []
+
+		return frappe.qb.get_query(
+			"GP Guest Access",
+			filters={"user": user, "project": ["in", project_names]},
+			fields=["name"],
+		).run(pluck=True)
+
+	def get_project_names(self, is_private=None):
+		filters = {"team": self.name}
+		if is_private is not None:
+			filters["is_private"] = is_private
+
+		return frappe.qb.get_query("GP Project", filters=filters, fields=["name"]).run(pluck=True)
 
 
 @frappe.whitelist(methods=["POST"])
@@ -143,11 +232,3 @@ def get_accessible_team_names():
 	)
 
 	return [team.name for team in query.run(as_dict=True)]
-
-
-def apply_permission_query(query):
-	Team = frappe.qb.DocType("GP Team")
-	criterion = team_access_criterion(Team)
-	if criterion is not None:
-		query = query.where(criterion)
-	return query

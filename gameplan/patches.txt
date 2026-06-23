@@ -35,5 +35,6 @@ gameplan.gameplan.doctype.gp_discussion.patches.rename_global_pin_scope_to_categ
 gameplan.gameplan.doctype.gp_draft.patches.set_default_mode
 gameplan.gameplan.doctype.gp_team.patches.join_active_users_to_communities
 gameplan.gameplan.doctype.gp_member.patches.backfill_team_admins
+gameplan.gameplan.doctype.gp_team.patches.remove_disabled_users_from_communities
 gameplan.gameplan.doctype.gp_user_profile.patches.backfill_community_order
 gameplan.patches.backfill_private_file_attachments

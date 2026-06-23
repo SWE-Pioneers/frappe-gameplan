@@ -63,8 +63,9 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRouter, type RouteLocationRaw } from 'vue-router'
-import { isGameplanAdmin, useSessionUser } from '@/data/users'
+import { useSessionUser } from '@/data/users'
 import { session } from '@/data/session'
+import { useConfigureRoute } from '@/composables/useConfigureRoute'
 import { useTheme, type Theme } from '@/utils/useTheme'
 
 interface MoreItem {
@@ -90,7 +91,7 @@ const THEME_META: Record<Theme, { label: string; icon: string }> = {
   system: { label: 'System Default', icon: 'lucide-monitor-smartphone' },
 }
 
-const isAdmin = computed(() => isGameplanAdmin(sessionUser))
+const configureRoute = useConfigureRoute()
 const userInitials = computed(() => {
   return (sessionUser.full_name || sessionUser.name)
     .split(/\s+/)
@@ -114,8 +115,12 @@ const itemGroups = computed<MoreItemGroup[]>(() => {
     { label: 'People', icon: 'lucide-users-2', route: { name: 'People' } },
   ]
 
-  if (isAdmin.value) {
-    workspaceItems.push({ label: 'Manage', icon: 'lucide-layout-grid', route: { name: 'Spaces' } })
+  if (configureRoute.value) {
+    workspaceItems.push({
+      label: 'Manage',
+      icon: 'lucide-layout-grid',
+      route: configureRoute.value,
+    })
   }
 
   return [

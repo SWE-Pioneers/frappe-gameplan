@@ -13,8 +13,8 @@ from gameplan.gameplan.doctype.gp_unread_record.gp_unread_record import GPUnread
 from gameplan.mixins.archivable import Archivable
 from gameplan.mixins.manage_members import ManageMembersMixin
 from gameplan.permissions import (
+	apply_project_query_filter,
 	can_view_space,
-	project_access_criterion,
 	require_can_invite_guest,
 	require_can_manage_space_members,
 )
@@ -35,7 +35,7 @@ class GPProject(ManageMembersMixin, Archivable, Document):
 
 	@staticmethod
 	def get_list_query(query):
-		return apply_permission_query(query)
+		return apply_project_query_filter(query)
 
 	def as_dict(self, *args, **kwargs) -> dict:
 		d = super().as_dict(*args, **kwargs)
@@ -222,14 +222,6 @@ def get_meta_tags(url):
 		image = urljoin(url, image)
 
 	return {"title": title, "image": image}
-
-
-def apply_permission_query(query):
-	Project = frappe.qb.DocType("GP Project")
-	criterion = project_access_criterion(Project)
-	if criterion is not None:
-		query = query.where(criterion)
-	return query
 
 
 @frappe.whitelist()
