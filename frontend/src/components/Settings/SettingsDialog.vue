@@ -33,8 +33,9 @@
 
 <script setup lang="ts">
 import { markRaw, onMounted, type Component } from 'vue'
+import { useEventListener } from '@vueuse/core'
 import { Dialog } from 'frappe-ui'
-import { show, activeTab, registerTabs } from './index'
+import { show, activeTab, registerTabs, showSettingsDialog } from './index'
 import Members from './Members.vue'
 import InvitePeople from './InvitePeople.vue'
 import SettingsTabDialog from './SettingsTab.vue'
@@ -67,5 +68,14 @@ const tabs: Tab[] = [
 
 onMounted(() => {
   registerTabs(tabs)
+})
+
+// Cmd/Ctrl+Shift+. toggles Settings. Use e.code (physical key) since Shift
+// rewrites e.key for "." to ">" on most layouts. useEventListener auto-cleans up.
+useEventListener(window, 'keydown', (e: KeyboardEvent) => {
+  if (e.code === 'Comma' && e.shiftKey && (e.metaKey || e.ctrlKey)) {
+    e.preventDefault()
+    show.value ? (show.value = false) : showSettingsDialog()
+  }
 })
 </script>

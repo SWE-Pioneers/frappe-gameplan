@@ -18,7 +18,7 @@
 </template>
 
 <script setup lang="ts">
-import { markRaw, ref } from 'vue'
+import { h, markRaw, ref } from 'vue'
 import { Dropdown } from 'frappe-ui'
 import { clear as clearIndexDb } from 'idb-keyval'
 import { showSettingsDialog } from '@/components/Settings'
@@ -26,6 +26,10 @@ import AboutDialog from './AboutDialog.vue'
 import AppSelector from './AppSelector.vue'
 
 const showAboutDialog = ref(false)
+
+// Mirror the Cmd/Ctrl+Shift+, handler in SettingsDialog.vue.
+const isMac = /Mac/i.test(navigator.platform)
+const settingsShortcut = isMac ? '⌘⇧,' : 'Ctrl ⇧ ,'
 
 const dropdownItems = [
   {
@@ -41,6 +45,9 @@ const dropdownItems = [
     icon: 'lucide-settings',
     label: 'Settings',
     onClick: () => showSettingsDialog(),
+    slots: {
+      suffix: () => h('span', { class: 'text-xs text-ink-gray-4' }, settingsShortcut),
+    },
   },
   {
     icon: 'lucide-list-restart',
