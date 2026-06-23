@@ -4,8 +4,10 @@
       <div class="flex h-full">
         <AppRail :show-border="onCommunityRoute" :show-community-active-state="onCommunityRoute" />
         <AppSidebar v-if="onCommunityRoute" />
-        <div class="flex min-w-0 flex-1 py-1 pr-1">
-          <div class="flex min-w-0 flex-1 overflow-hidden rounded-lg bg-surface-base shadow-sm">
+        <div class="flex min-w-0 flex-1 py-1 pr-1 dark:p-0">
+          <div
+            class="flex min-w-0 flex-1 overflow-hidden rounded-lg bg-surface-base shadow-sm dark:rounded-none dark:border-l dark:shadow-none"
+          >
             <div class="flex flex-1 min-w-0 flex-col">
               <div id="pageHeaderTarget" />
               <ScrollContainer>
