@@ -93,6 +93,7 @@
             :editable="showCommentBox"
             placeholder="Add a comment"
           />
+          <ErrorMessage :message="comments.insert.error" />
         </div>
       </div>
     </div>
@@ -101,7 +102,7 @@
 <script setup lang="ts">
 import { ref, computed, nextTick, onUnmounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { useList } from 'frappe-ui'
+import { ErrorMessage, useList } from 'frappe-ui'
 import CommentEditor from '@/components/editor/CommentEditor.vue'
 import Comment from './Comment.vue'
 import Activity from './Activity.vue'
@@ -368,21 +369,18 @@ async function discardComment() {
   }
 }
 
-function submitComment() {
-  if (commentEmpty.value) {
-    return
-  }
+async function submitComment() {
+  if (commentEmpty.value || comments.insert.loading) return
 
-  comments.insert
-    .submit({
-      reference_doctype: props.doctype,
-      reference_name: props.name,
-      content: draftData.value.content,
-    })
-    .then(async () => {
-      await draft.commit()
-      resetCommentState()
-    })
+  const comment = await comments.insert.submit({
+    reference_doctype: props.doctype,
+    reference_name: props.name,
+    content: draftData.value.content,
+  })
+  if (comments.insert.error || !comment?.name) return
+
+  await draft.commit()
+  resetCommentState()
 }
 
 function onNewCommentChange(content: string) {

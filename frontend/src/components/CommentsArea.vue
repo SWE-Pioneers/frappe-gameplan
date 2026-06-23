@@ -212,6 +212,7 @@
                 />
               </template>
             </CommentEditor>
+            <ErrorMessage :message="comments.insert.error" />
             <PollEditor
               v-show="newCommentType == 'Poll'"
               v-model:poll="newPoll"
@@ -610,19 +611,18 @@ function resetCommentState() {
 }
 
 async function submitComment() {
-  if (commentEmpty.value) return
+  if (commentEmpty.value || comments.insert.loading) return
 
-  comments.insert
-    .submit({
-      reference_doctype: props.doctype,
-      reference_name: props.name,
-      content: draftData.value.content,
-    })
-    .then(async () => {
-      await draft.commit()
-      resetCommentState()
-      tags.reload()
-    })
+  const comment = await comments.insert.submit({
+    reference_doctype: props.doctype,
+    reference_name: props.name,
+    content: draftData.value.content,
+  })
+  if (comments.insert.error || !comment?.name) return
+
+  await draft.commit()
+  resetCommentState()
+  tags.reload()
 }
 
 async function scrollToEnd() {
