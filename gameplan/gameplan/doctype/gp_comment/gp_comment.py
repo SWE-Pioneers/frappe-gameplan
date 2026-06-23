@@ -4,12 +4,12 @@
 import frappe
 from frappe.model.document import Document
 
-import gameplan
 from gameplan.gameplan.doctype.gp_unread_record.gp_unread_record import GPUnreadRecord
 from gameplan.mixins.attachments import HasAttachments
 from gameplan.mixins.mentions import HasMentions
 from gameplan.mixins.reactions import HasReactions
 from gameplan.mixins.tags import HasTags
+from gameplan.permissions import comment_query_conditions, content_has_permission
 from gameplan.utils import get_document_revisions, remove_empty_trailing_paragraphs
 
 
@@ -89,47 +89,8 @@ class GPComment(HasAttachments, HasMentions, HasReactions, HasTags, Document):
 
 
 def get_permission_query_conditions(user):
-	if not user:
-		user = frappe.session.user
-
-	if not gameplan.is_guest(user):
-		return None
-
-	escaped_user = frappe.db.escape(user)
-	guest_projects_subquery = f"""(
-		select `tabGP Guest Access`.project
-		from `tabGP Guest Access`
-		where `tabGP Guest Access`.user = {escaped_user}
-	)"""
-
-	return f"""(
-		(`tabGP Comment`.reference_doctype = 'GP Discussion' and `tabGP Comment`.reference_name in (
-			select `tabGP Discussion`.name
-			from `tabGP Discussion`
-			where `tabGP Discussion`.project in {guest_projects_subquery}
-		))
-		or
-		(`tabGP Comment`.reference_doctype = 'GP Task' and `tabGP Comment`.reference_name in (
-			select `tabGP Task`.name
-			from `tabGP Task`
-			where `tabGP Task`.project in {guest_projects_subquery}
-		))
-	)"""
+	return comment_query_conditions(user)
 
 
 def has_permission(doc, ptype="read", user=None):
-	user = user or frappe.session.user
-
-	if not gameplan.is_guest(user):
-		return True
-
-	project = None
-	if doc.reference_doctype == "GP Discussion":
-		project = frappe.db.get_value("GP Discussion", doc.reference_name, "project")
-	elif doc.reference_doctype == "GP Task":
-		project = frappe.db.get_value("GP Task", doc.reference_name, "project")
-
-	if not project:
-		return False
-
-	return bool(frappe.db.exists("GP Guest Access", {"user": user, "project": project}))
+	return content_has_permission(doc, ptype, user)

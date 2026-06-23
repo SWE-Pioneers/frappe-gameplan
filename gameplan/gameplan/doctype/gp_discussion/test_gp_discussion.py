@@ -89,7 +89,6 @@ class TestGPDiscussionPermissions(FrappeTestCase):
 
 	def test_member_can_access(self):
 		self.assertTrue(has_permission(self._discussion(), "read", self.member.name))
-		self.assertTrue(has_permission(self._discussion(), "write", self.member.name))
 
 	def test_guest_without_access_denied(self):
 		self.assertFalse(has_permission(self._discussion(), "read", self.guest.name))

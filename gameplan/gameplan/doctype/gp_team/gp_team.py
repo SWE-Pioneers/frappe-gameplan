@@ -8,6 +8,7 @@ from pypika.terms import ExistsCriterion
 
 import gameplan
 from gameplan.mixins.archivable import Archivable
+from gameplan.permissions import require_can_manage_community, team_access_criterion
 from gameplan.utils import validate_type
 
 
@@ -25,30 +26,14 @@ class GPTeam(Archivable, Document):
 
 	@staticmethod
 	def get_list_query(query):
-		Team = frappe.qb.DocType("GP Team")
-		Member = frappe.qb.DocType("GP Member")
-		member_exists = (
-			frappe.qb.from_(Member)
-			.select(Member.name)
-			.where(Member.parenttype == "GP Team")
-			.where(Member.parent == Team.name)
-			.where(Member.user == frappe.session.user)
-		)
-		query = query.where(
-			(Team.is_private == 0) | ((Team.is_private == 1) & ExistsCriterion(member_exists))
-		)
-		is_guest = gameplan.is_guest()
-		if is_guest:
-			Team = frappe.qb.DocType("GP Team")
-			GuestAccess = frappe.qb.DocType("GP Guest Access")
-			team_list = GuestAccess.select(GuestAccess.team).where(GuestAccess.user == frappe.session.user)
-			query = query.where(Team.name.isin(team_list))
-		return query
+		return apply_permission_query(query)
 
 	def before_insert(self):
 		if not self.name:
 			slug = frappe.scrub(self.title).replace("_", "-")
 			self.name = append_number_if_name_exists("GP Team", slug)
+		if frappe.session.user != "Guest":
+			self.add_member(frappe.session.user, is_admin=1)
 
 	def after_insert(self):
 		self.create_general_space()
@@ -69,18 +54,23 @@ class GPTeam(Archivable, Document):
 			ignore_permissions=True
 		)
 
-	def add_member(self, email):
+	def add_member(self, email, is_admin=0):
 		if email not in [member.user for member in self.members]:
-			self.append("members", {"email": email, "user": email, "status": "Accepted"})
+			self.append(
+				"members",
+				{"email": email, "user": email, "status": "Accepted", "is_admin": is_admin},
+			)
 
 	@frappe.whitelist()
 	def add_members(self, users):
+		require_can_manage_community(self)
 		for user in users:
 			self.add_member(user)
 		self.save()
 
 	@frappe.whitelist()
 	def remove_member(self, user):
+		require_can_manage_community(self)
 		for member in self.members:
 			if member.user == user:
 				self.remove(member)
@@ -153,3 +143,11 @@ def get_accessible_team_names():
 	)
 
 	return [team.name for team in query.run(as_dict=True)]
+
+
+def apply_permission_query(query):
+	Team = frappe.qb.DocType("GP Team")
+	criterion = team_access_criterion(Team)
+	if criterion is not None:
+		query = query.where(criterion)
+	return query

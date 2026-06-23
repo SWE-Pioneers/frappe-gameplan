@@ -79,14 +79,16 @@ class TestApiSecurity(FrappeTestCase):
 		self.assertFalse(frappe.db.exists("GP Invitation", {"email": "someone@example.com"}))
 
 	def test_member_can_invite_guest_to_project(self):
-		"""Gating invite_by_email must not break a member inviting a guest to a space.
+		"""Gating invite_by_email must not break a private-space member inviting a guest.
 
 		invite_guest hardcodes the Gameplan Guest role (non-escalating), so it routes
 		through the trusted internal helper rather than the admin-gated endpoint.
 		"""
 		member = create_member("sec_space_member@example.com")
 		team = create_team("Sec Team")
-		project = create_project("Sec Space", team.name)
+		project = create_project("Sec Space", team.name, is_private=1)
+		project.append("members", {"user": member.name})
+		project.save(ignore_permissions=True)
 
 		frappe.set_user(member.name)
 		project.invite_guest("invited_guest@example.com")

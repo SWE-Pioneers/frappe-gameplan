@@ -16,7 +16,7 @@ from frappe.search.sqlite_search import (
 )
 from frappe.utils import cstr
 
-import gameplan
+from gameplan.permissions import project_access_criterion
 
 INDEX_BUILD_FLAG = "discussions_index_in_progress"
 
@@ -149,41 +149,12 @@ class GameplanSearch(SQLiteSearch):
 
 	def _get_accessible_projects(self):
 		"""Get list of projects accessible to current user."""
-		from pypika.terms import ExistsCriterion
-
-		if gameplan.is_guest():
-			GuestAccess = frappe.qb.DocType("GP Guest Access")
-			projects = (
-				frappe.qb.from_(GuestAccess)
-				.select(GuestAccess.project)
-				.distinct()
-				.where(GuestAccess.user == frappe.session.user)
-				.run(pluck=True)
-			)
-			return [cstr(p) for p in projects] if projects else []
-
 		Project = frappe.qb.DocType("GP Project")
-
-		# Administrator has access to all projects
-		if frappe.session.user == "Administrator":
-			projects = frappe.qb.from_(Project).select(Project.name).distinct().run(pluck=True)
-			return [cstr(p) for p in projects]
-
-		Member = frappe.qb.DocType("GP Member")
-		member_exists = (
-			frappe.qb.from_(Member)
-			.select(Member.name)
-			.where(Member.parenttype == "GP Project")
-			.where(Member.parent == Project.name)
-			.where(Member.user == frappe.session.user)
-		)
-		projects = (
-			frappe.qb.from_(Project)
-			.select(Project.name)
-			.distinct()
-			.where((Project.is_private == 0) | ((Project.is_private == 1) & ExistsCriterion(member_exists)))
-			.run(pluck=True)
-		)
+		query = frappe.qb.from_(Project).select(Project.name).distinct()
+		criterion = project_access_criterion(Project)
+		if criterion is not None:
+			query = query.where(criterion)
+		projects = query.run(pluck=True)
 		return [cstr(p) for p in projects]
 
 	def _get_project_team_for_comment(self, doc):

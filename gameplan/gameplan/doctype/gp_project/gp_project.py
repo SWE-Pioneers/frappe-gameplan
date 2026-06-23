@@ -7,13 +7,17 @@ import frappe
 import requests
 from bs4 import BeautifulSoup
 from frappe.model.document import Document
-from pypika.terms import ExistsCriterion
 
-import gameplan
 from gameplan.api import _invite_by_email
 from gameplan.gameplan.doctype.gp_unread_record.gp_unread_record import GPUnreadRecord
 from gameplan.mixins.archivable import Archivable
 from gameplan.mixins.manage_members import ManageMembersMixin
+from gameplan.permissions import (
+	can_view_space,
+	project_access_criterion,
+	require_can_invite_guest,
+	require_can_manage_space_members,
+)
 
 DEFAULT_SPACE_ICON = "lucide-hash"
 
@@ -31,49 +35,7 @@ class GPProject(ManageMembersMixin, Archivable, Document):
 
 	@staticmethod
 	def get_list_query(query):
-		Project = frappe.qb.DocType("GP Project")
-		Member = frappe.qb.DocType("GP Member")
-		member_exists = (
-			frappe.qb.from_(Member)
-			.select(Member.name)
-			.where(Member.parenttype == "GP Project")
-			.where(Member.parent == Project.name)
-			.where(Member.user == frappe.session.user)
-		)
-		query = query.where(
-			(Project.is_private == 0) | ((Project.is_private == 1) & ExistsCriterion(member_exists))
-		)
-		if gameplan.is_guest():
-			GuestAccess = frappe.qb.DocType("GP Guest Access")
-			project_list = GuestAccess.select(GuestAccess.project).where(
-				GuestAccess.user == frappe.session.user
-			)
-			query = query.where(Project.name.isin(project_list))
-
-		return query
-
-	@staticmethod
-	def get_list(query):
-		Project = frappe.qb.DocType("GP Project")
-		Member = frappe.qb.DocType("GP Member")
-		member_exists = (
-			frappe.qb.from_(Member)
-			.select(Member.name)
-			.where(Member.parenttype == "GP Project")
-			.where(Member.parent == Project.name)
-			.where(Member.user == frappe.session.user)
-		)
-		query = query.where(
-			(Project.is_private == 0) | ((Project.is_private == 1) & ExistsCriterion(member_exists))
-		)
-		if gameplan.is_guest():
-			GuestAccess = frappe.qb.DocType("GP Guest Access")
-			project_list = GuestAccess.select(GuestAccess.project).where(
-				GuestAccess.user == frappe.session.user
-			)
-			query = query.where(Project.name.isin(project_list))
-
-		return query
+		return apply_permission_query(query)
 
 	def as_dict(self, *args, **kwargs) -> dict:
 		d = super().as_dict(*args, **kwargs)
@@ -126,12 +88,14 @@ class GPProject(ManageMembersMixin, Archivable, Document):
 
 	@frappe.whitelist()
 	def invite_guest(self, email):
+		require_can_invite_guest(self)
 		# Trusted path: a space member invites a guest to this space. The role is
 		# hardcoded (non-escalating), so it bypasses invite_by_email's admin gate.
 		_invite_by_email(email, role="Gameplan Guest", projects=[self.name])
 
 	@frappe.whitelist()
 	def remove_guest(self, email):
+		require_can_invite_guest(self)
 		name = frappe.db.get_value("GP Guest Access", {"project": self.name, "user": email})
 		if name:
 			frappe.delete_doc("GP Guest Access", name)
@@ -173,13 +137,33 @@ class GPProject(ManageMembersMixin, Archivable, Document):
 
 	@frappe.whitelist()
 	def add_member(self, user):
-		if user not in [d.user for d in self.members]:
-			self.append("members", {"user": user})
-			self.save()
+		require_can_manage_space_members(self)
+		self.add_member_row(user)
+
+	@frappe.whitelist()
+	def invite_members(self, emails):
+		require_can_manage_space_members(self)
+		return super().invite_members(emails)
+
+	@frappe.whitelist()
+	def remove_member(self, user):
+		require_can_manage_space_members(self)
+		for member in self.members:
+			if member.user == user:
+				self.remove(member)
+				self.save(ignore_permissions=True)
+				break
 
 	@frappe.whitelist()
 	def join(self):
-		self.add_member(frappe.session.user)
+		if not can_view_space(frappe.session.user, self):
+			frappe.throw("Not permitted", frappe.PermissionError)
+		self.add_member_row(frappe.session.user)
+
+	def add_member_row(self, user):
+		if user not in [d.user for d in self.members]:
+			self.append("members", {"user": user})
+			self.save(ignore_permissions=True)
 
 	@frappe.whitelist()
 	def leave(self):
@@ -187,7 +171,7 @@ class GPProject(ManageMembersMixin, Archivable, Document):
 		for member in self.members:
 			if member.user == user:
 				self.remove(member)
-				self.save()
+				self.save(ignore_permissions=True)
 				break
 
 	@frappe.whitelist()
@@ -238,6 +222,14 @@ def get_meta_tags(url):
 		image = urljoin(url, image)
 
 	return {"title": title, "image": image}
+
+
+def apply_permission_query(query):
+	Project = frappe.qb.DocType("GP Project")
+	criterion = project_access_criterion(Project)
+	if criterion is not None:
+		query = query.where(criterion)
+	return query
 
 
 @frappe.whitelist()
