@@ -25,7 +25,7 @@
             </p>
           </div>
 
-          <div class="flex items-end gap-2">
+          <div v-if="canManageMembers" class="flex items-end gap-2">
             <Combobox
               :options="addableUsers"
               v-model="selectedUser"
@@ -76,7 +76,7 @@
             </p>
           </div>
 
-          <div class="flex items-end gap-2">
+          <div v-if="canInvite" class="flex items-end gap-2">
             <TextInput
               class="w-full"
               v-model="guestEmail"
@@ -103,7 +103,7 @@
                   {{ user.pending ? 'Pending invitation' : useUser(user.user).email }}
                 </div>
               </div>
-              <div class="ml-auto flex">
+              <div v-if="canInvite" class="ml-auto flex">
                 <Tooltip :text="user.pending ? 'Delete invite' : 'Remove guest'">
                   <Button
                     :label="user.pending ? 'Delete invite' : 'Remove guest'"
@@ -130,13 +130,17 @@ import { Badge, Combobox, toast, Tooltip, TextInput, useDoctype, useList } from 
 import EmptyStateBox from '@/components/EmptyStateBox.vue'
 import { getCommunity } from '@/data/communities'
 import { useSpace } from '@/data/spaces'
-import { useUser, users } from '@/data/users'
+import { useSessionUser, useUser, users } from '@/data/users'
+import { canInviteGuests, canManageSpace } from '@/utils/permissions'
 import { GPGuestAccess, GPInvitation, GPProject } from '@/types/doctypes'
 
 const props = defineProps<{ spaceId: string }>()
 const show = defineModel<boolean>()
 const space = useSpace(() => props.spaceId)
 const spaces = useDoctype<GPProject>('GP Project')
+const sessionUser = useSessionUser()
+const canManageMembers = computed(() => canManageSpace(space.value, sessionUser))
+const canInvite = computed(() => canInviteGuests(space.value, sessionUser))
 
 type GuestAccess = GPGuestAccess & { pending: false }
 let guests = useList<GuestAccess>({
