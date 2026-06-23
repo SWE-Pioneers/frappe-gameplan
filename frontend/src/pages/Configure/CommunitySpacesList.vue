@@ -18,13 +18,11 @@
     <Switch v-if="hasArchivedSpaces" v-model="showArchived" label="Show archived" />
   </div>
 
-  <ConfigureList
-    v-if="filteredSpaces.length"
-    header-class="hidden grid-cols-[minmax(8rem,1fr)_15.25rem_3rem] gap-12 items-center h-7 text-sm text-ink-gray-6 md:grid"
-  >
+  <ConfigureList v-if="filteredSpaces.length" :header-class="spacesHeaderClass">
     <template #header>
       <div>Space</div>
       <div>Content</div>
+      <div v-if="hasGuests">Guests</div>
       <div />
     </template>
     <SpaceRow
@@ -32,6 +30,8 @@
       :key="space.name"
       :space="space"
       :pages-count="getPagesCount(space.name)"
+      :guests-count="getGuestsCount(space.name)"
+      :show-guests="hasGuests"
     />
   </ConfigureList>
 
@@ -80,7 +80,7 @@
 import { computed, ref, watch } from 'vue'
 import { Button, Switch, TabButtons, useList } from 'frappe-ui'
 import { spaces, type Space } from '@/data/spaces'
-import type { GPPage } from '@/types/doctypes'
+import type { GPGuestAccess, GPPage } from '@/types/doctypes'
 import { visibilityFilterIcon } from '@/utils/visibility'
 import ConfigureEmptyState from './ConfigureEmptyState.vue'
 import ConfigureList from './ConfigureList.vue'
@@ -88,6 +88,7 @@ import SpaceRow from './SpaceRow.vue'
 
 type VisibilityFilter = 'All' | 'Public' | 'Private'
 type PageRecord = Pick<GPPage, 'project'>
+type GuestAccessRecord = Pick<GPGuestAccess, 'project'>
 
 const props = defineProps<{
   communityId: string
@@ -114,6 +115,14 @@ const pages = useList<PageRecord>({
   cacheKey: 'space-page-counts',
 })
 
+const guestAccess = useList<GuestAccessRecord>({
+  doctype: 'GP Guest Access',
+  fields: ['project'],
+  initialData: [],
+  limit: 99999,
+  cacheKey: 'space-guest-counts',
+})
+
 const communitySpaces = computed(() => {
   return (spaces.data || []).filter((space) => space.team === props.communityId)
 })
@@ -131,6 +140,25 @@ const pagesCountBySpace = computed(() => {
     counts[page.project] = (counts[page.project] || 0) + 1
   }
   return counts
+})
+
+const guestsCountBySpace = computed(() => {
+  const counts: Record<string, number> = {}
+  for (const access of guestAccess.data || []) {
+    if (!access.project) continue
+    counts[access.project] = (counts[access.project] || 0) + 1
+  }
+  return counts
+})
+
+const hasGuests = computed(() =>
+  communitySpaces.value.some((space) => getGuestsCount(space.name) > 0),
+)
+const spacesHeaderClass = computed(() => {
+  const columns = hasGuests.value
+    ? 'grid-cols-[minmax(8rem,1fr)_15.25rem_5rem_3rem]'
+    : 'grid-cols-[minmax(8rem,1fr)_15.25rem_3rem]'
+  return `hidden ${columns} gap-12 items-center h-7 text-sm text-ink-gray-6 md:grid`
 })
 
 const visibleSpaces = computed(() =>
@@ -158,6 +186,10 @@ function matchesVisibilityFilter(space: Space, filter: VisibilityFilter) {
 
 function getPagesCount(spaceId: string) {
   return pagesCountBySpace.value[spaceId] || 0
+}
+
+function getGuestsCount(spaceId: string) {
+  return guestsCountBySpace.value[spaceId] || 0
 }
 
 function getVisibilityCount(value: unknown) {

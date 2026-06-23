@@ -37,12 +37,17 @@
             {{ visibilityLabel(space.is_private) }}
           </span>
           <span>{{ contentLabel }}</span>
+          <span v-if="guestsLabel">{{ guestsLabel }}</span>
         </div>
       </div>
     </div>
 
     <div class="hidden truncate text-sm text-ink-gray-5 md:block">
       {{ contentLabel }}
+    </div>
+
+    <div v-if="showGuests" class="hidden truncate text-sm text-ink-gray-5 md:block">
+      {{ guestsLabel }}
     </div>
 
     <div class="flex items-center justify-end gap-1">
@@ -73,12 +78,16 @@ import { visibilityIcon, visibilityLabel } from '@/utils/visibility'
 const props = defineProps<{
   space: Space
   pagesCount: number
+  guestsCount: number
+  showGuests: boolean
 }>()
 
-const rowClass = [
+const rowClass = computed(() => [
   'grid grid-cols-[minmax(0,1fr)_auto] items-center gap-1 h-10',
-  'md:grid-cols-[minmax(8rem,1fr)_15.25rem_3rem] md:gap-12',
-]
+  props.showGuests
+    ? 'md:grid-cols-[minmax(8rem,1fr)_15.25rem_5rem_3rem] md:gap-12'
+    : 'md:grid-cols-[minmax(8rem,1fr)_15.25rem_3rem] md:gap-12',
+])
 
 const project = useDoctype<GPProject>('GP Project')
 const title = ref(props.space.title)
@@ -93,6 +102,9 @@ const contentLabel = computed(() => {
 
   return counts.length ? counts.join(' / ') : 'No content'
 })
+const guestsLabel = computed(() =>
+  props.guestsCount > 0 ? formatCount(props.guestsCount, 'guest') : '',
+)
 
 watch(
   () => props.space.title,
