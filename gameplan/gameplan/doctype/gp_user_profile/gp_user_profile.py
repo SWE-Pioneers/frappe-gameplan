@@ -173,9 +173,46 @@ def get_list(
 	).run(as_dict=True)
 	comments_by_user = {d.owner: d.count for d in comments_count}
 
+	Reaction = frappe.qb.DocType("GP Reaction")
+	reactions_given = (
+		frappe.qb.from_(Reaction)
+		.select(Count(Reaction.name).as_("count"), Reaction.user)
+		.where(Reaction.user.isin(users))
+		.groupby(Reaction.user)
+	).run(as_dict=True)
+	reactions_given_by_user = {r.user: r.count for r in reactions_given}
+
+	reactions_received_by_user = {}
+
+	discussion_reactions = (
+		frappe.qb.from_(Reaction)
+		.join(Discussion)
+		.on(Discussion.name == Reaction.parent)
+		.select(Count(Reaction.name).as_("count"), Discussion.owner)
+		.where((Reaction.parenttype == "GP Discussion") & Discussion.owner.isin(users))
+		.groupby(Discussion.owner)
+	).run(as_dict=True)
+	for r in discussion_reactions:
+		reactions_received_by_user[r.owner] = reactions_received_by_user.get(r.owner, 0) + r.count
+
+	comment_reactions = (
+		frappe.qb.from_(Reaction)
+		.join(Comment)
+		.on(Comment.name == Reaction.parent)
+		.select(Count(Reaction.name).as_("count"), Comment.owner)
+		.where(
+			(Reaction.parenttype == "GP Comment") & Comment.owner.isin(users) & Comment.deleted_at.isnull()
+		)
+		.groupby(Comment.owner)
+	).run(as_dict=True)
+	for r in comment_reactions:
+		reactions_received_by_user[r.owner] = reactions_received_by_user.get(r.owner, 0) + r.count
+
 	for user in data:
 		user.discussions_count = discussions_by_user.get(user.user, 0)
 		user.comments_count = comments_by_user.get(user.user, 0)
+		user.reactions_given = reactions_given_by_user.get(user.user, 0)
+		user.reactions_received = reactions_received_by_user.get(user.user, 0)
 
 	return data
 
