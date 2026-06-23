@@ -13,5 +13,6 @@ export function setSidebarBadgeStyle(style: unknown) {
 
 function normalizeSidebarBadgeStyle(style: unknown): SidebarBadgeStyle {
   if (style === 'Dot') return 'Dot'
+  if (style === 'Unread count') return 'Unread count'
   return defaultSidebarBadgeStyle
 }
