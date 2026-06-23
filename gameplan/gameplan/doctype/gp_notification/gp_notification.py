@@ -17,11 +17,11 @@ class GPNotification(Document):
 			user = frappe.session.user
 		filters = {"to_user": user}
 		if discussion:
-			filters["discussion"] = discussion
+			filters["discussion"] = str(discussion)
 		if comment:
-			filters["comment"] = comment
+			filters["comment"] = str(comment)
 		if task:
-			filters["task"] = task
+			filters["task"] = str(task)
 
 		Notification = frappe.qb.DocType("GP Notification")
 		query = frappe.qb.update(Notification).set(Notification.read, 1)
