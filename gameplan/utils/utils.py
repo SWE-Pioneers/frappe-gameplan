@@ -77,13 +77,23 @@ def extract_file_references(html):
 		if not raw:
 			continue
 		parsed = urlparse(raw)
-		if parsed.scheme or parsed.netloc:
+		if not is_same_origin_file_url(parsed):
 			continue
 		path = unquote(parsed.path)
 		if path.startswith(("/files/", "/private/files/")):
 			fid = parse_qs(parsed.query).get("fid", [None])[0]
 			references.add(FileReference(path, fid))
 	return list(references)
+
+
+def is_same_origin_file_url(parsed):
+	if not parsed.scheme and not parsed.netloc:
+		return True
+	if parsed.scheme not in ("http", "https"):
+		return False
+
+	site_url = urlparse(frappe.utils.get_url())
+	return parsed.netloc == site_url.netloc
 
 
 def remove_empty_trailing_paragraphs(html):

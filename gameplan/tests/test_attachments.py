@@ -34,6 +34,14 @@ class TestExtractFileUrls(FrappeTestCase):
 			[("/private/files/Screen Shot.png", "abc123")],
 		)
 
+	def test_accepts_absolute_same_origin_file_urls(self):
+		src = frappe.utils.get_url("/private/files/Screen%20Shot.png?fid=abc123")
+		html = f'<img src="{src}">'
+		self.assertEqual(
+			extract_file_references(html),
+			[("/private/files/Screen Shot.png", "abc123")],
+		)
+
 	def test_skips_external_and_data_urls(self):
 		html = (
 			'<img src="https://cdn.example.com/x.png">'
@@ -94,6 +102,19 @@ class TestContentAttachments(FrappeTestCase):
 			title="has image",
 			project=self.project.name,
 			content=f'<p>hi</p><img src="{f.file_url}?fid={f.name}">',
+		).insert(ignore_permissions=True)
+
+		row = self._attached_to(f.name)
+		self.assertEqual(row.attached_to_doctype, "GP Discussion")
+		self.assertEqual(str(row.attached_to_name), str(d.name))
+
+	def test_discussion_attaches_absolute_same_origin_private_file_url(self):
+		f = self._make_private_file("absolute")
+		d = frappe.get_doc(
+			doctype="GP Discussion",
+			title="absolute image",
+			project=self.project.name,
+			content=f'<img src="{frappe.utils.get_url(f.file_url)}">',
 		).insert(ignore_permissions=True)
 
 		row = self._attached_to(f.name)
