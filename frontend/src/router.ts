@@ -752,22 +752,33 @@ router.beforeEach(async (to, from) => {
 
   await ensureCommunityDataLoaded()
 
+  let isCommunityScopedRoute = to.matched.some((route) => route.meta?.communityScope)
+  if (!isCommunityScopedRoute) {
+    communityState.scope(null)
+  }
+
   if (['/', '/community'].includes(to.path)) {
     return getHomeRoute()
   }
 
-  if (!to.matched.some((route) => route.meta?.communityScope)) {
+  if (!isCommunityScopedRoute) {
     return
   }
 
   let communityId = routeParam(to.params.communityId)
 
+  let community = getCommunity(communityId)
+
   // Invalid community URLs should fail loudly instead of silently switching shell state.
-  if (!getActiveCommunity(communityId)) {
+  // Public communities are visible even when the user has not joined them, so route validity
+  // cannot be tied to the active sidebar community list.
+  if (!community || community.archived_at) {
     return { name: 'NotFound' }
   }
 
-  if (communityState.id !== communityId) {
+  communityState.scope(communityId)
+
+  if (getActiveCommunity(communityId) && communityState.joinedId !== communityId) {
     communityState.change(communityId)
   }
 

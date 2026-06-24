@@ -267,8 +267,8 @@ const shortcuts = computed((): CommandPaletteGroup[] => [
         condition: () => useUser().isNotGuest,
       },
       {
-        title: 'Inbox',
-        name: 'inbox',
+        title: 'Notifications',
+        name: 'notifications',
         icon: 'lucide-bell',
         route: { name: 'Notifications' },
         condition: () => useUser().isNotGuest,

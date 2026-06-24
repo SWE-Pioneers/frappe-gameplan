@@ -60,7 +60,7 @@ import UserAvatar from './UserAvatar.vue'
 import { readOnlyMode } from '@/data/readOnlyMode'
 
 interface MobileTab {
-  name: 'Home' | 'Inbox' | 'Search' | 'You'
+  name: 'Home' | 'Notifications' | 'Search' | 'You'
   icon: string
   route: RouteLocationRaw
   isActive: boolean
@@ -83,8 +83,8 @@ const tabs = computed<MobileTab[]>(() => [
     isActive: isHomeRoute.value,
   },
   {
-    name: 'Inbox',
-    icon: 'lucide-inbox',
+    name: 'Notifications',
+    icon: 'lucide-bell',
     route: { name: 'Notifications' },
     isActive: route.name === 'Notifications',
   },

@@ -6,5 +6,5 @@
 // biome-ignore lint: disable
 export {}
 declare global {
-
+  const lucideSlotClasses: typeof import('~icons/lucide/slot-classes')['default']
 }

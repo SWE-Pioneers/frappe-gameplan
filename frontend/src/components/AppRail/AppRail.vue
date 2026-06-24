@@ -247,8 +247,8 @@ const mainShortcuts = computed<RailItem[]>(() => [
 
 const personalShortcuts = computed<RailItem[]>(() => [
   {
-    label: 'Inbox',
-    icon: 'lucide-inbox',
+    label: 'Notifications',
+    icon: 'lucide-bell',
     isActive: isRoute('Notifications'),
     route: { name: 'Notifications' },
     unreadCount: unreadNotifications.data || 0,
