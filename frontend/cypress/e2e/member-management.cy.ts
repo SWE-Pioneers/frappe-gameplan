@@ -81,21 +81,24 @@ describe('Member management', () => {
   it('admin can change a member’s role', () => {
     openSettings()
 
-    // Role is a native Select per row; change_user_role swaps the single Gameplan
-    // role, so a confirm step gates it.
-    memberRow('john@example.com').find('select').select('Gameplan Admin')
+    // Role is a frappe-ui Select per row (reka-ui trigger = [role="combobox"],
+    // options portal out as [role="option"]). change_user_role swaps the single
+    // Gameplan role, so a confirm step gates it.
+    memberRow('john@example.com').find('[role="combobox"]').click()
+    cy.get('[role="option"]:contains("Admin"):visible').click()
     cy.button('Change Role').click()
 
-    // The Select reflects the new role.
-    memberRow('john@example.com').find('select').should('have.value', 'Gameplan Admin')
+    // The Select trigger reflects the new role.
+    memberRow('john@example.com').find('[role="combobox"]').should('contain', 'Admin')
   })
 
   it('admin can disable a member', () => {
     openSettings()
 
     // remove_user disables the account (enabled = 0) rather than deleting it.
+    // The row's disable control is an icon button labelled "Disable <name>".
     memberRow('john@example.com').find('button[aria-label^="Disable"]').click()
-    cy.scope('dialog').contains('button', 'Disable').click()
+    cy.button('Disable').click()
 
     // Disabled users drop out of the active members list.
     cy.scope('dialog').find('input[placeholder="Search"]').clear().type('john')
