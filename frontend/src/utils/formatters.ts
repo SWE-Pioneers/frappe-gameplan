@@ -32,7 +32,7 @@ export function formatUnreadCount(count: number): string {
 
 /**
  * Builds an accessible label that folds an unread count into a control's name,
- * e.g. ("Inbox", 3) -> "Inbox, 3 unread". Returns the bare label when there's
+ * e.g. ("Notifications", 3) -> "Notifications, 3 unread". Returns the bare label when there's
  * nothing unread so screen readers aren't told about an empty badge.
  */
 export function unreadAriaLabel(label: string, count: number): string {

@@ -246,8 +246,8 @@ const navigation = [
     icon: 'lucide-newspaper',
   },
   {
-    name: 'Inbox',
-    icon: 'lucide-inbox',
+    name: 'Notifications',
+    icon: 'lucide-bell',
   },
   {
     name: 'Tasks',

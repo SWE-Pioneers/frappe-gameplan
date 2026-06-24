@@ -95,6 +95,8 @@ export interface GPPage extends DocType {
 export interface GPMember extends ChildDocType {
   /** User: Link (User) */
   user?: string
+  /** Community Admin: Check */
+  is_admin?: 0 | 1
 }
 
 // Last updated: 2026-02-01 13:07:33.079297

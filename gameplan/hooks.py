@@ -113,6 +113,8 @@ after_install = "gameplan.install.after_install"
 # Permissions evaluated in scripted ways
 
 permission_query_conditions = {
+	"GP Team": "gameplan.permissions.team_query_conditions",
+	"GP Project": "gameplan.permissions.project_query_conditions",
 	"GP Discussion": "gameplan.gameplan.doctype.gp_discussion.gp_discussion.get_permission_query_conditions",
 	"GP Task": "gameplan.gameplan.doctype.gp_task.gp_task.get_permission_query_conditions",
 	"GP Comment": "gameplan.gameplan.doctype.gp_comment.gp_comment.get_permission_query_conditions",
@@ -120,6 +122,8 @@ permission_query_conditions = {
 }
 
 has_permission = {
+	"GP Team": "gameplan.permissions.team_has_permission",
+	"GP Project": "gameplan.permissions.project_has_permission",
 	"GP Discussion": "gameplan.gameplan.doctype.gp_discussion.gp_discussion.has_permission",
 	"GP Task": "gameplan.gameplan.doctype.gp_task.gp_task.has_permission",
 	"GP Comment": "gameplan.gameplan.doctype.gp_comment.gp_comment.has_permission",

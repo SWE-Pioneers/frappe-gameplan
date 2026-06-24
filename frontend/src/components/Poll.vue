@@ -119,7 +119,8 @@ import UserAvatarWithHover from './UserAvatarWithHover.vue'
 import UserProfileLink from './UserProfileLink.vue'
 import { copyToClipboard } from '@/utils'
 import Reactions from './Reactions.vue'
-import { useUser } from '@/data/users'
+import { useUser, useSessionUser } from '@/data/users'
+import { canDeleteContent } from '@/utils/permissions'
 
 export default {
   name: 'Poll',
@@ -131,6 +132,11 @@ export default {
     highlight: {
       type: Boolean,
       default: false,
+    },
+    // Space the poll's discussion belongs to, for community-admin delete moderation.
+    space: {
+      type: Object,
+      default: null,
     },
   },
   emits: ['vote'],
@@ -260,7 +266,7 @@ export default {
         {
           label: 'Delete',
           icon: 'lucide-trash',
-          condition: () => this.$isSessionUser(this._poll.owner),
+          condition: () => canDeleteContent(this._poll, this.space, useSessionUser()),
           onClick: () => {
             dialog.danger({
               title: 'Delete poll',

@@ -22,7 +22,12 @@
     </RouterLink>
 
     <div class="hidden justify-end md:flex">
-      <MemberOptions :community="community" :member="member" />
+      <MemberOptions
+        v-if="canManage"
+        :community="community"
+        :member="member"
+        :can-manage="canManage"
+      />
     </div>
   </div>
 </template>
@@ -37,6 +42,7 @@ import MemberOptions from './MemberOptions.vue'
 const props = defineProps<{
   community: Community
   member: CommunityMember
+  canManage: boolean
 }>()
 
 const rowClass = [
@@ -45,7 +51,7 @@ const rowClass = [
 ]
 
 const user = computed(() => useUser(props.member.user))
-const roleLabel = computed(() => user.value.role.replace('Gameplan ', ''))
+const roleLabel = computed(() => (props.member.is_admin ? 'Community Admin' : 'Member'))
 const profileRoute = computed(() => {
   return user.value.user_profile
     ? { name: 'PersonProfileProfile', params: { personId: user.value.user_profile } }

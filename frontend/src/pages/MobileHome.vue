@@ -96,7 +96,7 @@ function onCommunityClick(communityId: string) {
     return
   }
 
-  router.push({ name: 'MobileCommunityMenu', params: { communityId } })
+  router.push({ name: 'Discussions', params: { communityId } })
 }
 
 async function toggleEditMode() {

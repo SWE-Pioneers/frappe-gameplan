@@ -102,6 +102,8 @@ import MobileBackButton from '@/components/MobileBackButton.vue'
 import MobileHeader from '@/components/MobileHeader.vue'
 import { readOnlyMode } from '@/data/readOnlyMode'
 import { relativeTimestamp } from '@/utils'
+import { useSessionUser } from '@/data/users'
+import { canDeleteContent } from '@/utils/permissions'
 const props = defineProps<{
   communityId?: string
   pageId: string
@@ -171,6 +173,7 @@ const pageActions = computed(() => [
     label: 'Delete',
     icon: 'lucide-trash-2',
     onClick: deletePage,
+    condition: () => canDeleteContent(page.doc, space.value, useSessionUser()),
   },
 ])
 

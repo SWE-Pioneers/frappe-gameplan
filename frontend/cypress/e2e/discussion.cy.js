@@ -46,11 +46,18 @@ describe('Discussion', () => {
 
     // cy.button('View all').click()
     cy.button('Add new').click()
-    cy.get('textarea').should('be.visible').type('Starting a new discussion')
+    // Type into the editor first so TipTap finishes initializing; otherwise it
+    // steals focus while the title is being typed and drops the title's first
+    // keystroke, which corrupts the published slug. Then type and verify the title.
     cy.get('div[contenteditable=true]')
       .should('be.visible')
       .click()
       .type('This is content for new discussion{enter}')
+    cy.get('textarea')
+      .should('be.visible')
+      .click()
+      .type('Starting a new discussion')
+      .should('have.value', 'Starting a new discussion')
     // The composer renders a Publish button in both the mobile (sm:hidden) and
     // desktop headers; target the visible one so the click doesn't hit the hidden
     // mobile button at desktop viewport.

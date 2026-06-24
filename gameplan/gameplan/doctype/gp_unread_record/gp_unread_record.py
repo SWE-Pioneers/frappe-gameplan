@@ -202,6 +202,50 @@ class GPUnreadRecord(Document):
 		return out
 
 	@staticmethod
+	def get_participating_unread_count(user, team=None):
+		"""Count distinct unread discussions the user participates in.
+
+		Mirrors the `participating` feed filter (owned or commented) intersected with
+		the user's unread records so the menu badge always matches the feed contents.
+		"""
+		from frappe.query_builder.functions import Count
+		from frappe.utils import cint
+		from pypika.terms import ExistsCriterion
+
+		from gameplan.gameplan.doctype.gp_discussion.api import clause_discussions_commented_by_user
+		from gameplan.permissions import apply_accessible_project_filter
+
+		Discussion = frappe.qb.DocType("GP Discussion")
+		Project = frappe.qb.DocType("GP Project")
+		UnreadRecord = frappe.qb.DocType("GP Unread Record")
+
+		unread_record_exists = (
+			frappe.qb.from_(UnreadRecord)
+			.select(UnreadRecord.name)
+			.where(
+				(UnreadRecord.user == user)
+				& (UnreadRecord.discussion == Discussion.name)
+				& (UnreadRecord.is_unread == 1)
+			)
+		)
+
+		query = (
+			frappe.qb.from_(Discussion)
+			.left_join(Project)
+			.on(Discussion.project == Project.name)
+			.where(Project.archived_at.isnull())
+			.where(ExistsCriterion(unread_record_exists))
+			.where((Discussion.owner == user) | clause_discussions_commented_by_user(user))
+			.select(Count(Discussion.name).distinct())
+		)
+		query = apply_accessible_project_filter(query, Discussion.project)
+
+		if team:
+			query = query.where(Project.team == team)
+
+		return cint(query.run()[0][0])
+
+	@staticmethod
 	def _get_project_members(project_name):
 		"""Get all users who have access to the project"""
 		import gameplan
@@ -261,8 +305,9 @@ def add_indexes():
 	frappe.db.add_index("GP Unread Record", ["user", "project", "is_unread"], "user_project_unread")
 
 
-@frappe.whitelist(methods=["GET", "POST"])
-def get_unread_count(projects: list[str] = None):
-	"""Get unread count for specific projects"""
-	user = frappe.session.user
-	return GPUnreadRecord.get_unread_count_for_projects(user, projects)
+# Re-exported so the thin whitelisted unread-count endpoints resolve under the
+# `GP Unread Record/<method>` endpoint while their implementation lives in api.py.
+from gameplan.gameplan.doctype.gp_unread_record.api import (  # noqa: E402, F401
+	get_participating_unread_count,
+	get_unread_count,
+)

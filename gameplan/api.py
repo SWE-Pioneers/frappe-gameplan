@@ -8,7 +8,11 @@ from frappe.query_builder.functions import Count
 from frappe.utils import split_emails, validate_email_address
 
 import gameplan
+from gameplan.permissions import apply_accessible_project_filter
 from gameplan.utils import validate_type
+
+DISCUSSION_VISIT_JOIN_INDEX = "discussion_user_index"
+_has_discussion_visit_join_index = None
 
 
 def require_admin():
@@ -29,7 +33,7 @@ def get_user_info(user=None):
 	users = frappe.qb.get_query(
 		"User",
 		filters=filters,
-		fields=["name", "email", "enabled", "user_image", "full_name", "user_type"],
+		fields=["name", "email", "enabled", "user_image", "full_name", "user_type", "creation"],
 		order_by="full_name asc",
 		distinct=True,
 	).run(as_dict=1)
@@ -237,25 +241,37 @@ def get_unread_items():
 		.where((Visit.last_visit.isnull()) | (Visit.last_visit < Discussion.last_post_at))
 		.groupby(Discussion.team)
 	)
+	query = apply_accessible_project_filter(query, Discussion.project)
 
-	is_guest = gameplan.is_guest()
-	if is_guest:
-		GuestAccess = frappe.qb.DocType("GP Guest Access")
-		project_list = GuestAccess.select(GuestAccess.project).where(GuestAccess.user == frappe.session.user)
-		query = query.where(Discussion.project.isin(project_list))
-
-	# pypika doesn't have any API for "FORCE INDEX FOR JOIN"
-	sql = query.get_sql()
-	sql = sql.replace(
-		"LEFT JOIN `tabGP Discussion Visit`",
-		"LEFT JOIN `tabGP Discussion Visit` FORCE INDEX FOR JOIN(discussion_user_index)",
-	)
-	data = frappe.db.sql(sql, as_dict=1)
+	data = run_unread_items_query(query)
 
 	out = {}
 	for d in data:
 		out[d.team] = d.count
 	return out
+
+
+def run_unread_items_query(query):
+	if not has_discussion_visit_join_index():
+		return query.run(as_dict=1)
+
+	sql = query.get_sql()
+	# MariaDB's optimizer picks a much slower plan for this page-load query on real data.
+	sql = sql.replace(
+		"LEFT JOIN `tabGP Discussion Visit`",
+		f"LEFT JOIN `tabGP Discussion Visit` FORCE INDEX FOR JOIN({DISCUSSION_VISIT_JOIN_INDEX})",
+	)
+	return frappe.db.sql(sql, as_dict=1)
+
+
+def has_discussion_visit_join_index():
+	global _has_discussion_visit_join_index
+
+	if _has_discussion_visit_join_index is None:
+		_has_discussion_visit_join_index = bool(
+			frappe.db.has_index("tabGP Discussion Visit", DISCUSSION_VISIT_JOIN_INDEX)
+		)
+	return _has_discussion_visit_join_index
 
 
 @frappe.whitelist()
@@ -274,6 +290,7 @@ def get_unread_items_by_project(projects):
 		.where(Discussion.project.isin(project_names))
 		.groupby(Discussion.project)
 	)
+	query = apply_accessible_project_filter(query, Discussion.project)
 
 	data = query.run(as_dict=1)
 	out = {}
@@ -322,6 +339,7 @@ def recent_projects():
 		.orderby(ProjectVisit.last_visit, order=frappe.qb.desc)
 		.limit(12)
 	)
+	projects = apply_accessible_project_filter(projects, Project.name)
 
 	return projects.run(as_dict=1)
 
@@ -343,7 +361,8 @@ def active_projects():
 		.groupby(Discussion.project)
 		.orderby(CommentCount, order=frappe.qb.desc)
 		.limit(12)
-	).run(as_dict=1)
+	)
+	active_projects = apply_accessible_project_filter(active_projects, Discussion.project).run(as_dict=1)
 
 	projects = frappe.qb.get_query(
 		"GP Project",

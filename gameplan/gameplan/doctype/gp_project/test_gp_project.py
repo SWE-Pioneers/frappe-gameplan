@@ -4,8 +4,9 @@
 import frappe
 from frappe.tests.utils import FrappeTestCase
 
+from gameplan.gameplan.doctype.gp_project.gp_project import get_activity
 from gameplan.search_sqlite import GameplanSearch
-from gameplan.tests.utils import create_member, create_project, create_team
+from gameplan.tests.utils import create_discussion, create_member, create_project, create_team
 
 
 class TestGPProject(FrappeTestCase):
@@ -48,3 +49,22 @@ class TestGPProject(FrappeTestCase):
 		accessible_projects = GameplanSearch()._get_accessible_projects()
 
 		self.assertIn(str(private_project.name), accessible_projects)
+
+	def test_get_activity_returns_latest_accessible_space_activity(self):
+		member = create_member("test_space_activity_member@example.com")
+		team = create_team("Space Activity Team")
+		public_project = create_project("Public Activity Space", team.name)
+		private_project = create_project("Private Activity Space", team.name, is_private=1)
+
+		older_discussion = create_discussion("Older Activity", public_project.name)
+		latest_discussion = create_discussion("Latest Activity", public_project.name)
+		private_discussion = create_discussion("Private Activity", private_project.name)
+		frappe.db.set_value("GP Discussion", older_discussion.name, "last_post_at", "2026-01-01 10:00:00")
+		frappe.db.set_value("GP Discussion", latest_discussion.name, "last_post_at", "2026-01-02 10:00:00")
+		frappe.db.set_value("GP Discussion", private_discussion.name, "last_post_at", "2026-01-03 10:00:00")
+
+		frappe.set_user(member.name)
+		activity = get_activity()
+
+		self.assertEqual(str(activity[str(public_project.name)]), "2026-01-02 10:00:00")
+		self.assertNotIn(str(private_project.name), activity)

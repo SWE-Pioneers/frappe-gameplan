@@ -3,8 +3,9 @@ import { useList } from 'frappe-ui'
 import { GPTeam, GPMember } from '@/types/doctypes'
 import { communityOrder } from './communityOrder'
 
-export interface CommunityMember extends Pick<GPMember, 'user'> {
+export interface CommunityMember extends Pick<GPMember, 'user' | 'is_admin'> {
   user: string
+  is_admin?: 0 | 1
 }
 
 export interface Community extends Pick<
@@ -25,7 +26,7 @@ export let communities = useList<Community>({
     'creation',
     'archived_at',
     'is_private',
-    { members: ['user'] },
+    { members: ['user', 'is_admin'] },
   ],
   orderBy: 'title asc',
   initialData: [],

@@ -7,6 +7,7 @@
       </p>
     </div>
     <Button
+      v-if="canManage"
       icon-left="lucide-user-plus"
       :disabled="Boolean(community.archived_at)"
       @click="showAddMembersDialog = true"
@@ -30,6 +31,7 @@
       :key="member.user"
       :community="community"
       :member="member"
+      :can-manage="canManage"
     />
   </ConfigureList>
 
@@ -39,7 +41,7 @@
     title="No members yet"
     description="Add community members so they can access public spaces here."
   >
-    <template #actions>
+    <template v-if="canManage" #actions>
       <Button
         icon-left="lucide-user-plus"
         :disabled="Boolean(community.archived_at)"
@@ -50,9 +52,9 @@
     </template>
   </ConfigureEmptyState>
 
-  <CommunityGuestsList class="mt-10" :community="community" />
+  <CommunityGuestsList class="mt-10" :community="community" :can-manage="canManage" />
 
-  <Dialog title="Add members" v-model:open="showAddMembersDialog">
+  <Dialog v-if="canManage" title="Add members" v-model:open="showAddMembersDialog">
     <div class="space-y-4">
       <ul v-if="membersToAdd.length" class="flex flex-wrap gap-2">
         <li
@@ -64,6 +66,7 @@
           <span class="text-base text-ink-gray-8">{{ user.label }}</span>
           <Button
             variant="ghost"
+            size="xs"
             icon="lucide-x"
             @click="membersToAdd = membersToAdd.filter((member) => member.value !== user.value)"
           />
@@ -111,6 +114,7 @@ import MemberRow from './MemberRow.vue'
 
 const props = defineProps<{
   community: Community
+  canManage: boolean
 }>()
 
 const teams = useDoctype<GPTeam>('GP Team')
@@ -161,7 +165,7 @@ watch(showAddMembersDialog, (value) => {
 })
 
 async function addMembers() {
-  if (!membersToAdd.value.length) return
+  if (!props.canManage || !membersToAdd.value.length) return
 
   await teams.runDocMethod.submit({
     name: props.community.name,

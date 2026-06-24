@@ -8,6 +8,7 @@
           </template>
           <template #right>
             <Button
+              v-if="isAdmin"
               variant="ghost"
               size="md"
               icon="lucide-user-plus-2"
@@ -42,6 +43,7 @@
                   { label: 'Last updated', value: 'modified desc' },
                   { label: 'Posts', value: 'posts' },
                   { label: 'Replies', value: 'replies' },
+                  { label: 'Reactions received', value: 'reactions_received' },
                 ]"
                 v-model="orderBy"
               >
@@ -50,6 +52,7 @@
                 </template>
               </Select>
               <Button
+                v-if="isAdmin"
                 class="hidden sm:inline-flex"
                 variant="solid"
                 icon-left="lucide-user-plus-2"
@@ -73,6 +76,21 @@
             </TextInput>
           </div>
           <div class="mt-4 pb-16 -mx-3">
+            <div
+              class="hidden h-8 items-center px-3 text-sm text-ink-gray-5 sm:grid sm:grid-cols-[minmax(8rem,1fr)_repeat(4,5.5rem)] sm:gap-6"
+            >
+              <div>Member</div>
+              <div class="text-right">Posts</div>
+              <div class="text-right">Replies</div>
+              <div class="flex items-center justify-end gap-1.5">
+                <ReactionFaceIcon class="size-4 text-ink-gray-5" aria-hidden="true" />
+                <span>Received</span>
+              </div>
+              <div class="flex items-center justify-end gap-1.5">
+                <ReactionFaceIcon class="size-4 text-ink-gray-5" aria-hidden="true" />
+                <span>Given</span>
+              </div>
+            </div>
             <template v-for="user in people" :key="user.name">
               <router-link
                 :to="{
@@ -81,12 +99,12 @@
                     personId: user.name,
                   },
                 }"
-                class="flex sm:rounded px-3 py-2 sm:h-15 sm:hover:bg-surface-gray-2 duration-150 active:bg-surface-gray-2 transition-colors"
+                class="flex sm:grid sm:grid-cols-[minmax(8rem,1fr)_repeat(4,5.5rem)] sm:gap-6 sm:items-center sm:rounded px-3 py-2 sm:h-15 sm:hover:bg-surface-gray-2 duration-150 active:bg-surface-gray-2 transition-colors"
                 exact-active-class="!bg-surface-gray-2"
               >
-                <div class="flex w-full sm:w-3/5 items-center">
+                <div class="flex w-full min-w-0 items-center">
                   <UserAvatarWithHover :user="user.user" size="2xl" />
-                  <div class="ml-3 min-w-0">
+                  <div class="ml-3 min-w-0 flex-1">
                     <div class="flex items-center space-x-2">
                       <div class="text-base-medium text-ink-gray-8">
                         {{ $user(user.user).full_name }}
@@ -108,32 +126,32 @@
                     </div>
                   </div>
                 </div>
-                <div class="hidden sm:flex w-1/5 items-center justify-end text-right">
-                  <router-link
-                    class="text-base text-ink-gray-5 hover:text-ink-gray-8"
-                    :to="{
-                      name: 'PersonProfilePosts',
-                      params: { personId: user.name },
-                    }"
-                    @click.prevent
-                  >
-                    {{ user.discussions_count }} posts
-                  </router-link>
-                </div>
-                <div
-                  class="hidden sm:flex w-1/5 items-center justify-end text-right text-base text-ink-gray-5"
+                <router-link
+                  class="hidden items-center justify-end text-base text-ink-gray-5 hover:text-ink-gray-8 sm:flex"
+                  :to="{
+                    name: 'PersonProfilePosts',
+                    params: { personId: user.name },
+                  }"
+                  @click.prevent
                 >
-                  <router-link
-                    class="text-base text-ink-gray-5 hover:text-ink-gray-8"
-                    :to="{
-                      name: 'PersonProfileReplies',
-                      params: { personId: user.name },
-                    }"
-                    @click.prevent
-                  >
-                    {{ user.comments_count }} replies
-                  </router-link>
-                </div>
+                  {{ user.discussions_count }}
+                </router-link>
+                <router-link
+                  class="hidden items-center justify-end text-base text-ink-gray-5 hover:text-ink-gray-8 sm:flex"
+                  :to="{
+                    name: 'PersonProfileReplies',
+                    params: { personId: user.name },
+                  }"
+                  @click.prevent
+                >
+                  {{ user.comments_count }}
+                </router-link>
+                <span class="hidden items-center justify-end text-base text-ink-gray-5 sm:flex">
+                  {{ user.reactions_received }}
+                </span>
+                <span class="hidden items-center justify-end text-base text-ink-gray-5 sm:flex">
+                  {{ user.reactions_given }}
+                </span>
               </router-link>
               <div class="mx-2 border-b"></div>
             </template>
@@ -152,12 +170,15 @@
   </div>
 </template>
 <script>
+import { computed } from 'vue'
 import { Breadcrumbs, Badge, Button, Input, Select, TextInput } from 'frappe-ui'
 import MobileBackButton from '@/components/MobileBackButton.vue'
 import MobileHeader from '@/components/MobileHeader.vue'
 import PageHeader from '@/components/PageHeader.vue'
 import { showSettingsDialog } from '@/components/Settings'
+import { isGameplanAdmin } from '@/data/users'
 import UserAvatarWithHover from '@/components/UserAvatarWithHover.vue'
+import ReactionFaceIcon from '@/components/ReactionFaceIcon.vue'
 
 export default {
   name: 'People',
@@ -172,6 +193,7 @@ export default {
     MobileBackButton,
     MobileHeader,
     PageHeader,
+    ReactionFaceIcon,
   },
   data() {
     return {
@@ -182,12 +204,13 @@ export default {
   setup() {
     return {
       showSettingsDialog,
+      isAdmin: computed(() => isGameplanAdmin()),
     }
   },
   resources: {
     profiles() {
       let orderBy = this.orderBy
-      if (['posts', 'replies'].includes(orderBy)) {
+      if (['posts', 'replies', 'reactions_received'].includes(orderBy)) {
         orderBy = 'modified desc'
       }
       return {
@@ -222,6 +245,8 @@ export default {
         list = list.sort((a, b) => b.discussions_count - a.discussions_count)
       } else if (this.orderBy == 'replies') {
         list = list.sort((a, b) => b.comments_count - a.comments_count)
+      } else if (this.orderBy == 'reactions_received') {
+        list = list.sort((a, b) => b.reactions_received - a.reactions_received)
       }
       return list
     },

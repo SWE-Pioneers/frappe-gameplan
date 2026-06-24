@@ -5,7 +5,6 @@ import frappe
 from frappe.model.document import Document
 from frappe.utils import cstr
 
-import gameplan
 from gameplan.gameplan.doctype.gp_notification.gp_notification import GPNotification
 from gameplan.gameplan.doctype.gp_unread_record.gp_unread_record import GPUnreadRecord
 from gameplan.mixins.activity import HasActivity
@@ -13,6 +12,7 @@ from gameplan.mixins.attachments import HasAttachments
 from gameplan.mixins.mentions import HasMentions
 from gameplan.mixins.reactions import HasReactions
 from gameplan.mixins.tags import HasTags
+from gameplan.permissions import content_has_permission, discussion_query_conditions
 from gameplan.utils import get_document_revisions, remove_empty_trailing_paragraphs, url_safe_slug
 
 
@@ -326,27 +326,8 @@ def move_discussions(discussions: list[dict]):
 
 
 def get_permission_query_conditions(user):
-	if not user:
-		user = frappe.session.user
-
-	if not gameplan.is_guest(user):
-		return None
-
-	escaped_user = frappe.db.escape(user)
-	return f"""`tabGP Discussion`.project in (
-		select `tabGP Guest Access`.project
-		from `tabGP Guest Access`
-		where `tabGP Guest Access`.user = {escaped_user}
-	)"""
+	return discussion_query_conditions(user)
 
 
 def has_permission(doc, ptype="read", user=None):
-	user = user or frappe.session.user
-
-	if not gameplan.is_guest(user):
-		return True
-
-	if not doc.project:
-		return False
-
-	return bool(frappe.db.exists("GP Guest Access", {"user": user, "project": doc.project}))
+	return content_has_permission(doc, ptype, user)

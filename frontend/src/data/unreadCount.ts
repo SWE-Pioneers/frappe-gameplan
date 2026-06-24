@@ -1,4 +1,4 @@
-import { useCall, useDoctype } from 'frappe-ui'
+import { useDoctype } from 'frappe-ui'
 import { GPProject } from '@/types/doctypes'
 import { reactive } from 'vue'
 
@@ -6,24 +6,47 @@ interface ProjectUnreadCount {
   [spaceId: string]: number
 }
 
-const unreadCounts = reactive<ProjectUnreadCount>({})
+interface ParticipatingUnreadCount {
+  [team: string]: number
+}
 
-const unreadCountByProjects = useCall<ProjectUnreadCount, { projects?: string[] }>({
-  url: '/api/v2/method/GP Unread Record/get_unread_count',
-  method: 'POST',
-  immediate: false,
-  onSuccess(data) {
-    for (const [spaceId, count] of Object.entries(data)) {
-      unreadCounts[spaceId] = count
-    }
-  },
-})
+const unreadCounts = reactive<ProjectUnreadCount>({})
+const participatingUnreadCounts = reactive<ParticipatingUnreadCount>({})
+
+// All unread-count APIs live on the GP Unread Record controller, called via
+// runMethod so we avoid hardcoded dotted module paths.
+const UnreadCount = useDoctype('GP Unread Record')
+
+function loadProjectUnreadCounts(projects?: string[]) {
+  return UnreadCount.runMethod
+    .submit({ method: 'get_unread_count', params: { projects } })
+    .then((data: ProjectUnreadCount) => {
+      for (const [spaceId, count] of Object.entries(data)) {
+        unreadCounts[spaceId] = count
+      }
+      return data
+    })
+}
 
 // load unread count for all projects once
-unreadCountByProjects.submit({})
+loadProjectUnreadCounts()
 
 export function getProjectUnreadCount(spaceId: string) {
   return unreadCounts[spaceId] ?? 0
+}
+
+/** Fetch (and cache) the participating unread count for a community. */
+export function fetchParticipatingUnreadCount(team: string) {
+  return UnreadCount.runMethod
+    .submit({ method: 'get_participating_unread_count', params: { team } })
+    .then((count: number) => {
+      participatingUnreadCounts[team] = count ?? 0
+      return participatingUnreadCounts[team]
+    })
+}
+
+export function getParticipatingUnreadCount(team: string) {
+  return participatingUnreadCounts[team] ?? 0
 }
 
 const Project = useDoctype<GPProject>('GP Project')
@@ -53,5 +76,5 @@ export function markSpacesAsRead(spaceIds: string[]) {
 }
 
 export function refreshUnreadCountForProjects(projects: string[]) {
-  return unreadCountByProjects.submit({ projects })
+  return loadProjectUnreadCounts(projects)
 }

@@ -1,0 +1,25 @@
+# Copyright (c) 2025, Frappe Technologies Pvt Ltd and contributors
+# For license information, please see license.txt
+
+"""Thin whitelisted unread-count endpoints.
+
+Called from the frontend via `useDoctype('GP Unread Record').runMethod` (no dotted
+module paths). The query logic lives on the GPUnreadRecord controller; these are
+re-exported from gp_unread_record.py so they resolve under `GP Unread Record/<method>`.
+"""
+
+import frappe
+
+
+@frappe.whitelist(methods=["GET", "POST"])
+def get_unread_count(projects: list[str] = None):
+	from gameplan.gameplan.doctype.gp_unread_record.gp_unread_record import GPUnreadRecord
+
+	return GPUnreadRecord.get_unread_count_for_projects(frappe.session.user, projects)
+
+
+@frappe.whitelist(methods=["GET", "POST"])
+def get_participating_unread_count(team=None):
+	from gameplan.gameplan.doctype.gp_unread_record.gp_unread_record import GPUnreadRecord
+
+	return GPUnreadRecord.get_participating_unread_count(frappe.session.user, team)

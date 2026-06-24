@@ -26,8 +26,8 @@
             :route="{ name: 'CommunityMembers', params: { communityId: community.name } }"
           />
           <span class="inline-flex items-center gap-1">
-            <span :class="[visibilityIcon, 'size-3.5']" />
-            {{ visibilityLabel }}
+            <span :class="[visibilityIcon(community.is_private), 'size-3.5']" />
+            {{ visibilityLabel(community.is_private) }}
           </span>
         </div>
       </div>
@@ -51,10 +51,6 @@
         :route="{ name: 'CommunityMembers', params: { communityId: community.name } }"
       />
     </div>
-    <div class="hidden items-center gap-1 text-base text-ink-gray-5 md:flex">
-      <span :class="[visibilityIcon, 'size-3.5']" />
-      {{ visibilityLabel }}
-    </div>
     <div class="hidden justify-end md:flex">
       <CommunityOptions :community="community" />
     </div>
@@ -65,6 +61,7 @@
 import { computed } from 'vue'
 import { Badge, Button } from 'frappe-ui'
 import type { Community } from '@/data/communities'
+import { visibilityIcon, visibilityLabel } from '@/utils/visibility'
 import CommunityImageUploader from './CommunityImageUploader.vue'
 import CommunityOptions from './CommunityOptions.vue'
 
@@ -74,14 +71,10 @@ const props = defineProps<{
 }>()
 
 const rowClass = [
-  'grid grid-cols-[minmax(0,1fr)] items-center h-12',
-  'md:grid-cols-[minmax(12rem,6fr)_minmax(6rem,1.2fr)_minmax(6rem,1.2fr)_minmax(5.5rem,1fr)_3rem] md:gap-24',
+  'grid grid-cols-[minmax(0,1fr)] items-center h-10',
+  'md:grid-cols-[minmax(12rem,6fr)_minmax(6rem,1.2fr)_minmax(6rem,1.2fr)_3rem] md:gap-12',
 ]
 
-const visibilityLabel = computed(() => (props.community.is_private ? 'Private' : 'Public'))
-const visibilityIcon = computed(() =>
-  props.community.is_private ? 'lucide-lock' : 'lucide-globe-2',
-)
 const spacesLabel = computed(() => formatCount(props.spacesCount, 'space'))
 const membersLabel = computed(() => formatCount(props.community.members?.length || 0, 'member'))
 

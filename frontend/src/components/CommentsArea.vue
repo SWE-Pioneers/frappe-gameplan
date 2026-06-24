@@ -42,6 +42,7 @@
           }"
           :ref="($comment) => setItemRef($comment, item)"
           :comment="item"
+          :space="space"
           :highlight="
             highlightedItem?.doctype == item.doctype && highlightedItem?.name == item.name
           "
@@ -65,6 +66,7 @@
             highlightedItem?.doctype == item.doctype && highlightedItem?.name == item.name
           "
           :poll="item"
+          :space="space"
           :readOnlyMode="readOnlyMode"
         />
       </template>
@@ -268,12 +270,16 @@ import { isNewCommentOpen } from '@/data/newComment'
 import { useRichQuotes } from '@/components/RichQuoteExtension/useRichQuotes'
 import { useDraftSync } from '@/data/useDraftSync'
 import { useSessionUser } from '@/data/users'
+import type { Space } from '@/data/spaces'
 import { isMobile } from '@/composables/isMobile'
 import { needsMobileCommentGap } from '@/utils/commentTimeline'
 
 interface Props {
   doctype: string
   name: string
+  // The space this thread lives in, used to derive community-admin moderation
+  // rights for deleting others' comments/polls.
+  space?: Space | null
   newCommentsFrom?: string
   readOnlyMode?: boolean
   disableNewComment?: boolean

@@ -66,6 +66,20 @@ describe('Search privacy', () => {
       value: 'gameplan123',
     })
 
+    // clear_data keeps users, so john's role/enabled can leak from earlier specs.
+    // This test needs him as an enabled non-guest member; a guest sees no public
+    // results, so normalize before logging in.
+    cy.request('POST', '/api/method/frappe.client.set_value', {
+      doctype: 'User',
+      name: 'john@example.com',
+      fieldname: 'enabled',
+      value: 1,
+    })
+    cy.request('POST', '/api/v2/method/gameplan.api.change_user_role', {
+      user: 'john@example.com',
+      role: 'Gameplan Member',
+    })
+
     cy.login('john@example.com', 'gameplan123')
     cy.request('POST', '/api/v2/method/GP Team/update_joined_teams', {
       teams: [community],

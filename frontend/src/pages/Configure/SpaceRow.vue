@@ -33,10 +33,11 @@
         </div>
         <div class="mt-1 flex flex-wrap gap-x-2 gap-y-1 text-sm text-ink-gray-5 md:hidden">
           <span class="inline-flex items-center gap-1">
-            <span :class="[visibilityIcon, 'size-3.5']" />
-            {{ visibilityLabel }}
+            <span :class="[visibilityIcon(space.is_private), 'size-3.5']" />
+            {{ visibilityLabel(space.is_private) }}
           </span>
           <span>{{ contentLabel }}</span>
+          <span v-if="guestsLabel">{{ guestsLabel }}</span>
         </div>
       </div>
     </div>
@@ -44,9 +45,9 @@
     <div class="hidden truncate text-sm text-ink-gray-5 md:block">
       {{ contentLabel }}
     </div>
-    <div class="hidden items-center gap-1 text-sm text-ink-gray-5 md:flex">
-      <span :class="[visibilityIcon, 'size-3.5']" />
-      {{ visibilityLabel }}
+
+    <div v-if="showGuests" class="hidden truncate text-sm text-ink-gray-5 md:block">
+      {{ guestsLabel }}
     </div>
 
     <div class="flex items-center justify-end gap-1">
@@ -72,23 +73,26 @@ import SpaceOptions from '@/components/SpaceOptions.vue'
 import { isDocMethodLoading, spaces, type Space, unarchiveSpace } from '@/data/spaces'
 import { readOnlyMode } from '@/data/readOnlyMode'
 import type { GPProject } from '@/types/doctypes'
+import { visibilityIcon, visibilityLabel } from '@/utils/visibility'
 
 const props = defineProps<{
   space: Space
   pagesCount: number
+  guestsCount: number
+  showGuests: boolean
 }>()
 
-const rowClass = [
+const rowClass = computed(() => [
   'grid grid-cols-[minmax(0,1fr)_auto] items-center gap-1 h-10',
-  'md:grid-cols-[minmax(8rem,1fr)_15.25rem_6.5rem_3rem] md:gap-24',
-]
+  props.showGuests
+    ? 'md:grid-cols-[minmax(8rem,1fr)_15.25rem_5rem_3rem] md:gap-12'
+    : 'md:grid-cols-[minmax(8rem,1fr)_15.25rem_3rem] md:gap-12',
+])
 
 const project = useDoctype<GPProject>('GP Project')
 const title = ref(props.space.title)
 const savingTitle = ref(false)
 const canEditSpace = computed(() => !readOnlyMode && !props.space.archived_at)
-const visibilityLabel = computed(() => (props.space.is_private ? 'Private' : 'Public'))
-const visibilityIcon = computed(() => (props.space.is_private ? 'lucide-lock' : 'lucide-globe-2'))
 const contentLabel = computed(() => {
   const counts = [
     formatNonZeroCount(props.space.discussions_count ?? 0, 'post'),
@@ -98,6 +102,9 @@ const contentLabel = computed(() => {
 
   return counts.length ? counts.join(' / ') : 'No content'
 })
+const guestsLabel = computed(() =>
+  props.guestsCount > 0 ? formatCount(props.guestsCount, 'guest') : '',
+)
 
 watch(
   () => props.space.title,

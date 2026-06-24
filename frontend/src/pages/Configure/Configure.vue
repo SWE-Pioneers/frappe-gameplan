@@ -45,7 +45,7 @@
   <NewCommunityDialog v-model="newCommunityDialog" />
   <NewSpaceDialog v-model="newSpaceDialog" :lockedCommunityId="selectedCommunityId || ''" />
 
-  <div class="body-container pb-16 pt-4">
+  <div class="mx-auto w-full max-w-[800px] px-3 pb-16 pt-4 sm:px-5">
     <template v-if="selectedCommunityId">
       <ConfigureEmptyState
         v-if="!selectedCommunity"
@@ -61,10 +61,12 @@
       <CommunityMembersList
         v-else-if="isMembersView && selectedCommunity"
         :community="selectedCommunity"
+        :can-manage="canManageSelectedCommunity"
       />
       <CommunitySpacesList
         v-else
         :community-id="selectedCommunityId"
+        :can-create-space="canCreateSpace"
         @create-space="openNewSpaceDialog"
       />
     </template>
@@ -82,6 +84,8 @@ import MobileBackButton from '@/components/MobileBackButton.vue'
 import MobileHeader from '@/components/MobileHeader.vue'
 import PageHeader from '@/components/PageHeader.vue'
 import { communities } from '@/data/communities'
+import { useSessionUser } from '@/data/users'
+import { canManageCommunity, getManageableCommunities, isGlobalAdmin } from '@/utils/permissions'
 import CommunitiesList from './CommunitiesList.vue'
 import ConfigureEmptyState from './ConfigureEmptyState.vue'
 import CommunityMembersList from './CommunityMembersList.vue'
@@ -97,6 +101,7 @@ type BreadcrumbItem = {
 }
 
 const route = useRoute()
+const sessionUser = useSessionUser()
 const newSpaceDialog = ref(false)
 const newCommunityDialog = ref(false)
 
@@ -110,7 +115,16 @@ const selectedCommunity = computed(() => {
 })
 
 const isMembersView = computed(() => route.name === 'CommunityMembers')
-const showNewCommunityButton = computed(() => !selectedCommunityId.value)
+const canAccessGlobalConfigure = computed(() => isGlobalAdmin(sessionUser))
+const canAccessConfigureIndex = computed(
+  () => getManageableCommunities(communities.data || [], sessionUser).length > 0,
+)
+const canManageSelectedCommunity = computed(() =>
+  canManageCommunity(selectedCommunity.value, sessionUser),
+)
+const showNewCommunityButton = computed(
+  () => !selectedCommunityId.value && canAccessGlobalConfigure.value,
+)
 const showNewSpaceButton = computed(() => Boolean(selectedCommunity.value && !isMembersView.value))
 
 const mobileTitle = computed(() => {
@@ -124,13 +138,18 @@ const mobileBackRoute = computed<RouteLocationRaw>(() => {
     return { name: 'CommunitySpaces', params: { communityId: selectedCommunityId.value } }
   }
   if (selectedCommunityId.value) {
-    return { name: 'Spaces' }
+    return canAccessConfigureIndex.value ? { name: 'Spaces' } : { name: 'More' }
   }
   return { name: 'More' }
 })
 
 const breadcrumbs = computed(() => {
-  const items: BreadcrumbItem[] = [{ label: 'Communities', route: { name: 'Spaces' } }]
+  const items: BreadcrumbItem[] = [
+    {
+      label: 'Communities',
+      route: canAccessConfigureIndex.value ? { name: 'Spaces' } : undefined,
+    },
+  ]
   if (selectedCommunity.value) {
     items.push({
       label: selectedCommunity.value.title,
@@ -149,7 +168,11 @@ const breadcrumbs = computed(() => {
 })
 
 const canCreateSpace = computed(() =>
-  Boolean(selectedCommunity.value && !selectedCommunity.value.archived_at),
+  Boolean(
+    selectedCommunity.value &&
+      canManageSelectedCommunity.value &&
+      !selectedCommunity.value.archived_at,
+  ),
 )
 
 function openNewSpaceDialog() {

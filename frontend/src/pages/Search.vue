@@ -359,9 +359,6 @@ const searchInput = useTemplateRef<typeof TextInput>('searchInput')
 const router = useRouter()
 const route = useRoute()
 const groupedSpaces = useGroupedSpaceOptions()
-const activeCommunityIds = computed(
-  () => new Set(activeCommunities.value.map((community) => community.name)),
-)
 const visibleSearchResults = computed(() => {
   return (searchResponse.value?.results || []).filter(isSearchResultVisible)
 })
@@ -759,8 +756,11 @@ function getItemRoute(item: SearchResultItem) {
 function isSearchResultVisible(item: SearchResultItem) {
   if (!item.project) return true
 
+  // Search spans every community the user can access, joined or not — the backend
+  // already filters results by permission. Only hide results from archived spaces;
+  // if the space isn't in the local cache, still show it (the server allowed it).
   const space = getSpace(item.project)
-  return Boolean(space && !space.archived_at && activeCommunityIds.value.has(space.team))
+  return !space || !space.archived_at
 }
 
 // Feedback System

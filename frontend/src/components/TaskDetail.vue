@@ -25,6 +25,7 @@
               {
                 label: 'Delete',
                 onClick: deleteTask,
+                condition: () => canDeleteContent(task.doc, space, useSessionUser()),
               },
             ]"
           />
@@ -83,7 +84,7 @@
             @update:modelValue="changeSpace"
           />
         </div>
-        <CommentsList class="mt-8" doctype="GP Task" :name="taskId" />
+        <CommentsList class="mt-8" doctype="GP Task" :name="taskId" :space="space" />
       </div>
     </div>
     <div class="hidden w-[20rem] shrink-0 border-l sm:block">
@@ -165,6 +166,8 @@ import { useGroupedSpaceOptions } from '@/data/groupedSpaces'
 import { getSpace } from '@/data/spaces'
 import { useTask } from '@/data/tasks'
 import { GPTask } from '@/types/doctypes'
+import { useSessionUser } from '@/data/users'
+import { canDeleteContent } from '@/utils/permissions'
 
 const props = defineProps<{
   taskId: string
@@ -174,6 +177,7 @@ const router = useRouter()
 const route = useRoute()
 
 const task = useTask(() => props.taskId)
+const space = computed(() => getSpace(task.doc?.project))
 
 function deleteTask() {
   dialog.danger({

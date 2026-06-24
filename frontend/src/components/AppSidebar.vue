@@ -29,6 +29,11 @@
                 <span class="size-4 lucide-at-sign" />
               </template>
               Participating
+              <template #suffix>
+                <span v-if="participatingUnreadCount > 0" class="shrink-0 text-xs text-ink-gray-5">
+                  {{ participatingUnreadCount }}
+                </span>
+              </template>
             </AppSidebarLink>
 
             <AppSidebarLink
@@ -42,20 +47,38 @@
                 <span class="size-4 lucide-mail-open" />
               </template>
               Unread
+              <template #suffix>
+                <span v-if="communityUnreadTotal > 0" class="shrink-0 text-xs text-ink-gray-5">
+                  {{ communityUnreadTotal }}
+                </span>
+              </template>
             </AppSidebarLink>
           </nav>
 
           <div class="group/spaces mt-4">
             <div class="flex h-7 items-center justify-between pl-2 text-base text-ink-gray-5">
               <span>Spaces</span>
-              <Button
-                v-if="isAdmin"
-                variant="ghost"
-                size="sm"
-                icon="lucide-plus text-ink-gray-5"
-                label="New space"
-                @click="openNewSpaceDialog"
-              />
+              <div class="flex items-center">
+                <Dropdown :options="spaceSortOptions" align="end">
+                  <template #trigger="{ open }">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      icon="lucide-arrow-up-down text-ink-gray-5"
+                      label="Sort spaces"
+                      tooltip="Sort spaces"
+                      :active="open || hasCustomSpaceSidebarOptions"
+                    />
+                  </template>
+                </Dropdown>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  icon="lucide-plus text-ink-gray-5"
+                  label="New space"
+                  @click="openNewSpaceDialog"
+                />
+              </div>
             </div>
 
             <nav class="mt-0.5 space-y-0.5">
@@ -112,7 +135,7 @@
               >
                 {{ communitySpaces.emptyMessage }}
                 <Button
-                  v-if="isAdmin && communitySpaces.archived.length === 0"
+                  v-if="communitySpaces.archived.length === 0 && !communitySpaces.hasHiddenInactive"
                   size="sm"
                   icon-left="lucide-plus"
                   class="mt-2"
@@ -136,14 +159,22 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { ScrollAreaRoot, ScrollAreaViewport } from 'reka-ui'
 import { Button, Dropdown } from 'frappe-ui'
+import type { DropdownOptions } from 'frappe-ui'
 import { communityState } from '@/data/communityState'
 import { communitySpaces } from '@/data/communitySpaces'
-import { getSpaceUnreadCount, markAllAsRead, type Space } from '@/data/spaces'
-import { isGameplanAdmin, useSessionUser } from '@/data/users'
+import {
+  currentHideInactiveSpaces,
+  currentSpaceSidebarSort,
+  setHideInactiveSpaces,
+  setSpaceSidebarSort,
+  type SpaceSidebarSort,
+} from '@/data/sidebarPreferences'
+import { getSpaceUnreadCount, markAllAsRead, spaces, type Space } from '@/data/spaces'
+import { fetchParticipatingUnreadCount, getParticipatingUnreadCount } from '@/data/unreadCount'
 import AppLink from './AppLink.vue'
 import AppDropdown from './AppDropdown.vue'
 import AppSidebarLink from './AppSidebarLink.vue'
@@ -156,11 +187,44 @@ import LucideMailOpen from '~icons/lucide/mail-open'
 import LucideMessageSquareText from '~icons/lucide/message-square-text'
 
 const route = useRoute()
-const sessionUser = useSessionUser()
-
-const isAdmin = computed(() => isGameplanAdmin(sessionUser))
 
 const spacesList = computed(() => communitySpaces.list)
+const communityUnreadTotal = computed(() => {
+  return communitySpaceList.value.reduce(
+    (total, space) => total + getSpaceUnreadCount(space.name),
+    0,
+  )
+})
+const participatingUnreadCount = computed(() => {
+  if (!communityState.id) return 0
+  return getParticipatingUnreadCount(communityState.id)
+})
+const hasCustomSpaceSidebarOptions = computed(() => {
+  return currentSpaceSidebarSort.value !== 'Alphabetical' || currentHideInactiveSpaces.value
+})
+
+const spaceSortOptions = computed<DropdownOptions>(() => [
+  {
+    group: 'Sort by',
+    options: spaceSortValues.map((sort) => ({
+      label: sort,
+      icon: currentSpaceSidebarSort.value === sort ? 'lucide-check' : null,
+      onClick: () => setSpaceSidebarSort(sort),
+    })),
+  },
+  {
+    group: 'Visibility',
+    options: [
+      {
+        label: 'Hide inactive spaces',
+        description: 'No activity for 2 months',
+        switch: true,
+        switchValue: currentHideInactiveSpaces.value,
+        onClick: setHideInactiveSpaces,
+      },
+    ],
+  },
+])
 
 const feedType = computed(() => {
   if (route.name !== 'DiscussionsTab') return null
@@ -171,6 +235,12 @@ const isUnreadFeed = computed(() => feedType.value === 'unread')
 const isParticipatingFeed = computed(() => feedType.value === 'participating')
 
 const showNewSpaceDialog = ref(false)
+const spaceSortValues: SpaceSidebarSort[] = ['Recent activity', 'Alphabetical']
+const communitySpaceList = computed(() => {
+  return (spaces.data || []).filter((space) => {
+    return !space.archived_at && space.team === communityState.id
+  })
+})
 const activeSpaceId = computed(() => {
   const routeName = route.name?.toString() || ''
   if (routeName.startsWith('Space') || routeName === 'Discussion') {
@@ -179,6 +249,14 @@ const activeSpaceId = computed(() => {
   if (routeName === 'NewDiscussion') return routeQueryString(route.query.spaceId)
   return null
 })
+
+watch(
+  () => communityState.id,
+  (communityId) => {
+    if (communityId) fetchParticipatingUnreadCount(communityId)
+  },
+  { immediate: true },
+)
 
 function isRoute(name: string) {
   return route.name === name

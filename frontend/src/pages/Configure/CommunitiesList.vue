@@ -1,6 +1,12 @@
 <template>
   <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
     <TabButtons :options="visibilityButtons" v-model="visibilityFilter">
+      <template #prefix="{ button }">
+        <span
+          v-if="visibilityFilterIcon(button.modelValue)"
+          :class="[visibilityFilterIcon(button.modelValue), 'size-3.5 shrink-0']"
+        />
+      </template>
       <template #suffix="{ button }">
         <span class="rounded-full bg-surface-gray-3 px-1.5 text-xs text-ink-gray-6">
           {{ getVisibilityCount(button.modelValue) }}
@@ -11,13 +17,18 @@
   </div>
 
   <ConfigureEmptyState
-    v-if="!communities.data?.length"
+    v-if="!manageableCommunities.length"
     icon="lucide-blocks"
     title="No communities yet"
     description="Create a community to group related spaces, members, and discussions."
   >
     <template #actions>
-      <Button icon-left="lucide-plus" variant="solid" @click="emit('create-community')">
+      <Button
+        v-if="showCreateCommunity"
+        icon-left="lucide-plus"
+        variant="solid"
+        @click="emit('create-community')"
+      >
         New community
       </Button>
     </template>
@@ -25,13 +36,12 @@
 
   <ConfigureList
     v-else-if="filteredCommunities.length"
-    header-class="hidden grid-cols-[minmax(12rem,6fr)_minmax(6rem,1.2fr)_minmax(6rem,1.2fr)_minmax(5.5rem,1fr)_3rem] gap-24 items-center h-7 text-sm text-ink-gray-6 md:grid"
+    header-class="hidden grid-cols-[minmax(12rem,6fr)_minmax(6rem,1.2fr)_minmax(6rem,1.2fr)_3rem] gap-12 items-center h-7 text-sm text-ink-gray-6 md:grid"
   >
     <template #header>
       <div>Community</div>
       <div class="px-1.5">Spaces</div>
       <div class="px-1.5">Members</div>
-      <div>Visibility</div>
       <div />
     </template>
     <CommunityRow
@@ -47,6 +57,7 @@
     icon="lucide-search-x"
     title="No communities match these filters"
     description="Clear the current filters to see every community."
+    class="mt-4"
   >
     <template #actions>
       <Button @click="clearFilters">Clear filters</Button>
@@ -59,6 +70,9 @@ import { computed, ref, watch } from 'vue'
 import { Button, Switch, TabButtons } from 'frappe-ui'
 import { communities, type Community } from '@/data/communities'
 import { spaces } from '@/data/spaces'
+import { useSessionUser } from '@/data/users'
+import { getManageableCommunities, isGlobalAdmin } from '@/utils/permissions'
+import { visibilityFilterIcon } from '@/utils/visibility'
 import ConfigureEmptyState from './ConfigureEmptyState.vue'
 import ConfigureList from './ConfigureList.vue'
 import CommunityRow from './CommunityRow.vue'
@@ -67,6 +81,7 @@ type VisibilityFilter = 'All' | 'Public' | 'Private'
 
 const visibilityFilter = ref<VisibilityFilter>('All')
 const showArchived = ref(false)
+const sessionUser = useSessionUser()
 const emit = defineEmits<{
   (event: 'create-community'): void
 }>()
@@ -83,12 +98,16 @@ const filteredCommunities = computed(() => {
   )
 })
 
+const manageableCommunities = computed(() =>
+  getManageableCommunities(communities.data || [], sessionUser),
+)
 const visibleCommunities = computed(() =>
-  (communities.data || []).filter((community) => showArchived.value || !community.archived_at),
+  manageableCommunities.value.filter((community) => showArchived.value || !community.archived_at),
 )
 const hasArchivedCommunities = computed(() =>
-  (communities.data || []).some((community) => community.archived_at),
+  manageableCommunities.value.some((community) => community.archived_at),
 )
+const showCreateCommunity = computed(() => isGlobalAdmin(sessionUser))
 const publicCommunityCount = computed(
   () => visibleCommunities.value.filter((community) => !community.is_private).length,
 )

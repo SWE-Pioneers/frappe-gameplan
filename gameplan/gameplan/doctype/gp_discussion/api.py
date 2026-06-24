@@ -7,7 +7,7 @@ from frappe.query_builder.functions import Count
 from frappe.utils import cint
 from pypika.terms import ExistsCriterion
 
-import gameplan
+from gameplan.permissions import apply_accessible_project_filter
 from gameplan.utils import html_to_text_preview
 
 
@@ -44,10 +44,10 @@ def get_discussions(filters=None, order_by=None, start=None, limit=None):
 		.left_join(Project)
 		.on(Discussion.project == Project.name)
 		.where(Project.archived_at.isnull())
-		.where((Project.is_private == 0) | ((Project.is_private == 1) & ExistsCriterion(member_exists)))
 		.limit(limit + 1)
 		.offset(start or 0)
 	)
+	query = apply_accessible_project_filter(query, Discussion.project)
 
 	if participator:
 		query = query.where(clause_discussions_commented_by_user(participator))
@@ -78,12 +78,6 @@ def get_discussions(filters=None, order_by=None, start=None, limit=None):
 
 	# default order by last_post_at desc
 	query = query.orderby(Discussion[order_field], order=frappe._dict(value=order_direction))
-
-	is_guest = gameplan.is_guest()
-	if is_guest:
-		GuestAccess = frappe.qb.DocType("GP Guest Access")
-		project_list = GuestAccess.select(GuestAccess.project).where(GuestAccess.user == frappe.session.user)
-		query = query.where(Discussion.project.isin(project_list))
 
 	discussions = query.run(as_dict=1)
 	has_next_page = len(discussions) > limit

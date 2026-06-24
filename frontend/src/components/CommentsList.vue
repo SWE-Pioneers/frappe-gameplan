@@ -40,6 +40,7 @@
           }"
           :ref="($comment) => setItemRef($comment, item)"
           :comment="item"
+          :space="space"
           :highlight="highlightedItem == item"
           :readOnlyMode="readOnlyMode"
           :comments="comments"
@@ -112,11 +113,14 @@ import { needsMobileCommentGap } from '@/utils/commentTimeline'
 import { dialog } from 'frappe-ui'
 import { useSocket, type NewActivityEvent } from '@/socket'
 import { GPActivity, GPComment } from '@/types/doctypes'
+import type { Space } from '@/data/spaces'
 import { useDraftSync } from '@/data/useDraftSync'
 
 interface Props {
   doctype: string
   name: string
+  // Space the thread belongs to, for community-admin delete moderation.
+  space?: Space | null
   newCommentsFrom?: string
   readOnlyMode?: boolean
   disableNewComment?: boolean

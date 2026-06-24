@@ -29,25 +29,29 @@ describe('Mobile community home', () => {
       })
   })
 
-  it('drills from Home into a community menu, feeds, spaces, and global tabs', () => {
+  it('opens All Discussions, switches feeds and spaces from the header, and shows global tabs', () => {
     cy.visit('/g')
     cy.url().should('include', '/home')
     cy.contains('button', 'Design').should('be.visible')
     cy.contains('button', 'Support').should('be.visible')
 
+    // Tapping a community lands directly on its All Discussions feed.
     cy.contains('button', 'Design').click()
-    cy.url().should('include', `/community/${first}/menu`)
-    cy.contains('button', 'All discussions').should('be.visible')
+    cy.url().should('include', `/community/${first}/discussions`)
+
+    // The header title opens the community switcher sheet.
+    cy.contains('button', 'All Discussions').click()
     cy.contains('button', 'Unread').should('be.visible')
     cy.contains('button', 'Participating').should('be.visible')
     cy.contains('button', 'Brand').should('be.visible')
     cy.contains('button', 'Tickets').should('not.exist')
 
-    cy.contains('button', 'All discussions').click()
-    cy.url().should('include', `/community/${first}/discussions`)
+    // Picking a feed stays within the discussions page.
+    cy.contains('button', 'Unread').click()
+    cy.url().should('include', `/community/${first}/discussions/unread`)
 
-    cy.go('back')
-    cy.url().should('include', `/community/${first}/menu`)
+    // Picking a space from the same switcher navigates into it.
+    cy.contains('button', 'Unread').click()
     cy.contains('button', 'Brand').click()
     cy.url().should('include', `/community/${first}/space/${firstSpace}`)
 

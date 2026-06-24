@@ -18,7 +18,7 @@
 
       <div
         v-if="activeCommunities.length"
-        class="flex min-h-0 w-full flex-1 flex-col items-center border-t border-outline-gray-2 pt-3"
+        class="flex min-h-0 w-full flex-1 flex-col items-center border-t pt-3"
       >
         <div class="flex min-h-0 w-[50px] flex-1 flex-col items-center">
           <div class="relative min-h-0 w-[50px] flex-1">
@@ -85,7 +85,7 @@
                 size="sm"
                 icon="lucide-settings-2"
                 label="Customize sidebar"
-                class="mt-3 shrink-0 text-ink-gray-5"
+                class="mt-3"
                 @click="showCustomizeSidebar = true"
               />
             </TooltipTrigger>
@@ -112,9 +112,7 @@
       </div>
 
       <div v-if="!activeCommunities.length" class="flex-1" />
-      <div
-        class="mb-3 mt-3 flex w-full flex-col items-center gap-0.5 border-t border-outline-gray-2 py-3"
-      >
+      <div class="mb-3 mt-3 flex w-full flex-col items-center gap-0.5 border-t py-3">
         <RailIcon
           v-for="item in personalShortcuts"
           :key="item.label"
@@ -157,6 +155,7 @@ import { unreadNotifications } from '@/data/notifications'
 import { currentSidebarBadgeStyle } from '@/data/sidebarPreferences'
 import { getSpaceUnreadCount, spaces } from '@/data/spaces'
 import { isGameplanAdmin, useSessionUser } from '@/data/users'
+import { useConfigureRoute } from '@/composables/useConfigureRoute'
 import { formatUnreadCount, unreadAriaLabel } from '@/utils/formatters'
 import CommunityImage from '../CommunityImage.vue'
 import GameplanLogo from '../GameplanLogo.vue'
@@ -208,17 +207,20 @@ const homeRoute = computed<RouteLocationRaw>(() => {
 })
 
 const adminShortcuts = computed<RailItem[]>(() => {
-  if (!isAdmin.value) return []
+  const route = configureRoute.value
+  if (!route) return []
 
   return [
     {
       label: 'Configure communities',
       icon: 'lucide-building-2',
       isActive: isRoute('Spaces', 'CommunitySpaces', 'CommunityMembers'),
-      route: { name: 'Spaces' },
+      route,
     },
   ]
 })
+
+const configureRoute = useConfigureRoute()
 
 const mainShortcuts = computed<RailItem[]>(() => [
   {
@@ -245,8 +247,8 @@ const mainShortcuts = computed<RailItem[]>(() => [
 
 const personalShortcuts = computed<RailItem[]>(() => [
   {
-    label: 'Inbox',
-    icon: 'lucide-inbox',
+    label: 'Notifications',
+    icon: 'lucide-bell',
     isActive: isRoute('Notifications'),
     route: { name: 'Notifications' },
     unreadCount: unreadNotifications.data || 0,

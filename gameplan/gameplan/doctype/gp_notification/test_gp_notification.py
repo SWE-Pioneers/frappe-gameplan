@@ -18,6 +18,12 @@ class TestGPNotification(FrappeTestCase):
 		team = create_team("Notification Empty Link Team")
 		project = create_project("Notification Empty Link Space", team.name)
 		discussion = create_discussion("Notification Empty Link Discussion", project.name)
+		comment = frappe.get_doc(
+			doctype="GP Comment",
+			reference_doctype="GP Discussion",
+			reference_name=discussion.name,
+			content="Unrelated notification",
+		).insert(ignore_permissions=True)
 		matching = frappe.get_doc(
 			doctype="GP Notification",
 			to_user=user.name,
@@ -30,7 +36,7 @@ class TestGPNotification(FrappeTestCase):
 			to_user=user.name,
 			type="Mention",
 			discussion="",
-			comment=1,
+			comment=comment.name,
 			read=0,
 		).insert(ignore_permissions=True)
 

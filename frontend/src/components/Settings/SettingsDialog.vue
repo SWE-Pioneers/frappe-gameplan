@@ -32,9 +32,11 @@
 </template>
 
 <script setup lang="ts">
-import { markRaw, onMounted, type Component } from 'vue'
+import { computed, markRaw, watchEffect, type Component } from 'vue'
+import { useEventListener } from '@vueuse/core'
 import { Dialog } from 'frappe-ui'
-import { show, activeTab, registerTabs } from './index'
+import { show, activeTab, registerTabs, showSettingsDialog } from './index'
+import { isGameplanAdmin } from '@/data/users'
 import Members from './Members.vue'
 import InvitePeople from './InvitePeople.vue'
 import SettingsTabDialog from './SettingsTab.vue'
@@ -45,18 +47,23 @@ interface Tab {
   label: string
   icon: Component | LucideIconString
   component: Component
+  // Tabs that drive global role management / invites; these only make sense for
+  // global admins, whose actions the server (require_admin) actually accepts.
+  adminOnly?: boolean
 }
 
-const tabs: Tab[] = [
+const allTabs: Tab[] = [
   {
     label: 'Members',
     icon: 'lucide-users',
     component: markRaw(Members),
+    adminOnly: true,
   },
   {
     label: 'Invites',
     icon: 'lucide-user-plus',
     component: markRaw(InvitePeople),
+    adminOnly: true,
   },
   {
     label: 'Settings',
@@ -65,7 +72,18 @@ const tabs: Tab[] = [
   },
 ]
 
-onMounted(() => {
-  registerTabs(tabs)
+// Admin status loads asynchronously (the users resource is immediate: false), so
+// keep this reactive and re-register once the session user's role resolves.
+const tabs = computed(() => allTabs.filter((tab) => !tab.adminOnly || isGameplanAdmin()))
+
+watchEffect(() => registerTabs(tabs.value))
+
+// Cmd/Ctrl+Shift+. toggles Settings. Use e.code (physical key) since Shift
+// rewrites e.key for "." to ">" on most layouts. useEventListener auto-cleans up.
+useEventListener(window, 'keydown', (e: KeyboardEvent) => {
+  if (e.code === 'Comma' && e.shiftKey && (e.metaKey || e.ctrlKey)) {
+    e.preventDefault()
+    show.value ? (show.value = false) : showSettingsDialog()
+  }
 })
 </script>

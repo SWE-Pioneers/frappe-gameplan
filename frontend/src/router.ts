@@ -8,10 +8,11 @@ import {
 import { until } from '@vueuse/core'
 import { session } from './data/session'
 import { isGameplanAdmin, users, useSessionUser } from './data/users'
-import { communities, getActiveCommunity } from './data/communities'
+import { communities, getActiveCommunity, getCommunity } from './data/communities'
 import { spaces, getSpace } from './data/spaces'
 import type { Space } from './data/spaces'
 import { communityState } from './data/communityState'
+import { canManageCommunity, getManageableCommunities } from './utils/permissions'
 import { getScrollContainer, scrollTo } from './utils/scrollContainer'
 
 declare const __FRONTEND_ROUTE__: string
@@ -38,10 +39,23 @@ function optionalRouteParam(value: RouteParamValue | undefined): string | undefi
   return resolvedValue || undefined
 }
 
-async function ensureConfigureAccess() {
+async function ensureConfigureAccess(to: RouteLocationNormalized) {
   await ensureCommunityDataLoaded()
 
-  if (!isGameplanAdmin()) {
+  if (isGameplanAdmin()) {
+    return
+  }
+
+  const communityId = optionalRouteParam(to.params.communityId)
+  if (!communityId) {
+    if (getManageableCommunities(communities.data || [], useSessionUser()).length) {
+      return
+    }
+
+    return getHomeRoute()
+  }
+
+  if (!canManageCommunity(getCommunity(communityId), useSessionUser())) {
     return getHomeRoute()
   }
 }
@@ -97,21 +111,12 @@ const routes: RouteRecordRaw[] = [
     }),
   },
   {
-    name: 'MobileCommunityMenu',
+    // Legacy path: the community menu is now a bottom sheet on the discussions header.
     path: '/community/:communityId/menu',
-    component: () => import('@/pages/MobileCommunityMenu.vue'),
-    props: true,
-    meta: { communityScope: true },
-    async beforeEnter(to) {
-      await ensureCommunityDataLoaded()
-
-      if (!isMobileViewport()) {
-        return {
-          name: 'Discussions',
-          params: { communityId: routeParam(to.params.communityId) },
-        }
-      }
-    },
+    redirect: (to) => ({
+      name: 'Discussions',
+      params: { communityId: routeParam(to.params.communityId) },
+    }),
   },
   {
     name: 'Discussions',
@@ -747,22 +752,33 @@ router.beforeEach(async (to, from) => {
 
   await ensureCommunityDataLoaded()
 
+  let isCommunityScopedRoute = to.matched.some((route) => route.meta?.communityScope)
+  if (!isCommunityScopedRoute) {
+    communityState.scope(null)
+  }
+
   if (['/', '/community'].includes(to.path)) {
     return getHomeRoute()
   }
 
-  if (!to.matched.some((route) => route.meta?.communityScope)) {
+  if (!isCommunityScopedRoute) {
     return
   }
 
   let communityId = routeParam(to.params.communityId)
 
+  let community = getCommunity(communityId)
+
   // Invalid community URLs should fail loudly instead of silently switching shell state.
-  if (!getActiveCommunity(communityId)) {
+  // Public communities are visible even when the user has not joined them, so route validity
+  // cannot be tied to the active sidebar community list.
+  if (!community || community.archived_at) {
     return { name: 'NotFound' }
   }
 
-  if (communityState.id !== communityId) {
+  communityState.scope(communityId)
+
+  if (getActiveCommunity(communityId) && communityState.joinedId !== communityId) {
     communityState.change(communityId)
   }
 
