@@ -94,9 +94,11 @@ class GPTeam(Archivable, Document):
 		if invitation.role != "Gameplan Guest" or invitation.status != "Pending":
 			frappe.throw("Invalid guest invitation")
 
-		project_names = set(self.get_project_names())
-		invitation_projects = [str(project) for project in frappe.parse_json(invitation.projects or "[]")]
-		remaining_projects = [project for project in invitation_projects if project not in project_names]
+		# Compare as str (project names are ints for autoincrement doctypes), but keep
+		# the invitation's original project values so they round-trip unchanged.
+		project_names = {str(project) for project in self.get_project_names()}
+		invitation_projects = frappe.parse_json(invitation.projects or "[]")
+		remaining_projects = [project for project in invitation_projects if str(project) not in project_names]
 		if len(remaining_projects) == len(invitation_projects):
 			frappe.throw("Not permitted", frappe.PermissionError)
 
