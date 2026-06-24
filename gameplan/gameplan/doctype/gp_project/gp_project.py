@@ -13,6 +13,7 @@ from gameplan.gameplan.doctype.gp_unread_record.gp_unread_record import GPUnread
 from gameplan.mixins.archivable import Archivable
 from gameplan.mixins.manage_members import ManageMembersMixin
 from gameplan.permissions import (
+	apply_accessible_project_filter,
 	apply_project_query_filter,
 	can_view_space,
 	require_can_invite_guest,
@@ -237,6 +238,37 @@ def get_joined_spaces():
 	).run(as_dict=True, pluck="project")
 
 	return list(map(str, set(projects + guest_access_projects)))
+
+
+@frappe.whitelist()
+def get_activity():
+	from frappe.query_builder.functions import Max
+
+	activity_by_project = {}
+	for doctype, timestamp_field in [
+		("GP Discussion", "last_post_at"),
+		("GP Task", "modified"),
+		("GP Page", "modified"),
+	]:
+		DocType = frappe.qb.DocType(doctype)
+		project = DocType.project
+		timestamp = getattr(DocType, timestamp_field)
+		query = (
+			frappe.qb.from_(DocType)
+			.select(project, Max(timestamp).as_("last_activity_at"))
+			.where(project.isnotnull())
+			.groupby(project)
+		)
+		query = apply_accessible_project_filter(query, project)
+
+		for row in query.run(as_dict=True):
+			project_name = str(row.project)
+			last_activity_at = row.last_activity_at
+			current_activity_at = activity_by_project.get(project_name, "")
+			if last_activity_at and str(last_activity_at) > str(current_activity_at):
+				activity_by_project[project_name] = last_activity_at
+
+	return activity_by_project
 
 
 @frappe.whitelist()
