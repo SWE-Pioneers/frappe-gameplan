@@ -77,13 +77,19 @@
           </div>
           <div class="mt-4 pb-16 -mx-3">
             <div
-              class="hidden sm:grid sm:grid-cols-[minmax(8rem,1fr)_4.5rem_4.5rem_8.5rem_8.5rem] sm:gap-6 h-8 items-center px-3 text-sm text-ink-gray-5"
+              class="hidden h-8 items-center px-3 text-sm text-ink-gray-5 sm:grid sm:grid-cols-[minmax(8rem,1fr)_repeat(4,5.5rem)] sm:gap-6"
             >
               <div>Member</div>
               <div class="text-right">Posts</div>
               <div class="text-right">Replies</div>
-              <div class="whitespace-nowrap text-right">Reactions received</div>
-              <div class="whitespace-nowrap text-right">Reactions given</div>
+              <div class="flex items-center justify-end gap-1.5">
+                <ReactionFaceIcon class="size-4 text-ink-gray-5" aria-hidden="true" />
+                <span>Received</span>
+              </div>
+              <div class="flex items-center justify-end gap-1.5">
+                <ReactionFaceIcon class="size-4 text-ink-gray-5" aria-hidden="true" />
+                <span>Given</span>
+              </div>
             </div>
             <template v-for="user in people" :key="user.name">
               <router-link
@@ -93,12 +99,12 @@
                     personId: user.name,
                   },
                 }"
-                class="flex sm:grid sm:grid-cols-[minmax(8rem,1fr)_4.5rem_4.5rem_8.5rem_8.5rem] sm:gap-6 sm:items-center sm:rounded px-3 py-2 sm:h-15 sm:hover:bg-surface-gray-2 duration-150 active:bg-surface-gray-2 transition-colors"
+                class="flex sm:grid sm:grid-cols-[minmax(8rem,1fr)_repeat(4,5.5rem)] sm:gap-6 sm:items-center sm:rounded px-3 py-2 sm:h-15 sm:hover:bg-surface-gray-2 duration-150 active:bg-surface-gray-2 transition-colors"
                 exact-active-class="!bg-surface-gray-2"
               >
                 <div class="flex w-full min-w-0 items-center">
                   <UserAvatarWithHover :user="user.user" size="2xl" />
-                  <div class="ml-3 min-w-0">
+                  <div class="ml-3 min-w-0 flex-1">
                     <div class="flex items-center space-x-2">
                       <div class="text-base-medium text-ink-gray-8">
                         {{ $user(user.user).full_name }}
@@ -172,6 +178,7 @@ import PageHeader from '@/components/PageHeader.vue'
 import { showSettingsDialog } from '@/components/Settings'
 import { isGameplanAdmin } from '@/data/users'
 import UserAvatarWithHover from '@/components/UserAvatarWithHover.vue'
+import ReactionFaceIcon from '@/components/ReactionFaceIcon.vue'
 
 export default {
   name: 'People',
@@ -186,6 +193,7 @@ export default {
     MobileBackButton,
     MobileHeader,
     PageHeader,
+    ReactionFaceIcon,
   },
   data() {
     return {
