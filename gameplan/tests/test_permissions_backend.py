@@ -165,6 +165,19 @@ class TestSpaceVisibility(PermissionBackendTestCase):
 
 		self.assertNotIn(space.name, [space.name for space in spaces])
 
+	def test_client_list_can_fetch_space_visibility_with_team_title(self):
+		team = self.create_community("Joined Field Community", members=[self.alice.name, self.bob.name])
+		space = self.create_space("Joined Field Space", team.name)
+
+		frappe.set_user(self.bob.name)
+		spaces = get_client_list(
+			doctype="GP Project",
+			fields=["name", "is_private", "team.title as team_title"],
+			limit=50,
+		)
+
+		self.assertIn(space.name, [space.name for space in spaces])
+
 
 class TestContentPermissions(PermissionBackendTestCase):
 	def test_content_inherits_private_space_visibility(self):

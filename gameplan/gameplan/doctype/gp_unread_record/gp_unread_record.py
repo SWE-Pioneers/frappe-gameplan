@@ -165,6 +165,95 @@ class GPUnreadRecord(Document):
 		return query.run(as_dict=1)
 
 	@staticmethod
+	def mark_all_as_read_for_team(team, user):
+		projects = GPUnreadRecord.get_accessible_project_names_for_team(team, user)
+		if not projects:
+			return []
+
+		UnreadRecord = frappe.qb.DocType("GP Unread Record")
+		(
+			frappe.qb.update(UnreadRecord)
+			.set(UnreadRecord.is_unread, 0)
+			.where(
+				(UnreadRecord.user == user)
+				& (UnreadRecord.project.isin(projects))
+				& (UnreadRecord.is_unread == 1)
+			)
+		).run()
+
+		GPUnreadRecord.update_project_visits_for_mark_all_read(projects, user)
+		return projects
+
+	@staticmethod
+	def get_accessible_project_names_for_team(team, user):
+		from gameplan.permissions import apply_project_query_filter
+
+		Project = frappe.qb.DocType("GP Project")
+		query = (
+			frappe.qb.from_(Project)
+			.select(Project.name)
+			.where((Project.team == team) & Project.archived_at.isnull())
+		)
+		query = apply_project_query_filter(query, user)
+		return [str(row.name) for row in query.run(as_dict=True)]
+
+	@staticmethod
+	def update_project_visits_for_mark_all_read(projects: list[str], user):
+		now = frappe.utils.now()
+		existing_visits = GPUnreadRecord.get_project_visit_names(projects, user)
+
+		if existing_visits:
+			GPUnreadRecord.update_existing_project_visits(list(existing_visits.values()), now)
+
+		missing_projects = [project for project in projects if project not in existing_visits]
+		if missing_projects:
+			# Project access is already scoped by get_accessible_project_names_for_team;
+			# these visit rows are system-managed on behalf of the authenticated user.
+			GPUnreadRecord.create_project_visits(missing_projects, user, now)
+
+	@staticmethod
+	def get_project_visit_names(projects: list[str], user):
+		if not projects:
+			return {}
+
+		return {
+			row.project: row.name
+			for row in frappe.qb.get_query(
+				"GP Project Visit",
+				fields=["name", "project"],
+				filters={"user": user, "project": ["in", projects]},
+			).run(as_dict=True)
+		}
+
+	@staticmethod
+	def update_existing_project_visits(project_visit_names: list[str], timestamp):
+		ProjectVisit = frappe.qb.DocType("GP Project Visit")
+		(
+			frappe.qb.update(ProjectVisit)
+			.set(ProjectVisit.last_visit, timestamp)
+			.set(ProjectVisit.mark_all_read_at, timestamp)
+			.where(ProjectVisit.name.isin(project_visit_names))
+		).run()
+
+	@staticmethod
+	def create_project_visits(projects: list[str], user, timestamp):
+		visits = []
+		for project in projects:
+			visit = frappe.get_doc(
+				{
+					"doctype": "GP Project Visit",
+					"name": frappe.generate_hash(length=10),
+					"user": user,
+					"project": project,
+					"last_visit": timestamp,
+					"mark_all_read_at": timestamp,
+				}
+			)
+			visits.append(visit)
+
+		bulk_insert("GP Project Visit", visits, ignore_duplicates=True)
+
+	@staticmethod
 	def get_unread_count_for_projects(user, projects: list[str] = None):
 		"""Get unread count for a single project for user"""
 		from frappe.query_builder import functions
@@ -310,4 +399,5 @@ def add_indexes():
 from gameplan.gameplan.doctype.gp_unread_record.api import (  # noqa: E402, F401
 	get_participating_unread_count,
 	get_unread_count,
+	mark_all_as_read_for_team,
 )

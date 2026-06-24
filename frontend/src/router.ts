@@ -9,7 +9,7 @@ import { until } from '@vueuse/core'
 import { call } from 'frappe-ui'
 import { session } from './data/session'
 import { isGameplanAdmin, users, useSessionUser } from './data/users'
-import { communities, getActiveCommunity, getCommunity } from './data/communities'
+import { communities, getCommunity } from './data/communities'
 import { spaces, getSpace } from './data/spaces'
 import type { Space } from './data/spaces'
 import { communityState } from './data/communityState'
@@ -809,10 +809,6 @@ router.beforeEach(async (to, from) => {
   }
 
   communityState.scope(communityId)
-
-  if (getActiveCommunity(communityId) && communityState.joinedId !== communityId) {
-    communityState.change(communityId)
-  }
 })
 
 export default router

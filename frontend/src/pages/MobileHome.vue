@@ -96,6 +96,7 @@ function onCommunityClick(communityId: string) {
     return
   }
 
+  communityState.change(communityId)
   router.push({ name: 'Discussions', params: { communityId } })
 }
 

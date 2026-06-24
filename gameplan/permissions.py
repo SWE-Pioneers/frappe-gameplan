@@ -302,7 +302,7 @@ def is_member_parent(parenttype, parent_field, user):
 
 
 def criterion_sql(criterion):
-	return criterion.get_sql(quote_char="`") if criterion is not None else None
+	return criterion.get_sql(quote_char="`", with_namespace=True) if criterion is not None else None
 
 
 def is_global_admin(user):

@@ -21,8 +21,8 @@ describe('Onboarding', () => {
     // Lands on the new community's canonical discussions URL.
     cy.url().should('match', /\/community\/[^/]+\/discussions/)
 
-    // Sidebar shows the discussions row plus the auto-created public General space
-    // and the user-named space as space links.
+    // Page tabs show the discussions feed, and the sidebar lists the auto-created
+    // public General space plus the user-named space.
     cy.contains('All Discussions').should('exist')
     cy.contains('a', 'General').should('exist')
     cy.contains('a', 'Marketing').should('exist')

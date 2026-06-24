@@ -49,6 +49,15 @@ export function getParticipatingUnreadCount(team: string) {
   return participatingUnreadCounts[team] ?? 0
 }
 
+export function markCommunityAsRead(team: string) {
+  return UnreadCount.runMethod
+    .submit({ method: 'mark_all_as_read_for_team', params: { team } })
+    .then((projects: string[]) => {
+      participatingUnreadCounts[team] = 0
+      return refreshUnreadCountForProjects(projects)
+    })
+}
+
 const Project = useDoctype<GPProject>('GP Project')
 
 export function markSpaceAsRead(spaceId: string) {

@@ -42,9 +42,9 @@ describe('Community scope smoke', () => {
 
   it('shows the community sidebar on scoped routes and hides it on global ones', () => {
     cy.visit(`/g/community/${community}/discussions`)
-    // Sidebar lists this community's spaces and feed-type rows.
+    // Sidebar lists this community's spaces, and the page owns discussion feed tabs.
     cy.contains('a', 'Logistics').should('be.visible')
-    cy.contains('All Discussions').should('be.visible')
+    cy.contains('button:visible', 'All Discussions').should('be.visible')
 
     // Global routes drop the community sidebar; its space rows are gone.
     cy.visit('/g/bookmarks')

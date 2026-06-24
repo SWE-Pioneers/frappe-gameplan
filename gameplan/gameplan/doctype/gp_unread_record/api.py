@@ -23,3 +23,13 @@ def get_participating_unread_count(team=None):
 	from gameplan.gameplan.doctype.gp_unread_record.gp_unread_record import GPUnreadRecord
 
 	return GPUnreadRecord.get_participating_unread_count(frappe.session.user, team)
+
+
+@frappe.whitelist(methods=["POST"])
+def mark_all_as_read_for_team(team=None):
+	from gameplan.gameplan.doctype.gp_unread_record.gp_unread_record import GPUnreadRecord
+
+	if not team:
+		return []
+
+	return GPUnreadRecord.mark_all_as_read_for_team(team, frappe.session.user)

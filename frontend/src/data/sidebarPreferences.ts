@@ -6,7 +6,7 @@ export type SpaceSidebarSort = 'Recent activity' | 'Alphabetical'
 
 const defaultSidebarBadgeStyle: SidebarBadgeStyle = 'Dot'
 const sidebarBadgeStyle = ref<SidebarBadgeStyle>(defaultSidebarBadgeStyle)
-const defaultSpaceSidebarSort: SpaceSidebarSort = 'Alphabetical'
+const defaultSpaceSidebarSort: SpaceSidebarSort = 'Recent activity'
 const spaceSidebarSort = useLocalStorage<SpaceSidebarSort>(
   'gameplan:spaceSidebarSort',
   defaultSpaceSidebarSort,
