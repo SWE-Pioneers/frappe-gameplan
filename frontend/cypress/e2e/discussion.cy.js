@@ -46,6 +46,10 @@ describe('Discussion', () => {
 
     // cy.button('View all').click()
     cy.button('Add new').click()
+    // Wait for the editor to mount before typing the title; otherwise the editor's
+    // focus-steal on mount drops the title's first keystroke and the slug comes out
+    // wrong. Mirrors new-discussion.cy.ts.
+    cy.get('div[contenteditable=true]').should('exist')
     cy.get('textarea').should('be.visible').type('Starting a new discussion')
     cy.get('div[contenteditable=true]')
       .should('be.visible')
