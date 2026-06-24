@@ -56,11 +56,15 @@ class GPTeam(Archivable, Document):
 		)
 
 	def add_member(self, email, is_admin=0):
-		if email not in [member.user for member in self.members]:
-			self.append(
-				"members",
-				{"email": email, "user": email, "status": "Accepted", "is_admin": is_admin},
-			)
+		member = self.get_member(email)
+		if member:
+			member.is_admin = cint(member.is_admin) or cint(is_admin)
+			return
+
+		self.append(
+			"members",
+			{"email": email, "user": email, "status": "Accepted", "is_admin": is_admin},
+		)
 
 	@frappe.whitelist()
 	def add_members(self, users):
@@ -108,6 +112,19 @@ class GPTeam(Archivable, Document):
 			return
 
 		frappe.delete_doc("GP Invitation", invitation.name, ignore_permissions=True)
+
+	@frappe.whitelist()
+	def merge_into_team(self, team: str):
+		if self.archived_at:
+			frappe.throw("Cannot merge an archived community")
+
+		target = self.get_merge_target(team)
+		require_can_manage_community(self)
+		require_can_manage_community(target)
+
+		self.move_spaces_to(target.name)
+		self.copy_members_to(target)
+		self.archive()
 
 	@frappe.whitelist()
 	def set_member_admin(self, user, is_admin):
@@ -167,6 +184,28 @@ class GPTeam(Archivable, Document):
 			filters["is_private"] = is_private
 
 		return frappe.qb.get_query("GP Project", filters=filters, fields=["name"]).run(pluck=True)
+
+	def get_merge_target(self, team: str):
+		if not team or team == self.name:
+			frappe.throw("Select a different community to merge into")
+		if not frappe.db.exists("GP Team", team):
+			frappe.throw(f'Invalid community "{team}"')
+
+		target = frappe.get_doc("GP Team", team)
+		if target.archived_at:
+			frappe.throw("Cannot merge into an archived community")
+		return target
+
+	def move_spaces_to(self, team: str):
+		for project_name in self.get_project_names():
+			project = frappe.get_doc("GP Project", project_name)
+			project.move_to_team(team)
+
+	def copy_members_to(self, target):
+		for member in self.members:
+			if member.user:
+				target.add_member(member.user, is_admin=member.is_admin)
+		target.save(ignore_permissions=True)
 
 
 @frappe.whitelist(methods=["POST"])

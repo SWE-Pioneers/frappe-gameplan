@@ -6,7 +6,7 @@ from frappe.tests.utils import FrappeTestCase
 
 from gameplan.gameplan.doctype.gp_team.gp_team import update_joined_teams
 from gameplan.gameplan.doctype.gp_user_profile.gp_user_profile import get_session_user_profile
-from gameplan.tests.utils import create_member
+from gameplan.tests.utils import create_discussion, create_member, create_project
 
 
 class TestGPTeam(FrappeTestCase):
@@ -73,3 +73,29 @@ class TestGPTeam(FrappeTestCase):
 		frappe.set_user(user.name)
 
 		self.assertRaises(frappe.ValidationError, update_joined_teams, [team.name], "Banner")
+
+	def test_merge_into_team_moves_spaces_members_and_archives_source(self):
+		source_member = create_member("merge-source-member@example.com", "Merge Source Member")
+		source = frappe.get_doc(doctype="GP Team", title="Merge Source Team").insert(ignore_permissions=True)
+		target = frappe.get_doc(doctype="GP Team", title="Merge Target Team").insert(ignore_permissions=True)
+		source.add_member(source_member.name, is_admin=1)
+		source.save(ignore_permissions=True)
+		project = create_project("Merge Source Space", source.name)
+		discussion = create_discussion("Merge Source Discussion", project.name)
+		task = frappe.get_doc(doctype="GP Task", title="Merge Source Task", project=project.name).insert(
+			ignore_permissions=True
+		)
+		page = frappe.get_doc(doctype="GP Page", title="Merge Source Page", project=project.name).insert(
+			ignore_permissions=True
+		)
+
+		source.merge_into_team(target.name)
+
+		source.reload()
+		target.reload()
+		self.assertTrue(source.archived_at)
+		self.assertTrue(target.get_member(source_member.name).is_admin)
+		self.assertEqual(frappe.db.get_value("GP Project", project.name, "team"), target.name)
+		self.assertEqual(frappe.db.get_value("GP Discussion", discussion.name, "team"), target.name)
+		self.assertEqual(frappe.db.get_value("GP Task", task.name, "team"), target.name)
+		self.assertEqual(frappe.db.get_value("GP Page", page.name, "team"), target.name)
