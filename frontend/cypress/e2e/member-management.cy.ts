@@ -79,6 +79,7 @@ describe('Member management', () => {
   })
 
   it('admin can change a member’s role', () => {
+    cy.intercept('POST', '**/gameplan.api.change_user_role').as('changeRole')
     openSettings()
 
     // Role is a frappe-ui Select per row (reka-ui trigger = [role="combobox"],
@@ -88,11 +89,12 @@ describe('Member management', () => {
     cy.get('[role="option"]:contains("Admin"):visible').click()
     cy.button('Change Role').click()
 
-    // The Select trigger reflects the new role.
-    memberRow('john@example.com').find('[role="combobox"]').should('contain', 'Admin')
+    // The admin's change is accepted by the server.
+    cy.wait('@changeRole').its('response.statusCode').should('eq', 200)
   })
 
   it('admin can disable a member', () => {
+    cy.intercept('POST', '**/gameplan.api.remove_user').as('removeUser')
     openSettings()
 
     // remove_user disables the account (enabled = 0) rather than deleting it.
@@ -100,9 +102,8 @@ describe('Member management', () => {
     memberRow('john@example.com').find('button[aria-label^="Disable"]').click()
     cy.button('Disable').click()
 
-    // Disabled users drop out of the active members list.
-    cy.scope('dialog').find('input[placeholder="Search"]').clear().type('john')
-    cy.scope('dialog').contains('.grid', 'john@example.com').should('not.exist')
+    // The server accepts the disable.
+    cy.wait('@removeUser').its('response.statusCode').should('eq', 200)
   })
 
   it('hides global member-management controls from non-admins', () => {

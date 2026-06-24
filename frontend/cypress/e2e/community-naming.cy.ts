@@ -34,12 +34,14 @@ describe('Community naming alignment', () => {
     cy.url().should('match', /\/community\/[^/]+\/discussions/)
   })
 
-  // The rail switcher uses a custom `#trigger` slot, so its trigger is the rail
-  // "More communities" button; clicking it mounts the searchable input.
+  // The rail lists each joined community as a direct button; its aria-label is the
+  // community title (optionally suffixed with an unread count).
   function switchCommunity(optionLabel: string) {
-    cy.iconButton('More communities').click()
-    cy.get('input[placeholder="Search communities"]').click().clear().type(optionLabel)
-    cy.get('[role="option"]').contains(optionLabel).click()
+    cy.get(
+      `button[aria-label="${optionLabel}"]:visible, button[aria-label^="${optionLabel}, "]:visible`,
+    )
+      .first()
+      .click()
   }
 
   it('switches communities from the rail and persists the choice across reload', () => {
