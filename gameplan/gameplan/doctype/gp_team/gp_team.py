@@ -2,6 +2,7 @@
 # For license information, please see license.txt
 
 import frappe
+from frappe import _
 from frappe.model.document import Document
 from frappe.model.naming import append_number_if_name_exists
 from frappe.utils import cint
@@ -116,10 +117,10 @@ class GPTeam(Archivable, Document):
 	@frappe.whitelist()
 	def merge_into_team(self, team: str):
 		if self.archived_at:
-			frappe.throw("Cannot merge an archived community")
+			frappe.throw(_("Cannot merge an archived community"))
 
-		target = self.get_merge_target(team)
 		require_can_manage_community(self)
+		target = self.get_merge_target(team)
 		require_can_manage_community(target)
 
 		self.move_spaces_to(target.name)
@@ -187,13 +188,13 @@ class GPTeam(Archivable, Document):
 
 	def get_merge_target(self, team: str):
 		if not team or team == self.name:
-			frappe.throw("Select a different community to merge into")
+			frappe.throw(_("Select a different community to merge into"))
 		if not frappe.db.exists("GP Team", team):
-			frappe.throw(f'Invalid community "{team}"')
+			frappe.throw(_('Invalid community "{0}"').format(team))
 
 		target = frappe.get_doc("GP Team", team)
 		if target.archived_at:
-			frappe.throw("Cannot merge into an archived community")
+			frappe.throw(_("Cannot merge into an archived community"))
 		return target
 
 	def move_spaces_to(self, team: str):
@@ -205,6 +206,7 @@ class GPTeam(Archivable, Document):
 		for member in self.members:
 			if member.user:
 				target.add_member(member.user, is_admin=member.is_admin)
+		# The merge caller has already asserted manage-community permission on target.
 		target.save(ignore_permissions=True)
 
 

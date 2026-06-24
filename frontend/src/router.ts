@@ -36,6 +36,7 @@ type ProjectContentDoc = {
 }
 
 const discussionFeeds = ['recent', 'unread', 'participating']
+const projectContentDocRequests = new Map<string, Promise<ProjectContentDoc | null>>()
 
 // Redirect-style guards still need a component record so Vue Router matches them consistently.
 const RouteGuard = { render: () => null }
@@ -480,11 +481,6 @@ const routes: RouteRecordRaw[] = [
     path: '/space/:spaceId/pages/:pageId/:slug?',
     component: RouteGuard,
     async beforeEnter(to) {
-      const canonicalRoute = await getCanonicalContentRoute(to)
-      if (canonicalRoute) {
-        return canonicalRoute
-      }
-
       const space = await findSpace(routeParam(to.params.spaceId))
 
       if (!space?.team) {
@@ -527,11 +523,6 @@ const routes: RouteRecordRaw[] = [
     path: '/space/:spaceId/tasks/:taskId',
     component: RouteGuard,
     async beforeEnter(to) {
-      const canonicalRoute = await getCanonicalContentRoute(to)
-      if (canonicalRoute) {
-        return canonicalRoute
-      }
-
       const space = await findSpace(routeParam(to.params.spaceId))
 
       if (!space?.team) {
@@ -553,11 +544,6 @@ const routes: RouteRecordRaw[] = [
     path: '/space/:spaceId/discussion/:postId/:slug?',
     component: RouteGuard,
     async beforeEnter(to) {
-      const canonicalRoute = await getCanonicalContentRoute(to)
-      if (canonicalRoute) {
-        return canonicalRoute
-      }
-
       const space = await findSpace(routeParam(to.params.spaceId))
 
       if (!space?.team) {
@@ -788,16 +774,16 @@ router.beforeEach(async (to, from) => {
     return getHomeRoute()
   }
 
+  const canonicalContentRoute = await getCanonicalContentRoute(to)
+  if (canonicalContentRoute) {
+    return canonicalContentRoute
+  }
+
   if (!isCommunityScopedRoute) {
     return
   }
 
   let communityId = routeParam(to.params.communityId)
-
-  const canonicalContentRoute = await getCanonicalContentRoute(to)
-  if (canonicalContentRoute) {
-    return canonicalContentRoute
-  }
 
   let space = to.params.spaceId ? getSpace(routeParam(to.params.spaceId)) : null
 
@@ -957,6 +943,19 @@ function getContentRouteDescriptor(to: RouteLocationNormalized): ContentRouteDes
 }
 
 async function getProjectContentDoc(doctype: ContentRouteDescriptor['doctype'], name: string) {
+  const cacheKey = `${doctype}:${name}`
+  const cachedRequest = projectContentDocRequests.get(cacheKey)
+  if (cachedRequest) return cachedRequest
+
+  const request = fetchProjectContentDoc(doctype, name)
+  projectContentDocRequests.set(cacheKey, request)
+  request.finally(() => {
+    window.setTimeout(() => projectContentDocRequests.delete(cacheKey), 1000)
+  })
+  return request
+}
+
+async function fetchProjectContentDoc(doctype: ContentRouteDescriptor['doctype'], name: string) {
   try {
     return await call<ProjectContentDoc>('frappe.client.get', { doctype, name })
   } catch {
