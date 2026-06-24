@@ -13,6 +13,9 @@
         <div class="absolute inset-x-0 bottom-0 flex justify-center">
           <Motion
             class="w-full max-w-2xl transform-gpu rounded-t-2xl bg-surface-base shadow-lg [corner-shape:squircle]"
+            role="dialog"
+            aria-modal="true"
+            :aria-label="title || 'Bottom sheet'"
             :initial="{ y: '50%', opacity: 0.5 }"
             :animate="{ y: dragY, opacity: 1 }"
             :exit="{ y: '100%', opacity: 0 }"

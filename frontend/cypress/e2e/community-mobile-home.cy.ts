@@ -41,18 +41,18 @@ describe('Mobile community home', () => {
 
     // The header title opens the community switcher sheet.
     cy.contains('button', 'All Discussions').click()
-    cy.contains('button', 'Unread').should('be.visible')
-    cy.contains('button', 'Participating').should('be.visible')
-    cy.contains('button', 'Brand').should('be.visible')
-    cy.contains('button', 'Tickets').should('not.exist')
+    cy.scope('dialog').button('Unread').should('be.visible')
+    cy.scope('dialog').button('Participating').should('be.visible')
+    cy.scope('dialog').button('Brand').should('be.visible')
+    cy.scope('dialog').contains('button', 'Tickets').should('not.exist')
 
     // Picking a feed stays within the discussions page.
-    cy.contains('button', 'Unread').click()
+    cy.scope('dialog').button('Unread').click()
     cy.url().should('include', `/community/${first}/discussions/unread`)
 
     // Picking a space from the same switcher navigates into it.
-    cy.contains('button', 'Unread').click()
-    cy.contains('button', 'Brand').click()
+    cy.scope('header').button('Unread').click()
+    cy.scope('dialog').button('Brand').click()
     cy.url().should('include', `/community/${first}/space/${firstSpace}`)
 
     cy.iconButton('Search').click()
