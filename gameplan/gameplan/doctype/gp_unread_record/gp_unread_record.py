@@ -165,6 +165,64 @@ class GPUnreadRecord(Document):
 		return query.run(as_dict=1)
 
 	@staticmethod
+	def mark_all_as_read_for_team(team, user):
+		projects = GPUnreadRecord.get_accessible_project_names_for_team(team, user)
+		if not projects:
+			return []
+
+		UnreadRecord = frappe.qb.DocType("GP Unread Record")
+		(
+			frappe.qb.update(UnreadRecord)
+			.set(UnreadRecord.is_unread, 0)
+			.where(
+				(UnreadRecord.user == user)
+				& (UnreadRecord.project.isin(projects))
+				& (UnreadRecord.is_unread == 1)
+			)
+		).run()
+
+		GPUnreadRecord.update_project_visits_for_mark_all_read(projects, user)
+		return projects
+
+	@staticmethod
+	def get_accessible_project_names_for_team(team, user):
+		from gameplan.permissions import apply_project_query_filter
+
+		Project = frappe.qb.DocType("GP Project")
+		query = (
+			frappe.qb.from_(Project)
+			.select(Project.name)
+			.where((Project.team == team) & Project.archived_at.isnull())
+		)
+		query = apply_project_query_filter(query, user)
+		return [str(row.name) for row in query.run(as_dict=True)]
+
+	@staticmethod
+	def update_project_visits_for_mark_all_read(projects: list[str], user):
+		now = frappe.utils.now()
+
+		for project in projects:
+			project_visit_name = frappe.db.get_value("GP Project Visit", {"user": user, "project": project})
+			if project_visit_name:
+				frappe.db.set_value(
+					"GP Project Visit",
+					project_visit_name,
+					{"mark_all_read_at": now, "last_visit": now},
+					update_modified=False,
+				)
+				continue
+
+			frappe.get_doc(
+				{
+					"doctype": "GP Project Visit",
+					"user": user,
+					"project": project,
+					"last_visit": now,
+					"mark_all_read_at": now,
+				}
+			).insert(ignore_permissions=True)
+
+	@staticmethod
 	def get_unread_count_for_projects(user, projects: list[str] = None):
 		"""Get unread count for a single project for user"""
 		from frappe.query_builder import functions
@@ -310,4 +368,5 @@ def add_indexes():
 from gameplan.gameplan.doctype.gp_unread_record.api import (  # noqa: E402, F401
 	get_participating_unread_count,
 	get_unread_count,
+	mark_all_as_read_for_team,
 )

@@ -22,9 +22,27 @@
     />
   </BottomSheet>
   <PageHeader class="hidden sm:flex">
-    <Breadcrumbs class="h-7" :items="breadcrumbs" />
+    <div class="flex min-w-0 items-center gap-1">
+      <router-link
+        v-if="community"
+        class="min-w-0 truncate rounded px-0.5 py-1 text-lg-medium text-ink-gray-9"
+        :title="community.title"
+        :to="{ name: 'Discussions', params: { communityId } }"
+      >
+        {{ community.title }}
+      </router-link>
+      <Dropdown :options="actionOptions">
+        <template #default="{ open }">
+          <Button
+            :variant="open ? 'subtle' : 'ghost'"
+            icon="lucide-more-horizontal"
+            label="Community actions"
+            :loading="markingAllAsRead"
+          />
+        </template>
+      </Dropdown>
+    </div>
     <div class="flex items-center gap-2">
-      <Select class="shrink-0 !w-fit" :options="orderOptions" v-model="orderBy" />
       <Button
         variant="solid"
         icon-left="lucide-plus"
@@ -36,6 +54,20 @@
   </PageHeader>
   <div class="body-container pt-5 pb-40">
     <LastPostReminder class="mb-3" />
+
+    <div class="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <TabButtons :options="feedTabs" v-model="currentFeed" size="sm">
+        <template #suffix="{ button }">
+          <span
+            v-if="feedUnreadCount(String(button.value)) > 0"
+            class="ml-1 text-xs text-ink-gray-5"
+          >
+            {{ feedUnreadCount(String(button.value)) }}
+          </span>
+        </template>
+      </TabButtons>
+      <Select class="shrink-0 !w-fit" :options="orderOptions" v-model="orderBy" />
+    </div>
 
     <KeepAlive>
       <DiscussionList
@@ -51,9 +83,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, useTemplateRef } from 'vue'
-import { Breadcrumbs, Button, Select, usePageMeta } from 'frappe-ui'
-import type { OrderBy } from 'frappe-ui'
+import { computed, ref, useTemplateRef, watch } from 'vue'
+import { Button, dialog, Dropdown, Select, TabButtons, usePageMeta } from 'frappe-ui'
+import type { DropdownOptions, OrderBy } from 'frappe-ui'
+import { useRouter } from 'vue-router'
 import BottomSheet from '@/components/BottomSheet.vue'
 import CommunityMenu from '@/components/CommunityMenu.vue'
 import DiscussionList from '@/components/DiscussionList.vue'
@@ -64,6 +97,14 @@ import MobileHeader from '@/components/MobileHeader.vue'
 import MobileHeaderTitle from '@/components/MobileHeaderTitle.vue'
 import { communityState } from '@/data/communityState'
 import { useCommunity } from '@/data/communities'
+import { getSpaceUnreadCount, spaces } from '@/data/spaces'
+import { useSessionUser } from '@/data/users'
+import {
+  fetchParticipatingUnreadCount,
+  getParticipatingUnreadCount,
+  markCommunityAsRead,
+} from '@/data/unreadCount'
+import { canManageCommunity } from '@/utils/permissions'
 
 type FeedType = 'recent' | 'unread' | 'participating'
 
@@ -78,7 +119,10 @@ const props = withDefaults(defineProps<Props>(), {
 
 const orderBy = ref<OrderBy>('last_post_at desc')
 const menuOpen = ref(false)
+const markingAllAsRead = ref(false)
 const discussionListRef = useTemplateRef('discussionListRef')
+const router = useRouter()
+const sessionUser = useSessionUser()
 
 const filters = computed(() => ({
   team: props.communityId,
@@ -94,24 +138,68 @@ const feedTitles: Record<FeedType, string> = {
 const feedTitle = computed(() => feedTitles[props.feedType])
 
 const community = useCommunity(() => props.communityId)
-
-const breadcrumbs = computed(() => {
-  const items = []
-  if (community.value) {
-    items.push({
-      label: community.value.title,
-      route: { name: 'Discussions', params: { communityId: props.communityId } },
-    })
-  }
-  items.push({
-    label: feedTitle.value,
-    route: {
-      name: 'DiscussionsTab',
-      params: { communityId: props.communityId, feedType: props.feedType },
-    },
+const communitySpaces = computed(() => {
+  return (spaces.data || []).filter((space) => {
+    return !space.archived_at && space.team === props.communityId
   })
-  return items
 })
+const communityUnreadCount = computed(() => {
+  return communitySpaces.value.reduce((total, space) => total + getSpaceUnreadCount(space.name), 0)
+})
+const participatingUnreadCount = computed(() => {
+  return getParticipatingUnreadCount(props.communityId)
+})
+const feedTabs = computed(() => [
+  {
+    label: 'All Discussions',
+    value: 'recent',
+  },
+  {
+    label: 'Participating',
+    value: 'participating',
+  },
+  {
+    label: 'Unread',
+    value: 'unread',
+  },
+])
+const currentFeed = computed({
+  get() {
+    return props.feedType
+  },
+  set(feedType) {
+    if (!feedType || feedType === props.feedType) return
+    router.push(feedRoute(String(feedType) as FeedType))
+  },
+})
+const actionOptions = computed<DropdownOptions>(() => [
+  {
+    label: 'Manage spaces',
+    icon: 'lucide-layout-grid',
+    route: { name: 'CommunitySpaces', params: { communityId: props.communityId } },
+    condition: () => canManageCurrentCommunity.value,
+  },
+  {
+    label: 'Manage members',
+    icon: 'lucide-users-2',
+    route: { name: 'CommunityMembers', params: { communityId: props.communityId } },
+    condition: () => canManageCurrentCommunity.value,
+  },
+  {
+    label: 'Mark all as read',
+    icon: 'lucide-check',
+    onClick: confirmMarkAllAsRead,
+  },
+])
+const canManageCurrentCommunity = computed(() => canManageCommunity(community.value, sessionUser))
+
+watch(
+  () => props.communityId,
+  (communityId) => {
+    if (communityId) fetchParticipatingUnreadCount(communityId)
+  },
+  { immediate: true },
+)
 
 const orderOptions = [
   {
@@ -132,6 +220,47 @@ const orderOptions = [
     value: 'creation desc' as OrderBy,
   },
 ]
+
+function feedRoute(feedType: FeedType) {
+  if (feedType === 'recent') {
+    return { name: 'Discussions', params: { communityId: props.communityId } }
+  }
+
+  return {
+    name: 'DiscussionsTab',
+    params: { communityId: props.communityId, feedType },
+  }
+}
+
+function feedUnreadCount(feedType: string) {
+  if (feedType === 'unread') return communityUnreadCount.value
+  if (feedType === 'participating') return participatingUnreadCount.value
+  return 0
+}
+
+function confirmMarkAllAsRead() {
+  dialog.confirm({
+    title: 'Mark all as read',
+    message: `Are you sure you want to mark all discussions in ${
+      community.value?.title || 'this community'
+    } as read? This action cannot be undone.`,
+    confirmLabel: 'Mark all as read',
+    onConfirm: markAllAsRead,
+  })
+}
+
+async function markAllAsRead() {
+  markingAllAsRead.value = true
+  try {
+    await markCommunityAsRead(props.communityId)
+    await Promise.all([
+      discussionListRef.value?.discussions.reload(),
+      discussionListRef.value?.pinnedDiscussions.reload(),
+    ])
+  } finally {
+    markingAllAsRead.value = false
+  }
+}
 
 usePageMeta(() => ({ title: feedTitle.value }))
 </script>

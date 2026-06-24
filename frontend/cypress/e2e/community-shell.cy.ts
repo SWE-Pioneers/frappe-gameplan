@@ -38,12 +38,12 @@ describe('Community shell IA', () => {
       .click()
   }
 
-  it('lands on a scoped discussions URL with the sidebar feed rows', () => {
+  it('lands on a scoped discussions URL with feed tabs', () => {
     cy.visit('/g')
     cy.url().should('match', /\/community\/[^/]+\/discussions/)
-    cy.contains('All Discussions').should('be.visible')
-    cy.contains('Unread').should('be.visible')
-    cy.contains('Participating').should('be.visible')
+    cy.contains('button:visible', 'All Discussions').should('be.visible')
+    cy.contains('button:visible', 'Unread').should('be.visible')
+    cy.contains('button:visible', 'Participating').should('be.visible')
   })
 
   it('switches communities from the rail switcher', () => {

@@ -7,55 +7,7 @@
 
       <ScrollAreaRoot class="relative flex min-h-0 flex-1 flex-col">
         <ScrollAreaViewport class="h-full w-full overflow-y-auto px-2 pt-0.5 pb-10">
-          <nav class="space-y-0.5">
-            <AppSidebarLink
-              :to="{ name: 'Discussions', params: { communityId: communityState.id } }"
-              :isActive="isRoute('Discussions')"
-            >
-              <template #prefix>
-                <span class="size-4 lucide-message-square-text" />
-              </template>
-              All Discussions
-            </AppSidebarLink>
-
-            <AppSidebarLink
-              :to="{
-                name: 'DiscussionsTab',
-                params: { communityId: communityState.id, feedType: 'participating' },
-              }"
-              :isActive="isParticipatingFeed"
-            >
-              <template #prefix>
-                <span class="size-4 lucide-at-sign" />
-              </template>
-              Participating
-              <template #suffix>
-                <span v-if="participatingUnreadCount > 0" class="shrink-0 text-xs text-ink-gray-5">
-                  {{ participatingUnreadCount }}
-                </span>
-              </template>
-            </AppSidebarLink>
-
-            <AppSidebarLink
-              :to="{
-                name: 'DiscussionsTab',
-                params: { communityId: communityState.id, feedType: 'unread' },
-              }"
-              :isActive="isUnreadFeed"
-            >
-              <template #prefix>
-                <span class="size-4 lucide-mail-open" />
-              </template>
-              Unread
-              <template #suffix>
-                <span v-if="communityUnreadTotal > 0" class="shrink-0 text-xs text-ink-gray-5">
-                  {{ communityUnreadTotal }}
-                </span>
-              </template>
-            </AppSidebarLink>
-          </nav>
-
-          <div class="group/spaces mt-4">
+          <div class="group/spaces">
             <div class="flex h-7 items-center justify-between pl-2 text-base text-ink-gray-5">
               <span>Spaces</span>
               <div class="flex items-center">
@@ -159,7 +111,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { ScrollAreaRoot, ScrollAreaViewport } from 'reka-ui'
 import { Button, Dropdown } from 'frappe-ui'
@@ -174,33 +126,18 @@ import {
   type SpaceSidebarSort,
 } from '@/data/sidebarPreferences'
 import { getSpaceUnreadCount, markAllAsRead, spaces, type Space } from '@/data/spaces'
-import { fetchParticipatingUnreadCount, getParticipatingUnreadCount } from '@/data/unreadCount'
 import AppLink from './AppLink.vue'
 import AppDropdown from './AppDropdown.vue'
-import AppSidebarLink from './AppSidebarLink.vue'
 import NewSpaceDialog from './NewSpaceDialog.vue'
 import ScrollBar from './ScrollBar.vue'
 import SpaceIcon from './SpaceIcon.vue'
-import LucideAtSign from '~icons/lucide/at-sign'
 import LucideLock from '~icons/lucide/lock'
-import LucideMailOpen from '~icons/lucide/mail-open'
-import LucideMessageSquareText from '~icons/lucide/message-square-text'
 
 const route = useRoute()
 
 const spacesList = computed(() => communitySpaces.list)
-const communityUnreadTotal = computed(() => {
-  return communitySpaceList.value.reduce(
-    (total, space) => total + getSpaceUnreadCount(space.name),
-    0,
-  )
-})
-const participatingUnreadCount = computed(() => {
-  if (!communityState.id) return 0
-  return getParticipatingUnreadCount(communityState.id)
-})
 const hasCustomSpaceSidebarOptions = computed(() => {
-  return currentSpaceSidebarSort.value !== 'Alphabetical' || currentHideInactiveSpaces.value
+  return currentSpaceSidebarSort.value !== 'Recent activity' || currentHideInactiveSpaces.value
 })
 
 const spaceSortOptions = computed<DropdownOptions>(() => [
@@ -226,14 +163,6 @@ const spaceSortOptions = computed<DropdownOptions>(() => [
   },
 ])
 
-const feedType = computed(() => {
-  if (route.name !== 'DiscussionsTab') return null
-  return String(route.params.feedType || '')
-})
-
-const isUnreadFeed = computed(() => feedType.value === 'unread')
-const isParticipatingFeed = computed(() => feedType.value === 'participating')
-
 const showNewSpaceDialog = ref(false)
 const spaceSortValues: SpaceSidebarSort[] = ['Recent activity', 'Alphabetical']
 const communitySpaceList = computed(() => {
@@ -249,18 +178,6 @@ const activeSpaceId = computed(() => {
   if (routeName === 'NewDiscussion') return routeQueryString(route.query.spaceId)
   return null
 })
-
-watch(
-  () => communityState.id,
-  (communityId) => {
-    if (communityId) fetchParticipatingUnreadCount(communityId)
-  },
-  { immediate: true },
-)
-
-function isRoute(name: string) {
-  return route.name === name
-}
 
 function isActiveSpace(spaceId: string) {
   return activeSpaceId.value === spaceId

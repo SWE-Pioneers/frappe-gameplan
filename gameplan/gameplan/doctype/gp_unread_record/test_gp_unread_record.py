@@ -1,8 +1,11 @@
 # Copyright (c) 2025, Frappe Technologies Pvt Ltd and Contributors
 # See license.txt
 
-# import frappe
+import frappe
 from frappe.tests import IntegrationTestCase
+
+from gameplan.gameplan.doctype.gp_unread_record.gp_unread_record import GPUnreadRecord
+from gameplan.tests.utils import create_discussion, create_member, create_project, create_team
 
 # On IntegrationTestCase, the doctype test records and all
 # link-field test record dependencies are recursively loaded
@@ -17,4 +20,45 @@ class IntegrationTestGPUnreadRecord(IntegrationTestCase):
 	Use this class for testing interactions between multiple components.
 	"""
 
-	pass
+	def test_mark_all_as_read_for_team_marks_accessible_community_projects(self):
+		suffix = frappe.generate_hash(length=8)
+		user = create_member(f"team-unread-member-{suffix}@example.com", "Team Unread Member")
+		source_team = create_team(f"Team Unread Source {suffix}")
+		other_team = create_team(f"Team Unread Other {suffix}")
+		source_project = create_project(f"Team Unread Source Space {suffix}", source_team.name)
+		other_project = create_project(f"Team Unread Other Space {suffix}", other_team.name)
+		source_discussion = create_discussion(f"Team Unread Source Discussion {suffix}", source_project.name)
+		other_discussion = create_discussion(f"Team Unread Other Discussion {suffix}", other_project.name)
+		source_unread_record = create_unread_record(user.name, source_discussion.name, source_project.name)
+		other_unread_record = create_unread_record(user.name, other_discussion.name, other_project.name)
+
+		frappe.set_user(user.name)
+		projects = GPUnreadRecord.mark_all_as_read_for_team(source_team.name, user.name)
+
+		self.assertIn(str(source_project.name), projects)
+		self.assertNotIn(str(other_project.name), projects)
+		self.assertEqual(frappe.db.get_value("GP Unread Record", source_unread_record, "is_unread"), 0)
+		self.assertEqual(frappe.db.get_value("GP Unread Record", other_unread_record, "is_unread"), 1)
+		self.assertTrue(
+			frappe.db.exists("GP Project Visit", {"user": user.name, "project": source_project.name})
+		)
+
+	def tearDown(self):
+		frappe.set_user("Administrator")
+		super().tearDown()
+
+
+def create_unread_record(user: str, discussion: str, project: str):
+	return (
+		frappe.get_doc(
+			{
+				"doctype": "GP Unread Record",
+				"user": user,
+				"discussion": discussion,
+				"project": project,
+				"is_unread": 1,
+			}
+		)
+		.insert(ignore_permissions=True)
+		.name
+	)
