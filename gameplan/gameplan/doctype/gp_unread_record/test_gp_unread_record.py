@@ -43,6 +43,34 @@ class IntegrationTestGPUnreadRecord(IntegrationTestCase):
 			frappe.db.exists("GP Project Visit", {"user": user.name, "project": source_project.name})
 		)
 
+	def test_mark_all_as_read_for_team_updates_existing_project_visit(self):
+		suffix = frappe.generate_hash(length=8)
+		user = create_member(f"team-visit-member-{suffix}@example.com", "Team Visit Member")
+		team = create_team(f"Team Visit Source {suffix}")
+		project = create_project(f"Team Visit Source Space {suffix}", team.name)
+		discussion = create_discussion(f"Team Visit Source Discussion {suffix}", project.name)
+		unread_record = create_unread_record(user.name, discussion.name, project.name)
+		old_timestamp = frappe.utils.get_datetime("2026-01-01 00:00:00")
+		visit = frappe.get_doc(
+			{
+				"doctype": "GP Project Visit",
+				"user": user.name,
+				"project": project.name,
+				"last_visit": old_timestamp,
+				"mark_all_read_at": old_timestamp,
+			}
+		).insert(ignore_permissions=True)
+
+		frappe.set_user(user.name)
+		GPUnreadRecord.mark_all_as_read_for_team(team.name, user.name)
+
+		self.assertEqual(frappe.db.get_value("GP Unread Record", unread_record, "is_unread"), 0)
+		self.assertEqual(frappe.db.count("GP Project Visit", {"user": user.name, "project": project.name}), 1)
+		self.assertGreater(
+			frappe.db.get_value("GP Project Visit", visit.name, "mark_all_read_at"),
+			old_timestamp,
+		)
+
 	def tearDown(self):
 		frappe.set_user("Administrator")
 		super().tearDown()

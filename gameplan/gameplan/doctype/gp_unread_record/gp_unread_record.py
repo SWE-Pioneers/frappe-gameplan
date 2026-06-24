@@ -200,27 +200,58 @@ class GPUnreadRecord(Document):
 	@staticmethod
 	def update_project_visits_for_mark_all_read(projects: list[str], user):
 		now = frappe.utils.now()
+		existing_visits = GPUnreadRecord.get_project_visit_names(projects, user)
 
+		if existing_visits:
+			GPUnreadRecord.update_existing_project_visits(list(existing_visits.values()), now)
+
+		missing_projects = [project for project in projects if project not in existing_visits]
+		if missing_projects:
+			# Project access is already scoped by get_accessible_project_names_for_team;
+			# these visit rows are system-managed on behalf of the authenticated user.
+			GPUnreadRecord.create_project_visits(missing_projects, user, now)
+
+	@staticmethod
+	def get_project_visit_names(projects: list[str], user):
+		if not projects:
+			return {}
+
+		return {
+			row.project: row.name
+			for row in frappe.qb.get_query(
+				"GP Project Visit",
+				fields=["name", "project"],
+				filters={"user": user, "project": ["in", projects]},
+			).run(as_dict=True)
+		}
+
+	@staticmethod
+	def update_existing_project_visits(project_visit_names: list[str], timestamp):
+		ProjectVisit = frappe.qb.DocType("GP Project Visit")
+		(
+			frappe.qb.update(ProjectVisit)
+			.set(ProjectVisit.last_visit, timestamp)
+			.set(ProjectVisit.mark_all_read_at, timestamp)
+			.where(ProjectVisit.name.isin(project_visit_names))
+		).run()
+
+	@staticmethod
+	def create_project_visits(projects: list[str], user, timestamp):
+		visits = []
 		for project in projects:
-			project_visit_name = frappe.db.get_value("GP Project Visit", {"user": user, "project": project})
-			if project_visit_name:
-				frappe.db.set_value(
-					"GP Project Visit",
-					project_visit_name,
-					{"mark_all_read_at": now, "last_visit": now},
-					update_modified=False,
-				)
-				continue
-
-			frappe.get_doc(
+			visit = frappe.get_doc(
 				{
 					"doctype": "GP Project Visit",
+					"name": frappe.generate_hash(length=10),
 					"user": user,
 					"project": project,
-					"last_visit": now,
-					"mark_all_read_at": now,
+					"last_visit": timestamp,
+					"mark_all_read_at": timestamp,
 				}
-			).insert(ignore_permissions=True)
+			)
+			visits.append(visit)
+
+		bulk_insert("GP Project Visit", visits, ignore_duplicates=True)
 
 	@staticmethod
 	def get_unread_count_for_projects(user, projects: list[str] = None):
