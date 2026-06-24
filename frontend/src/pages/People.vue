@@ -8,6 +8,7 @@
           </template>
           <template #right>
             <Button
+              v-if="isAdmin"
               variant="ghost"
               size="md"
               icon="lucide-user-plus-2"
@@ -51,6 +52,7 @@
                 </template>
               </Select>
               <Button
+                v-if="isAdmin"
                 class="hidden sm:inline-flex"
                 variant="solid"
                 icon-left="lucide-user-plus-2"
@@ -162,11 +164,13 @@
   </div>
 </template>
 <script>
+import { computed } from 'vue'
 import { Breadcrumbs, Badge, Button, Input, Select, TextInput } from 'frappe-ui'
 import MobileBackButton from '@/components/MobileBackButton.vue'
 import MobileHeader from '@/components/MobileHeader.vue'
 import PageHeader from '@/components/PageHeader.vue'
 import { showSettingsDialog } from '@/components/Settings'
+import { isGameplanAdmin } from '@/data/users'
 import UserAvatarWithHover from '@/components/UserAvatarWithHover.vue'
 
 export default {
@@ -192,6 +196,7 @@ export default {
   setup() {
     return {
       showSettingsDialog,
+      isAdmin: computed(() => isGameplanAdmin()),
     }
   },
   resources: {
