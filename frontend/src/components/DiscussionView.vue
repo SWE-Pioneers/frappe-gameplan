@@ -158,6 +158,7 @@
         <CommentsArea
           doctype="GP Discussion"
           :name="discussion.doc.name"
+          :space="space"
           :newCommentsFrom="discussion.doc.last_unread_comment?.toString()"
           :read-only-mode="readOnlyMode"
           :disable-new-comment="Boolean(discussion.doc.closed_at)"
@@ -317,7 +318,8 @@ import { isMobile as useIsMobile } from '@/composables/isMobile'
 import { provideRichQuotes } from '@/components/RichQuoteExtension/useRichQuotes'
 import QuoteBacklinksPopover from '@/components/RichQuoteExtension/QuoteBacklinksPopover.vue'
 import { refreshUnreadCountForProjects } from '@/data/unreadCount'
-import { isSessionUser } from '@/data/session'
+import { useSessionUser } from '@/data/users'
+import { canDeleteContent } from '@/utils/permissions'
 
 const props = defineProps<{
   postId: string
@@ -721,7 +723,7 @@ const actions = computed(() => [
   {
     label: 'Delete',
     icon: 'lucide-trash',
-    condition: () => !!discussion.doc?.owner && isSessionUser(discussion.doc.owner),
+    condition: () => canDeleteContent(discussion.doc, space.value, useSessionUser()),
     onClick: () => {
       dialog.danger({
         title: 'Delete',

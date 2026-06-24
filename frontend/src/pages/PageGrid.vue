@@ -73,6 +73,8 @@ import EmptyStateBox from '@/components/EmptyStateBox.vue'
 import SpaceIcon from '@/components/SpaceIcon.vue'
 import { GPPage } from '@/types/doctypes'
 import { useSpace } from '@/data/spaces'
+import { useSessionUser } from '@/data/users'
+import { canDeleteContent } from '@/utils/permissions'
 
 const props = defineProps<{
   listOptions: {
@@ -85,12 +87,12 @@ const props = defineProps<{
 interface Page
   extends Pick<
     GPPage,
-    'name' | 'creation' | 'title' | 'content' | 'slug' | 'project' | 'team' | 'modified'
+    'name' | 'creation' | 'title' | 'content' | 'slug' | 'project' | 'team' | 'modified' | 'owner'
   > {}
 
 const pages = useList<Page>({
   doctype: 'GP Page',
-  fields: ['name', 'creation', 'title', 'content', 'slug', 'project', 'team', 'modified'],
+  fields: ['name', 'creation', 'title', 'content', 'slug', 'project', 'team', 'modified', 'owner'],
   filters: props.listOptions.filters,
   orderBy: props.listOptions.orderBy,
   cacheKey: ['Pages', props.listOptions],
@@ -104,6 +106,7 @@ const getDropdownOptions = (page: Page) => [
   {
     label: 'Delete',
     icon: 'lucide-trash',
+    condition: () => canDeleteContent(page, getSpace(page), useSessionUser()),
     onClick: () => {
       dialog.danger({
         title: 'Delete Page',

@@ -49,3 +49,28 @@ export function canInviteGuests(space: Space | null | undefined, user: Permissio
   if (isGuest(user)) return false
   return canManageSpace(space, user)
 }
+
+type ContentDoc = { owner?: string | null } | null | undefined
+
+/**
+ * Mirror of backend `can_delete_content` (gameplan/permissions.py): global admins
+ * always; guests never; the content owner; otherwise a community admin of the
+ * content's space's community. Gameplan is permissive — members can create and
+ * edit freely (edits are transparent via revisions) — so DELETE is the one
+ * content action that stays gated.
+ *
+ * `space` is the content's space (GP Project); pass null/undefined for personal
+ * content with no space, where only the owner or a global admin can delete.
+ */
+export function canDeleteContent(
+  content: ContentDoc,
+  space: Space | null | undefined,
+  user: PermissionUser,
+) {
+  if (!content || !user.name) return false
+  if (isGlobalAdmin(user)) return true
+  if (isGuest(user)) return false
+  if (content.owner === user.name) return true
+  if (!space) return false
+  return isCommunityAdmin(getCommunity(space.team), user.name)
+}

@@ -71,6 +71,7 @@ import { GPProject, GPTeam } from '@/types/doctypes'
 import { spaces } from '@/data/spaces'
 import { computed, h, ref, watch } from 'vue'
 import { activeCommunities, communities } from '@/data/communities'
+import { isGameplanAdmin } from '@/data/users'
 import { until } from '@vueuse/core'
 
 const props = defineProps<{
@@ -104,6 +105,9 @@ const communityOptions = computed((): ComboboxOption[] => {
     label: community.title,
     value: community.name,
   }))
+
+  // Members can create spaces, but creating a new community is global-admin only.
+  if (!isGameplanAdmin()) return options
 
   const createNewOption = {
     type: 'custom' as const,

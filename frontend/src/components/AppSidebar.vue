@@ -49,7 +49,6 @@
             <div class="flex h-7 items-center justify-between pl-2 text-base text-ink-gray-5">
               <span>Spaces</span>
               <Button
-                v-if="isAdmin"
                 variant="ghost"
                 size="sm"
                 icon="lucide-plus text-ink-gray-5"
@@ -112,7 +111,7 @@
               >
                 {{ communitySpaces.emptyMessage }}
                 <Button
-                  v-if="isAdmin && communitySpaces.archived.length === 0"
+                  v-if="communitySpaces.archived.length === 0"
                   size="sm"
                   icon-left="lucide-plus"
                   class="mt-2"
@@ -143,7 +142,6 @@ import { Button, Dropdown } from 'frappe-ui'
 import { communityState } from '@/data/communityState'
 import { communitySpaces } from '@/data/communitySpaces'
 import { getSpaceUnreadCount, markAllAsRead, type Space } from '@/data/spaces'
-import { isGameplanAdmin, useSessionUser } from '@/data/users'
 import AppLink from './AppLink.vue'
 import AppDropdown from './AppDropdown.vue'
 import AppSidebarLink from './AppSidebarLink.vue'
@@ -156,9 +154,6 @@ import LucideMailOpen from '~icons/lucide/mail-open'
 import LucideMessageSquareText from '~icons/lucide/message-square-text'
 
 const route = useRoute()
-const sessionUser = useSessionUser()
-
-const isAdmin = computed(() => isGameplanAdmin(sessionUser))
 
 const spacesList = computed(() => communitySpaces.list)
 

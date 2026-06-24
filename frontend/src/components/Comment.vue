@@ -106,17 +106,20 @@ import Reactions from './Reactions.vue'
 const RevisionsDialog = defineAsyncComponent(() => import('./RevisionsDialog.vue'))
 import UserAvatarWithHover from './UserAvatarWithHover.vue'
 import { GPComment } from '@/types/doctypes'
-import { isSessionUser } from '@/data/session'
 import { dialog } from 'frappe-ui'
 import { tags } from '@/data/tags'
 import { useDraftSync } from '@/data/useDraftSync'
-import { useUser } from '@/data/users'
+import { useUser, useSessionUser } from '@/data/users'
+import type { Space } from '@/data/spaces'
+import { canDeleteContent } from '@/utils/permissions'
 
 interface Props {
   comment: GPComment
   readOnlyMode?: boolean
   highlight?: boolean
   comments: ReturnType<typeof useList<GPComment>>
+  // Space the comment's thread belongs to, for community-admin delete moderation.
+  space?: Space | null
 }
 
 const props = defineProps<Props>()
@@ -214,7 +217,9 @@ const dropdownOptions = computed(() => [
       })
     },
     condition: () =>
-      isSessionUser(props.comment.owner) && props.comment.deleted_at == null && !props.readOnlyMode,
+      canDeleteContent(props.comment, props.space, useSessionUser()) &&
+      props.comment.deleted_at == null &&
+      !props.readOnlyMode,
   },
 ])
 </script>
