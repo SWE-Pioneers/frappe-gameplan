@@ -21,6 +21,17 @@ from gameplan.permissions import (
 )
 
 DEFAULT_SPACE_ICON = "lucide-hash"
+PROJECT_TEAM_DOCTYPES = [
+	"GP Discussion",
+	"GP Draft",
+	"GP Followed Project",
+	"GP Guest Access",
+	"GP Notification",
+	"GP Page",
+	"GP Pinned Project",
+	"GP Project Visit",
+	"GP Task",
+]
 
 
 class GPProject(ManageMembersMixin, Archivable, Document):
@@ -66,16 +77,11 @@ class GPProject(ManageMembersMixin, Archivable, Document):
 			return
 		self.team = team
 		self.save()
-		# Repoint child discussions/tasks in one statement each. Loading + saving every
-		# doc would needlessly re-run their full on_update (notify_mentions, etc.); only
-		# the denormalized `team` column changes here.
-		for doctype in ["GP Task", "GP Discussion"]:
-			DocType = frappe.qb.DocType(doctype)
-			(
-				frappe.qb.update(DocType)
-				.set(DocType.team, self.team)
-				.where(DocType.project == str(self.name))
-			).run()
+		self.update_project_team_references()
+
+	def update_project_team_references(self):
+		for doctype in PROJECT_TEAM_DOCTYPES:
+			update_project_team_reference(doctype, self.name, self.team)
 
 	@frappe.whitelist()
 	def merge_with_project(self, project=None):
@@ -269,6 +275,11 @@ def get_activity():
 				activity_by_project[project_name] = last_activity_at
 
 	return activity_by_project
+
+
+def update_project_team_reference(doctype: str, project: str, team: str | None):
+	DocType = frappe.qb.DocType(doctype)
+	(frappe.qb.update(DocType).set(DocType.team, team).where(DocType.project == str(project))).run()
 
 
 @frappe.whitelist()

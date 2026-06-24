@@ -6,6 +6,7 @@ import {
   type RouteRecordRaw,
 } from 'vue-router'
 import { until } from '@vueuse/core'
+import { call } from 'frappe-ui'
 import { session } from './data/session'
 import { isGameplanAdmin, users, useSessionUser } from './data/users'
 import { communities, getActiveCommunity, getCommunity } from './data/communities'
@@ -22,8 +23,20 @@ type ResourceLike = {
 }
 
 type RouteParamValue = string | string[]
+type ContentRouteDescriptor = {
+  doctype: 'GP Discussion' | 'GP Page' | 'GP Task'
+  documentParam: 'postId' | 'pageId' | 'taskId'
+  routeName: 'Discussion' | 'SpacePage' | 'SpaceTask'
+  slugParam?: 'slug'
+}
+type ProjectContentDoc = {
+  name: string
+  project?: string
+  slug?: string
+}
 
 const discussionFeeds = ['recent', 'unread', 'participating']
+const projectContentDocRequests = new Map<string, Promise<ProjectContentDoc | null>>()
 
 // Redirect-style guards still need a component record so Vue Router matches them consistently.
 const RouteGuard = { render: () => null }
@@ -761,18 +774,37 @@ router.beforeEach(async (to, from) => {
     return getHomeRoute()
   }
 
+  const canonicalContentRoute = await getCanonicalContentRoute(to)
+  if (canonicalContentRoute) {
+    return canonicalContentRoute
+  }
+
   if (!isCommunityScopedRoute) {
     return
   }
 
   let communityId = routeParam(to.params.communityId)
 
+  let space = to.params.spaceId ? getSpace(routeParam(to.params.spaceId)) : null
+
+  if (to.params.spaceId && !space) {
+    return { name: 'NotFound' }
+  }
+
+  if (space?.team && space.team !== communityId) {
+    return redirectCurrentRouteToCommunity(to, space.team)
+  }
+
   let community = getCommunity(communityId)
 
   // Invalid community URLs should fail loudly instead of silently switching shell state.
   // Public communities are visible even when the user has not joined them, so route validity
   // cannot be tied to the active sidebar community list.
-  if (!community || community.archived_at) {
+  if (!community) {
+    return { name: 'NotFound' }
+  }
+
+  if (community.archived_at) {
     return { name: 'NotFound' }
   }
 
@@ -780,30 +812,6 @@ router.beforeEach(async (to, from) => {
 
   if (getActiveCommunity(communityId) && communityState.joinedId !== communityId) {
     communityState.change(communityId)
-  }
-
-  if (!to.params.spaceId) {
-    return
-  }
-
-  let space = getSpace(routeParam(to.params.spaceId))
-
-  // A scoped space URL is only valid inside the community that owns that space.
-  if (!space) {
-    return { name: 'NotFound' }
-  }
-
-  if (space.team !== communityId) {
-    return {
-      name: to.name ?? 'Space',
-      params: {
-        ...to.params,
-        communityId: space.team,
-      },
-      query: to.query,
-      hash: to.hash,
-      replace: true,
-    }
   }
 })
 
@@ -857,6 +865,118 @@ function isMobileViewport() {
 
 function hasAnyData(): boolean {
   return (communities.data?.length ?? 0) > 0 || (spaces.data?.length ?? 0) > 0
+}
+
+function redirectCurrentRouteToCommunity(to: RouteLocationNormalized, communityId: string) {
+  return {
+    name: to.name ?? 'Space',
+    params: {
+      ...to.params,
+      communityId,
+    },
+    query: to.query,
+    hash: to.hash,
+    replace: true,
+  }
+}
+
+async function getCanonicalContentRoute(
+  to: RouteLocationNormalized,
+): Promise<RouteLocationRaw | undefined> {
+  const descriptor = getContentRouteDescriptor(to)
+  if (!descriptor) return
+
+  const documentName = routeParam(to.params[descriptor.documentParam])
+  if (!documentName) return
+
+  const doc = await getProjectContentDoc(descriptor.doctype, documentName)
+  if (!doc?.project) return { name: 'NotFound' }
+
+  const space = await findSpace(String(doc.project))
+  if (!space?.team) return { name: 'NotFound' }
+
+  const params: Record<string, RouteParamValue | undefined> = {
+    ...to.params,
+    communityId: space.team,
+    spaceId: space.name,
+  }
+  if (descriptor.slugParam && doc.slug) {
+    params[descriptor.slugParam] = doc.slug
+  }
+
+  if (isCurrentContentRoute(to, descriptor, params)) return
+
+  return {
+    name: descriptor.routeName,
+    params,
+    query: to.query,
+    hash: to.hash,
+    replace: true,
+  }
+}
+
+function getContentRouteDescriptor(to: RouteLocationNormalized): ContentRouteDescriptor | null {
+  if (to.params.postId) {
+    return {
+      doctype: 'GP Discussion',
+      documentParam: 'postId',
+      routeName: 'Discussion',
+      slugParam: 'slug',
+    }
+  }
+  if (to.params.pageId) {
+    return {
+      doctype: 'GP Page',
+      documentParam: 'pageId',
+      routeName: 'SpacePage',
+      slugParam: 'slug',
+    }
+  }
+  if (to.params.taskId) {
+    return {
+      doctype: 'GP Task',
+      documentParam: 'taskId',
+      routeName: 'SpaceTask',
+    }
+  }
+  return null
+}
+
+async function getProjectContentDoc(doctype: ContentRouteDescriptor['doctype'], name: string) {
+  const cacheKey = `${doctype}:${name}`
+  const cachedRequest = projectContentDocRequests.get(cacheKey)
+  if (cachedRequest) return cachedRequest
+
+  const request = fetchProjectContentDoc(doctype, name)
+  projectContentDocRequests.set(cacheKey, request)
+  request.finally(() => {
+    window.setTimeout(() => projectContentDocRequests.delete(cacheKey), 1000)
+  })
+  return request
+}
+
+async function fetchProjectContentDoc(doctype: ContentRouteDescriptor['doctype'], name: string) {
+  try {
+    return await call<ProjectContentDoc>('frappe.client.get', { doctype, name })
+  } catch {
+    return null
+  }
+}
+
+function isCurrentContentRoute(
+  to: RouteLocationNormalized,
+  descriptor: ContentRouteDescriptor,
+  params: Record<string, RouteParamValue | undefined>,
+) {
+  if (to.name !== descriptor.routeName) return false
+  if (routeParam(to.params.communityId) !== params.communityId) return false
+  if (routeParam(to.params.spaceId) !== params.spaceId) return false
+
+  if (descriptor.slugParam && params.slug) {
+    return optionalRouteParam(to.params.slug) === params.slug
+  }
+
+  return true
 }
 
 async function findSpace(spaceId: string): Promise<Space | null> {
