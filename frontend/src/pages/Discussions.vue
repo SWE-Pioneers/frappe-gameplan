@@ -90,6 +90,7 @@
       <DatePicker
         v-model="markReadBeforeDate"
         :clearable="false"
+        :max="today"
         placeholder="Select date"
         format="D MMM, YYYY"
       />
@@ -152,8 +153,11 @@ const orderBy = ref<OrderBy>('last_post_at desc')
 const menuOpen = ref(false)
 const markingAllAsRead = ref(false)
 const showMarkAllAsReadDialog = ref(false)
-// Defaults to today so the action clears everything unless an earlier date is picked.
-const markReadBeforeDate = ref(dayjsLocal().format('YYYY-MM-DD'))
+// Today is the latest allowed cutoff: a future date can't mark not-yet-posted discussions
+// read, and the backend clamps to it anyway. Defaults to today so the action clears
+// everything unless an earlier date is picked.
+const today = dayjsLocal().format('YYYY-MM-DD')
+const markReadBeforeDate = ref(today)
 const discussionListRef = useTemplateRef('discussionListRef')
 const router = useRouter()
 const sessionUser = useSessionUser()
@@ -273,7 +277,7 @@ function feedUnreadCount(feedType: string) {
 }
 
 function openMarkAllAsReadDialog() {
-  markReadBeforeDate.value = dayjsLocal().format('YYYY-MM-DD')
+  markReadBeforeDate.value = today
   showMarkAllAsReadDialog.value = true
 }
 

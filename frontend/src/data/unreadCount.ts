@@ -25,6 +25,14 @@ function loadProjectUnreadCounts(projects?: string[]) {
   return unreadCountApi.runMethod
     .submit({ method: 'get_unread_count', params: { projects } })
     .then((data: ProjectUnreadCount) => {
+      // A full reload (no project filter) is authoritative: the backend omits spaces whose
+      // count is now zero, so clear stale positives before applying the response — otherwise
+      // a space that just dropped to zero keeps showing a phantom unread count.
+      if (!projects) {
+        for (const spaceId of Object.keys(unreadCounts)) {
+          if (!(spaceId in data)) unreadCounts[spaceId] = 0
+        }
+      }
       for (const [spaceId, count] of Object.entries(data)) {
         // Counts cross the runMethod/JSON boundary as strings (MariaDB COUNT). Coerce to
         // Number here so summing them (e.g. per community) adds instead of concatenating.

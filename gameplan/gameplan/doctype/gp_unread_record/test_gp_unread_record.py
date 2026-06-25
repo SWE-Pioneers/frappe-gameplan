@@ -137,8 +137,12 @@ class IntegrationTestGPUnreadRecord(IntegrationTestCase):
 			as_dict=True,
 		)
 		self.assertIsNotNone(visit)
-		# Watermark aligns with the cutoff (everything up to `before` reads as read).
-		self.assertEqual(frappe.utils.get_datetime(visit.mark_all_read_at), frappe.utils.get_datetime(cutoff))
+		# Watermark is the inclusive end of the `before` day: within that day and strictly
+		# below the exclusive cutoff, so the `> watermark` read check matches the `< cutoff`
+		# unread query exactly (no midnight-boundary skew).
+		watermark = frappe.utils.get_datetime(visit.mark_all_read_at)
+		self.assertGreaterEqual(watermark, frappe.utils.get_datetime(before))
+		self.assertLess(watermark, frappe.utils.get_datetime(cutoff))
 		# `last_visit` reflects the action time (~now), not the cutoff date in the past.
 		self.assertGreaterEqual(frappe.utils.get_datetime(visit.last_visit), before_action)
 
@@ -190,6 +194,32 @@ class IntegrationTestGPUnreadRecord(IntegrationTestCase):
 			"GP Project Visit", {"user": user.name, "project": project.name}, "mark_all_read_at"
 		)
 		self.assertEqual(frappe.utils.get_datetime(watermark), frappe.utils.get_datetime(newer_watermark))
+
+	def test_mark_all_as_read_for_team_clamps_future_before_to_today(self):
+		# The whitelisted endpoint clamps `before` so a client can't push the watermark into
+		# the future (which would mark not-yet-posted discussions read).
+		from gameplan.gameplan.doctype.gp_unread_record.api import mark_all_as_read_for_team
+
+		suffix = frappe.generate_hash(length=8)
+		user = create_member(f"team-clamp-member-{suffix}@example.com", "Team Clamp Member")
+		team = create_team(f"Team Clamp Source {suffix}")
+		project = create_project(f"Team Clamp Source Space {suffix}", team.name)
+		discussion = create_discussion(f"Team Clamp Discussion {suffix}", project.name)
+		record = create_unread_record(user.name, discussion.name, project.name)
+
+		frappe.set_user(user.name)
+		mark_all_as_read_for_team(team=team.name, before="2099-01-01")
+
+		# Clamped to today, so today's discussion is read...
+		self.assertEqual(frappe.db.get_value("GP Unread Record", record, "is_unread"), 0)
+		# ...and the watermark stays near today rather than jumping to the far-future cutoff.
+		watermark = frappe.db.get_value(
+			"GP Project Visit", {"user": user.name, "project": project.name}, "mark_all_read_at"
+		)
+		self.assertLess(
+			frappe.utils.get_datetime(watermark),
+			frappe.utils.get_datetime(frappe.utils.add_days(frappe.utils.nowdate(), 2)),
+		)
 
 	def tearDown(self):
 		frappe.set_user("Administrator")

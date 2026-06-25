@@ -37,4 +37,10 @@ def mark_all_as_read_for_team(team=None, before=None):
 	if not team:
 		return []
 
+	if before:
+		# Validate and clamp to today: a client must not push the read watermark into the
+		# future (which would mark not-yet-posted discussions read) or crash the endpoint
+		# on a malformed value.
+		before = str(min(frappe.utils.getdate(before), frappe.utils.getdate()))
+
 	return GPUnreadRecord.mark_all_as_read_for_team(team, frappe.session.user, before)

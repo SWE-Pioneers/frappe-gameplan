@@ -1,6 +1,8 @@
 # Copyright (c) 2025, Frappe Technologies Pvt Ltd and contributors
 # For license information, please see license.txt
 
+from datetime import timedelta
+
 import frappe
 from frappe.model.document import Document, bulk_insert
 
@@ -212,7 +214,11 @@ class GPUnreadRecord(Document):
 		# means unread). `cutoff` aligns the watermark with a "before date" action; without
 		# one we mark everything read up to now.
 		now = frappe.utils.now()
-		read_at = cutoff or now
+		# The unread query reads `last_post_at < cutoff`; the watermark check reads
+		# `last_post_at > mark_all_read_at`. Store the inclusive supremum (cutoff minus one
+		# microsecond) so both agree exactly — no post at the midnight boundary is read by
+		# one system and unread by the other.
+		read_at = str(frappe.utils.get_datetime(cutoff) - timedelta(microseconds=1)) if cutoff else now
 		existing_visits = GPUnreadRecord.get_project_visit_names(projects, user)
 
 		if existing_visits:
