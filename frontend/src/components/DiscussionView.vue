@@ -439,7 +439,7 @@ async function scrollToUnread() {
     await until(() => discussion.doc).toBeTruthy()
   }
 
-  updateUrlSlug()
+  canonicalizeRoute()
 
   let doc = discussion.doc
   if (
@@ -597,18 +597,32 @@ function updatePost() {
   editSnapshot.value = null
 }
 
-function updateUrlSlug() {
+function canonicalizeRoute() {
   let doc = discussion.doc
   if (!doc) return
-  if (!route.params.slug || route.params.slug !== doc.slug) {
-    nextTick(() => {
-      router.replace({
-        name: 'Discussion',
-        params: { ...route.params, slug: doc.slug },
-        query: route.query,
-      })
+
+  // A discussion moved to another space keeps its postId, so an in-app link (which the router
+  // fast path trusts without a server check) can land on a stale spaceId/communityId. Rewrite
+  // to the document's real space here so route params — and the actions that read them, like
+  // creating from the space context — target the current space, not the old one.
+  const canonicalSpaceId = doc.project
+  const canonicalCommunityId = canonicalSpaceId ? getSpace(canonicalSpaceId)?.team : undefined
+  const spaceMismatch = canonicalSpaceId && routeParam(route.params.spaceId) !== canonicalSpaceId
+  const slugMismatch = !route.params.slug || route.params.slug !== doc.slug
+  if (!spaceMismatch && !slugMismatch) return
+
+  nextTick(() => {
+    router.replace({
+      name: 'Discussion',
+      params: {
+        ...route.params,
+        ...(canonicalCommunityId ? { communityId: canonicalCommunityId } : {}),
+        ...(canonicalSpaceId ? { spaceId: canonicalSpaceId } : {}),
+        slug: doc.slug,
+      },
+      query: route.query,
     })
-  }
+  })
 }
 
 const space = useSpace(() => discussion.doc?.project)
