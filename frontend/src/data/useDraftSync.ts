@@ -13,11 +13,12 @@
  *    so the local key is per-instance until the server assigns a unique name.
  */
 import { ref, computed, watch, toValue, nextTick, onScopeDispose, type MaybeRefOrGetter } from 'vue'
-import { call, debounce } from 'frappe-ui'
+import { call, debounce, toast } from 'frappe-ui'
 import {
   getDraftRecord,
   putDraftRecord,
   deleteDraftRecord,
+  listDraftRecords,
   singletonKey,
   broadcastDraftChange,
   onDraftChange,
@@ -67,6 +68,8 @@ export function useDraftSync(options: UseDraftSyncOptions) {
   const saving = ref(false)
   const savedAt = ref<number | null>(null)
   const restored = ref(false)
+  // Tracks whether the last server push failed, so we toast once per streak (not per keystroke).
+  const pushFailed = ref(false)
   const serverName = ref<string | null>(toValue(options.draftName ?? null))
 
   // Last local edit vs last successful push, on THIS device. Drives reconciliation
@@ -85,7 +88,9 @@ export function useDraftSync(options: UseDraftSyncOptions) {
   const key = computed(() => {
     const id = toValue(identity)
     if (isSingleton.value) return singletonKey(id)
-    return serverName.value ? `Discussion::New::${serverName.value}` : `Discussion::New::${instanceId}`
+    return serverName.value
+      ? `Discussion::New::${serverName.value}`
+      : `Discussion::New::${instanceId}`
   })
 
   const isEnabled = () => toValue(options.enabled ?? true)
@@ -162,9 +167,18 @@ export function useDraftSync(options: UseDraftSyncOptions) {
       syncedAt.value = Date.now()
       savedAt.value = syncedAt.value
       await persistLocal()
+      pushFailed.value = false
     } catch (error) {
-      // Keep the local copy; the next edit (or unmount flush) retries.
+      // Keep the local copy; the next edit (or unmount flush) retries. Standalone
+      // new-discussion drafts that never land here are adopted later by
+      // recoverOrphanedDrafts(), so a missed push no longer strands a draft locally.
       console.error('Draft sync failed', error)
+      // Tell the user once per failure streak so a silently-failing save can't quietly
+      // lose server-side persistence. Reset on the next success above.
+      if (!pushFailed.value) {
+        pushFailed.value = true
+        toast.error('Could not save your draft to the server — keeping a local copy and retrying.')
+      }
     } finally {
       saving.value = false
     }
@@ -241,9 +255,13 @@ export function useDraftSync(options: UseDraftSyncOptions) {
     }
   }
 
-  watch(() => isEnabled(), (enabled) => {
-    if (enabled) void load()
-  }, { immediate: true })
+  watch(
+    () => isEnabled(),
+    (enabled) => {
+      if (enabled) void load()
+    },
+    { immediate: true },
+  )
 
   // Keep sibling tabs of the same draft coherent — but never clobber un-pushed edits
   // typed in this tab.
@@ -352,3 +370,44 @@ export function useDraftSync(options: UseDraftSyncOptions) {
 }
 
 export type DraftSync = ReturnType<typeof useDraftSync>
+
+/**
+ * Adopt standalone new-discussion drafts that are stranded in IndexedDB with no server
+ * row. A draft only reaches the (server-backed) Drafts list once its `GP Draft` row is
+ * created on the first successful push. If that push never lands — offline, a server
+ * hiccup, or the composer closing inside the debounce window — the draft lives on only
+ * locally: its per-instance key is never reconstructed by a later session, so the push is
+ * never retried and the draft never appears in the list.
+ *
+ * This sweep is the safety net: it finds those orphans (Discussion / New, no serverName,
+ * has content), creates their rows, and re-keys the local record to the server name so a
+ * live composable lines up with it. Returns how many drafts were recovered.
+ */
+export async function recoverOrphanedDrafts(): Promise<number> {
+  const records = await listDraftRecords()
+  let recovered = 0
+  for (const record of records) {
+    const { type, mode, referenceName } = record.identity
+    const isStandaloneNew = type === 'Discussion' && mode === 'New' && !referenceName
+    if (!isStandaloneNew || record.serverName || !hasContent(record.payload)) continue
+
+    try {
+      const fields: Record<string, unknown> = { content: record.payload.content ?? '' }
+      if (record.payload.title !== undefined) fields.title = record.payload.title ?? ''
+      if (record.payload.project !== undefined) fields.project = record.payload.project || null
+
+      const doc = await call('frappe.client.insert', {
+        doc: { doctype: 'GP Draft', type, mode, ...fields },
+      })
+
+      const newKey = `Discussion::New::${doc.name}`
+      await putDraftRecord({ ...record, key: newKey, serverName: doc.name, syncedAt: Date.now() })
+      if (newKey !== record.key) await deleteDraftRecord(record.key)
+      broadcastDraftChange(newKey)
+      recovered++
+    } catch (error) {
+      console.error('Failed to recover orphaned draft', error)
+    }
+  }
+  return recovered
+}

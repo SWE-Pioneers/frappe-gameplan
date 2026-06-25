@@ -94,7 +94,10 @@
               </div>
               <UserAvatarWithHover :user="draft.owner" size="2xl" />
               <div class="ml-4 flex-1 min-w-0">
-                <div class="flex items-center min-w-0">
+                <div class="flex items-center min-w-0 gap-1.5">
+                  <Tooltip v-if="draft.kind === 'comment'" text="Reply draft">
+                    <span class="lucide-reply h-4 w-4 shrink-0 text-ink-gray-5" />
+                  </Tooltip>
                   <span
                     class="overflow-hidden text-ellipsis whitespace-nowrap text-ink-gray-8 text-base-medium"
                   >
@@ -105,10 +108,10 @@
                   <div
                     class="overflow-hidden text-ellipsis whitespace-nowrap text-base inline-flex items-center text-ink-gray-5"
                   >
-                    <div v-if="draft.project_title" class="inline-flex items-center">
-                      <span>{{ draft.project_title }}</span>
+                    <div v-if="draft.space_title" class="inline-flex items-center">
+                      <span>{{ draft.space_title }}</span>
                       <span
-                        v-if="isSpacePrivate(draft.project)"
+                        v-if="draft.is_private"
                         class="lucide-lock h-3 w-3 text-ink-gray-6 ml-0.5"
                       />
                       <span>:&nbsp;</span>
@@ -162,19 +165,31 @@ import {
   useCall,
   toast,
 } from 'frappe-ui'
-import { GPDraft } from '@/types/doctypes'
-import { useList } from 'frappe-ui'
 import UserAvatarWithHover from '@/components/UserAvatarWithHover.vue'
-import { getSpace, useSpace } from '@/data/spaces'
 import { relativeTimestamp } from '@/utils'
 import MobileBackButton from '@/components/MobileBackButton.vue'
 import MobileHeader from '@/components/MobileHeader.vue'
 import PageHeader from '@/components/PageHeader.vue'
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import type { RouteLocationRaw } from 'vue-router'
+import { recoverOrphanedDrafts } from '@/data/useDraftSync'
 
-interface Draft extends GPDraft {
-  project_title: string
+/** A row from `get_my_drafts` — a new-discussion draft or a new-comment draft on a
+ *  discussion, already resolved to everything needed to render and route it. */
+interface DraftRow {
+  name: string
+  kind: 'discussion' | 'comment'
+  owner: string
+  title: string | null
+  content: string | null
+  modified: string
+  creation: string
+  space: string | null
+  space_title: string | null
+  community: string | null
+  is_private: boolean | number
+  /** For comment drafts, the parent discussion to open; null for discussion drafts. */
+  discussion: string | null
 }
 
 interface DeleteDraftsResponse {
@@ -189,17 +204,29 @@ const isBulkDeleteMode = ref(false)
 const selectedDrafts = ref<string[]>([])
 const showDeleteConfirm = ref(false)
 
-// Drafts with a space open in the scoped composer; legacy drafts without a
-// resolvable community keep opening on the unscoped route.
-function draftRoute(draft: Draft): RouteLocationRaw {
-  const communityId = draft.project ? getSpace(draft.project)?.team : null
-  if (!communityId) {
+// Comment drafts open their discussion with the reply composer focused (?draft=comment).
+// Discussion drafts open the scoped composer; those without a resolvable community fall
+// back to the unscoped route.
+function draftRoute(draft: DraftRow): RouteLocationRaw {
+  if (draft.kind === 'comment' && draft.discussion && draft.community && draft.space) {
+    return {
+      name: 'Discussion',
+      params: {
+        communityId: draft.community,
+        spaceId: draft.space,
+        postId: draft.discussion,
+      },
+      query: { draft: 'comment' },
+    }
+  }
+
+  if (!draft.community) {
     return { name: 'LegacyNewDiscussion', query: { draft: draft.name } }
   }
 
   return {
     name: 'NewDiscussion',
-    params: { communityId },
+    params: { communityId: draft.community },
     query: { draft: draft.name },
   }
 }
@@ -271,37 +298,26 @@ function deleteDrafts() {
     })
 }
 
-let drafts = useList<Draft>({
-  doctype: 'GP Draft',
-  filters: {
-    type: 'Discussion',
-    // Only standalone new-discussion drafts belong here; edit/comment buffers
-    // (mode='Edit', or comment drafts) are surface-local and excluded.
-    mode: 'New',
-  },
-  fields: [
-    'name',
-    'title',
-    'content',
-    'project',
-    'project.title as project_title',
-    'creation',
-    'modified',
-    'owner',
-  ],
-  orderBy: 'creation desc',
+// One enriched, route-ready feed of the user's new drafts — discussions and comment
+// replies alike. The backend resolves comment drafts' parent discussion + space, which
+// the bare GP Draft row can't express, so the client just renders and routes.
+let drafts = useCall<DraftRow[]>({
+  url: '/api/v2/method/gameplan.gameplan.doctype.gp_draft.gp_draft.get_my_drafts',
   cacheKey: 'drafts',
+  immediate: true,
 })
 
-function contentPreview(content?: string) {
+// Drafts whose server row never got created (a push that never landed) live only in
+// IndexedDB and would otherwise never show here. Adopt them on open, then refresh.
+onMounted(async () => {
+  const recovered = await recoverOrphanedDrafts()
+  if (recovered > 0) drafts.reload()
+})
+
+function contentPreview(content?: string | null) {
   if (content) {
     // remove html tags
     return content.replace(/<[^>]*>?/gm, '').slice(0, 100)
   }
-}
-
-function isSpacePrivate(spaceId?: string) {
-  if (!spaceId) return false
-  return useSpace(spaceId).value?.is_private
 }
 </script>

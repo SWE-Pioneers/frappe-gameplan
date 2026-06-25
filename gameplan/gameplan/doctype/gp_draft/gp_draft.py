@@ -94,6 +94,115 @@ def find_my_draft(
 
 
 @frappe.whitelist()
+def get_my_drafts():
+	"""Return the current user's new-content drafts, enriched for the Drafts list.
+
+	Covers two kinds of drafts and resolves the metadata each needs to render a row and
+	route to it: new-discussion drafts (standalone), and new-comment drafts on a discussion
+	(the reply composer's auto-saved buffer).
+
+	A comment draft stores only its content plus a reference to the discussion, so we
+	resolve the parent's title and its space/community here rather than forcing the client
+	into N+1 lookups. Comment drafts whose discussion was deleted — or whose space the user
+	can no longer access — are dropped, since they can't be shown or routed."""
+	user = frappe.session.user
+	rows = frappe.get_all(
+		"GP Draft",
+		filters={"owner": user, "mode": "New", "type": ["in", ["Discussion", "Comment"]]},
+		fields=[
+			"name",
+			"title",
+			"content",
+			"type",
+			"project",
+			"reference_doctype",
+			"reference_name",
+			"creation",
+			"modified",
+		],
+		order_by="modified desc",
+	)
+
+	# Resolve parent discussions for comment drafts (permission-checked, so inaccessible
+	# ones simply fall out and their drafts get skipped below).
+	discussion_ids = list(
+		{
+			r.reference_name
+			for r in rows
+			if r.type == "Comment" and r.reference_doctype == "GP Discussion" and r.reference_name
+		}
+	)
+	discussions = {}
+	if discussion_ids:
+		results = frappe.qb.get_query(
+			"GP Discussion",
+			filters={"name": ["in", discussion_ids]},
+			fields=["name", "title", "project"],
+			ignore_permissions=False,
+		).run(as_dict=True)
+		discussions = {str(d.name): d for d in results}
+
+	# Batch-resolve spaces (title, community, privacy) for both kinds.
+	project_ids = {r.project for r in rows if r.type == "Discussion" and r.project}
+	project_ids |= {d.project for d in discussions.values() if d.project}
+	projects = {}
+	if project_ids:
+		results = frappe.qb.get_query(
+			"GP Project",
+			filters={"name": ["in", list(project_ids)]},
+			fields=["name", "title", "team", "is_private"],
+			ignore_permissions=False,
+		).run(as_dict=True)
+		projects = {str(p.name): p for p in results}
+
+	drafts = []
+	for r in rows:
+		if r.type == "Discussion":
+			project = projects.get(str(r.project)) if r.project else None
+			drafts.append(
+				{
+					"name": r.name,
+					"kind": "discussion",
+					"owner": user,
+					"title": r.title,
+					"content": r.content,
+					"modified": r.modified,
+					"creation": r.creation,
+					"space": r.project,
+					"space_title": project.title if project else None,
+					"community": project.team if project else None,
+					"is_private": project.is_private if project else 0,
+					"discussion": None,
+				}
+			)
+		elif r.type == "Comment" and r.reference_doctype == "GP Discussion":
+			discussion = discussions.get(str(r.reference_name))
+			if not discussion:
+				continue  # parent discussion gone or not accessible
+			project = projects.get(str(discussion.project)) if discussion.project else None
+			if not project:
+				continue  # can't route without a resolvable space/community
+			drafts.append(
+				{
+					"name": r.name,
+					"kind": "comment",
+					"owner": user,
+					"title": discussion.title,
+					"content": r.content,
+					"modified": r.modified,
+					"creation": r.creation,
+					"space": discussion.project,
+					"space_title": project.title,
+					"community": project.team,
+					"is_private": project.is_private,
+					"discussion": r.reference_name,
+				}
+			)
+
+	return drafts
+
+
+@frappe.whitelist()
 def publish_draft(name: str):
 	"""Publish a discussion draft by name. Returns the new GP Discussion name."""
 	return frappe.get_doc("GP Draft", name).publish()

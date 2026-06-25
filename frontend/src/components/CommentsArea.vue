@@ -792,6 +792,25 @@ watch(
   { immediate: true },
 )
 
+// Opened from the Drafts list (?draft=comment): surface the restored reply by expanding
+// and focusing the composer, then drop the flag so later edits don't re-trigger it.
+watch(
+  () => draft.ready.value,
+  (ready) => {
+    if (!ready || route.query.draft !== 'comment') return
+    showCommentBox.value = true
+    composerMinimized.value = false
+    nextTick(() => {
+      editorObject.value?.commands.focus('end')
+      scrollToEnd()
+    })
+    const query = { ...route.query }
+    delete query.draft
+    router.replace({ query })
+  },
+  { immediate: true },
+)
+
 onMounted(() => {
   // Announce this area's reply box (quote insert target) and its comments (scroll
   // targets) to the rich-quote controller, instead of being reached into.
