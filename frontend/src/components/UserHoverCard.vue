@@ -1,42 +1,34 @@
 <template>
   <slot v-if="userData.name == '_everyone_'" />
-  <HoverCardRoot v-model:open="userCardOpen" v-else>
-    <HoverCardTrigger asChild>
+  <HoverCard v-else v-model:open="userCardOpen" side="top" align="center" arrow>
+    <template #trigger>
       <slot />
-    </HoverCardTrigger>
-    <HoverCardPortal>
-      <HoverCardContent side="top" class="z-50 w-66">
-        <HoverCardArrow class="fill-surface-elevation-2" />
-        <div class="bg-surface-elevation-2 p-3 rounded-lg shadow-2xl">
-          <div class="flex items-center gap-2.5">
-            <div>
-              <div class="text-base-medium text-ink-gray-8">
-                {{ userData.full_name }}
-              </div>
+    </template>
+    <template #default>
+      <!-- panel shell (bg, radius, shadow) is provided by HoverCard -->
+      <div class="w-66 p-3">
+        <div class="flex items-center gap-2.5">
+          <div>
+            <div class="text-base-medium text-ink-gray-8">
+              {{ userData.full_name }}
             </div>
           </div>
-          <div class="mt-0.5 text-p-sm text-ink-gray-6">{{ userData.bio }}</div>
-          <div class="text-p-xs text-ink-gray-6 mt-2">
-            {{ userData.discussions_count_3m }}
-            {{ pluralize(userData.discussions_count_3m, 'post', 'posts') }},
-            {{ userData.comments_count_3m }}
-            {{ pluralize(userData.comments_count_3m, 'reply', 'replies') }} in the last 3 months
-          </div>
         </div>
-      </HoverCardContent>
-    </HoverCardPortal>
-  </HoverCardRoot>
+        <div class="mt-0.5 text-p-sm text-ink-gray-6">{{ userData.bio }}</div>
+        <div class="text-p-xs text-ink-gray-6 mt-2">
+          {{ userData.discussions_count_3m }}
+          {{ pluralize(userData.discussions_count_3m, 'post', 'posts') }},
+          {{ userData.comments_count_3m }}
+          {{ pluralize(userData.comments_count_3m, 'reply', 'replies') }} in the last 3 months
+        </div>
+      </div>
+    </template>
+  </HoverCard>
 </template>
 
 <script setup lang="ts">
 import { useUser } from '@/data/users'
-import {
-  HoverCardRoot,
-  HoverCardPortal,
-  HoverCardTrigger,
-  HoverCardContent,
-  HoverCardArrow,
-} from 'reka-ui'
+import { HoverCard } from 'frappe-ui'
 import { ref } from 'vue'
 
 defineOptions({
