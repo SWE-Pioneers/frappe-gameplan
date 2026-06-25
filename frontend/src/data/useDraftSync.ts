@@ -372,35 +372,49 @@ export function useDraftSync(options: UseDraftSyncOptions) {
 export type DraftSync = ReturnType<typeof useDraftSync>
 
 /**
- * Adopt standalone new-discussion drafts that are stranded in IndexedDB with no server
- * row. A draft only reaches the (server-backed) Drafts list once its `GP Draft` row is
- * created on the first successful push. If that push never lands — offline, a server
- * hiccup, or the composer closing inside the debounce window — the draft lives on only
- * locally: its per-instance key is never reconstructed by a later session, so the push is
- * never retried and the draft never appears in the list.
+ * Adopt new drafts that are stranded in IndexedDB with no server row. A draft only reaches
+ * the (server-backed) Drafts list once its `GP Draft` row is created on the first
+ * successful push. If that push never lands — offline, a server hiccup, or the composer
+ * closing inside the debounce window — the draft lives on only locally and never appears in
+ * the list. This covers both orphan shapes:
+ *  - Standalone new discussions: keyed per-instance, so a later session never reconstructs
+ *    the key to retry the push.
+ *  - Comment replies: keyed deterministically (singleton), so a revisit would retry — but
+ *    only if the user reopens that exact discussion. Until then the draft is invisible.
  *
- * This sweep is the safety net: it finds those orphans (Discussion / New, no serverName,
- * has content), creates their rows, and re-keys the local record to the server name so a
- * live composable lines up with it. Returns how many drafts were recovered.
+ * This sweep is the safety net: it finds those orphans (mode New, no serverName, has
+ * content), creates their rows, and lines the local record up with the new server name.
+ * Returns how many drafts were recovered.
  */
 export async function recoverOrphanedDrafts(): Promise<number> {
   const records = await listDraftRecords()
   let recovered = 0
   for (const record of records) {
-    const { type, mode, referenceName } = record.identity
-    const isStandaloneNew = type === 'Discussion' && mode === 'New' && !referenceName
-    if (!isStandaloneNew || record.serverName || !hasContent(record.payload)) continue
+    const id = record.identity
+    // Only brand-new drafts can be orphaned: an Edit draft already has a server doc, and a
+    // record carrying a serverName already created its row.
+    if (id.mode !== 'New' || record.serverName || !hasContent(record.payload)) continue
+
+    const isStandaloneDiscussion = id.type === 'Discussion' && !id.referenceName
+    const isCommentReply = id.type === 'Comment' && Boolean(id.referenceName)
+    if (!isStandaloneDiscussion && !isCommentReply) continue
 
     try {
       const fields: Record<string, unknown> = { content: record.payload.content ?? '' }
       if (record.payload.title !== undefined) fields.title = record.payload.title ?? ''
       if (record.payload.project !== undefined) fields.project = record.payload.project || null
+      if (isCommentReply) {
+        fields.reference_doctype = id.referenceDoctype
+        fields.reference_name = id.referenceName
+      }
 
       const doc = await call('frappe.client.insert', {
-        doc: { doctype: 'GP Draft', type, mode, ...fields },
+        doc: { doctype: 'GP Draft', type: id.type, mode: id.mode, ...fields },
       })
 
-      const newKey = `Discussion::New::${doc.name}`
+      // Standalone discussion drafts re-key from their per-instance id to the server name;
+      // comment replies keep their deterministic singleton key and only gain a serverName.
+      const newKey = isCommentReply ? singletonKey(id) : `Discussion::New::${doc.name}`
       await putDraftRecord({ ...record, key: newKey, serverName: doc.name, syncedAt: Date.now() })
       if (newKey !== record.key) await deleteDraftRecord(record.key)
       broadcastDraftChange(newKey)
