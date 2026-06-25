@@ -338,10 +338,13 @@ const { isScrolled, scrollToTop } = useScrollPosition()
 const discussion = useDiscussion(() => props.postId)
 // In-app navigation skips the router's server canonicalization for speed, so a stale link to
 // a discussion deleted or moved out of reach after local data loaded would otherwise render a
-// blank detail view. The doc fetch still 404s/403s — surface that as NotFound here.
+// blank detail view. The doc fetch still 404s/403s — surface that as NotFound here. immediate,
+// because useDiscussion caches by id: a revisit to an already-failed discussion mounts with
+// error already truthy, which a lazy watcher would miss.
 whenever(
   () => discussion.error,
   () => router.replace({ name: 'NotFound' }),
+  { immediate: true },
 )
 const showTitleInMobileHeader = ref(false)
 const mobileHeaderTitle = computed(() =>
