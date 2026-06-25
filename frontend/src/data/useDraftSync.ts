@@ -237,6 +237,11 @@ export function useDraftSync(options: UseDraftSyncOptions) {
       const localRaw = await getDraftRecord(key.value)
       const local = localRaw?.user === session.user ? localRaw : null
       const server = await fetchServerDraft()
+      // A draft is readable by anyone with its name (e.g. a shared `?draft=` URL), but only its
+      // owner can write it. If we loaded someone else's draft, restore its content but don't bind
+      // our edits to their server row — that write is forbidden and would retry-toast forever.
+      // Forking (serverName = null) lets the reader's edits insert their own draft instead.
+      const serverIsForeign = Boolean(server?.owner && server.owner !== session.user)
 
       if (local && local.updatedAt > (local.syncedAt ?? 0)) {
         // Un-pushed local edits take precedence over the server copy.
@@ -248,7 +253,7 @@ export function useDraftSync(options: UseDraftSyncOptions) {
         restored.value = hasContent(local.payload)
       } else if (server) {
         applyPayload(payloadFromDoc(server))
-        serverName.value = server.name
+        serverName.value = serverIsForeign ? null : server.name
         syncedAt.value = Date.now()
         updatedAt.value = syncedAt.value
         await persistLocal()
