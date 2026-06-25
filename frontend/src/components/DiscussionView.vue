@@ -338,14 +338,19 @@ const { isScrolled, scrollToTop } = useScrollPosition()
 const discussion = useDiscussion(() => props.postId)
 // In-app navigation skips the router's server canonicalization for speed, so a stale link to
 // a discussion deleted or moved out of reach after local data loaded would otherwise render a
-// blank detail view. The doc fetch still 404s/403s — surface that as NotFound here. immediate,
-// because useDiscussion caches by id: a revisit to an already-failed discussion mounts with
-// error already truthy, which a lazy watcher would miss.
+// blank detail view. Redirect to NotFound only on a definitive missing/forbidden response —
+// never a transient network/5xx error, which would wrongly (and, with the cached error,
+// stickily) bury a valid discussion. immediate, because useDiscussion caches by id: a revisit
+// to an already-failed discussion mounts with error already set, which a lazy watcher misses.
 whenever(
-  () => discussion.error,
+  () => isMissingOrForbidden(discussion.error),
   () => router.replace({ name: 'NotFound' }),
   { immediate: true },
 )
+function isMissingOrForbidden(error: unknown): boolean {
+  const status = (error as { status?: number } | null)?.status
+  return status === 404 || status === 403
+}
 const showTitleInMobileHeader = ref(false)
 const mobileHeaderTitle = computed(() =>
   showTitleInMobileHeader.value ? discussion.doc?.title || 'Discussion' : 'Discussion',
@@ -610,7 +615,13 @@ function canonicalizeRoute() {
   // creating from the space context — target the current space, not the old one.
   const canonicalSpaceId = doc.project
   const canonicalCommunityId = canonicalSpaceId ? getSpace(canonicalSpaceId)?.team : undefined
-  const spaceMismatch = canonicalSpaceId && routeParam(route.params.spaceId) !== canonicalSpaceId
+  // Only rewrite the space when its community resolves locally too — otherwise we'd strand the
+  // new spaceId under the old communityId. If the space isn't cached yet, leave the route as-is
+  // (the slug is independent and always safe to correct).
+  const spaceMismatch =
+    canonicalSpaceId &&
+    canonicalCommunityId &&
+    routeParam(route.params.spaceId) !== canonicalSpaceId
   const slugMismatch = !route.params.slug || route.params.slug !== doc.slug
   if (!spaceMismatch && !slugMismatch) return
 
@@ -619,8 +630,7 @@ function canonicalizeRoute() {
       name: 'Discussion',
       params: {
         ...route.params,
-        ...(canonicalCommunityId ? { communityId: canonicalCommunityId } : {}),
-        ...(canonicalSpaceId ? { spaceId: canonicalSpaceId } : {}),
+        ...(spaceMismatch ? { communityId: canonicalCommunityId, spaceId: canonicalSpaceId } : {}),
         slug: doc.slug,
       },
       query: route.query,
