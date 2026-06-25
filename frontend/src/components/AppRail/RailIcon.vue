@@ -34,7 +34,7 @@ import { computed } from 'vue'
 import { TooltipRoot, TooltipTrigger } from 'reka-ui'
 import { Button, TooltipBubble } from 'frappe-ui'
 import type { SidebarBadgeStyle } from '@/data/sidebarPreferences'
-import { formatUnreadCount, unreadAriaLabel } from '@/utils/formatters'
+import { unreadAriaLabel } from '@/utils/formatters'
 import UnreadBadge from './UnreadBadge.vue'
 
 const props = defineProps<{
@@ -51,5 +51,5 @@ const ariaLabel = computed(() => unreadAriaLabel(props.label, props.unreadCount 
 const showTooltipUnreadCount = computed(() => {
   return props.badgeStyle === 'Dot' && (props.unreadCount ?? 0) > 0
 })
-const tooltipUnreadCount = computed(() => `${formatUnreadCount(props.unreadCount ?? 0)} unread`)
+const tooltipUnreadCount = computed(() => `${props.unreadCount ?? 0} unread`)
 </script>

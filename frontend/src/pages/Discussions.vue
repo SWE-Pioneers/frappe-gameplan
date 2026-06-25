@@ -80,11 +80,43 @@
       />
     </KeepAlive>
   </div>
+
+  <Dialog v-model:open="showMarkAllAsReadDialog" title="Mark all as read">
+    <div class="space-y-3">
+      <p class="text-p-base text-ink-gray-7">
+        Mark discussions in {{ community?.title || 'this community' }} as read up to and including
+        the selected date. This cannot be undone.
+      </p>
+      <DatePicker
+        v-model="markReadBeforeDate"
+        :clearable="false"
+        :max="today"
+        placeholder="Select date"
+        format="D MMM, YYYY"
+      />
+    </div>
+    <template #actions>
+      <div class="flex justify-end">
+        <Button variant="solid" :loading="markingAllAsRead" @click="markAllAsRead">
+          Mark all as read
+        </Button>
+      </div>
+    </template>
+  </Dialog>
 </template>
 
 <script setup lang="ts">
 import { computed, ref, useTemplateRef, watch } from 'vue'
-import { Button, dialog, Dropdown, Select, TabButtons, usePageMeta } from 'frappe-ui'
+import {
+  Button,
+  DatePicker,
+  dayjsLocal,
+  Dialog,
+  Dropdown,
+  Select,
+  TabButtons,
+  usePageMeta,
+} from 'frappe-ui'
 import type { DropdownOptions, OrderBy } from 'frappe-ui'
 import { useRouter } from 'vue-router'
 import BottomSheet from '@/components/BottomSheet.vue'
@@ -120,6 +152,13 @@ const props = withDefaults(defineProps<Props>(), {
 const orderBy = ref<OrderBy>('last_post_at desc')
 const menuOpen = ref(false)
 const markingAllAsRead = ref(false)
+const showMarkAllAsReadDialog = ref(false)
+// Today is the latest allowed cutoff: a future date can't mark not-yet-posted discussions
+// read, and the backend clamps to it anyway. Defaults to today so the action clears
+// everything unless an earlier date is picked. Held in a ref and refreshed whenever the
+// dialog opens so a page left open past midnight still offers the real current day.
+const today = ref(dayjsLocal().format('YYYY-MM-DD'))
+const markReadBeforeDate = ref(today.value)
 const discussionListRef = useTemplateRef('discussionListRef')
 const router = useRouter()
 const sessionUser = useSessionUser()
@@ -186,9 +225,9 @@ const actionOptions = computed<DropdownOptions>(() => [
     condition: () => canManageCurrentCommunity.value,
   },
   {
-    label: 'Mark all as read',
+    label: 'Mark all as read...',
     icon: 'lucide-check',
-    onClick: confirmMarkAllAsRead,
+    onClick: openMarkAllAsReadDialog,
   },
 ])
 const canManageCurrentCommunity = computed(() => canManageCommunity(community.value, sessionUser))
@@ -238,25 +277,21 @@ function feedUnreadCount(feedType: string) {
   return 0
 }
 
-function confirmMarkAllAsRead() {
-  dialog.confirm({
-    title: 'Mark all as read',
-    message: `Are you sure you want to mark all discussions in ${
-      community.value?.title || 'this community'
-    } as read? This action cannot be undone.`,
-    confirmLabel: 'Mark all as read',
-    onConfirm: markAllAsRead,
-  })
+function openMarkAllAsReadDialog() {
+  today.value = dayjsLocal().format('YYYY-MM-DD')
+  markReadBeforeDate.value = today.value
+  showMarkAllAsReadDialog.value = true
 }
 
 async function markAllAsRead() {
   markingAllAsRead.value = true
   try {
-    await markCommunityAsRead(props.communityId)
+    await markCommunityAsRead(props.communityId, markReadBeforeDate.value)
     await Promise.all([
       discussionListRef.value?.discussions.reload(),
       discussionListRef.value?.pinnedDiscussions.reload(),
     ])
+    showMarkAllAsReadDialog.value = false
   } finally {
     markingAllAsRead.value = false
   }

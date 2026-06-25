@@ -26,10 +26,25 @@ def get_participating_unread_count(team=None):
 
 
 @frappe.whitelist(methods=["POST"])
-def mark_all_as_read_for_team(team=None):
+def mark_all_as_read_for_team(team=None, before=None):
+	"""Mark discussions in a team as read.
+
+	`before` (optional, YYYY-MM-DD) limits the action to discussions last active on or
+	before that day. When omitted, every unread discussion is marked read.
+	"""
 	from gameplan.gameplan.doctype.gp_unread_record.gp_unread_record import GPUnreadRecord
 
 	if not team:
 		return []
 
-	return GPUnreadRecord.mark_all_as_read_for_team(team, frappe.session.user)
+	if before:
+		# Reject a malformed cutoff with a controlled error instead of a 500, then clamp to
+		# today so a client can't push the read watermark into the future (which would mark
+		# not-yet-posted discussions read).
+		try:
+			before = frappe.utils.getdate(before)
+		except Exception:
+			frappe.throw(frappe._("Invalid date for 'before': {0}").format(before))
+		before = str(min(before, frappe.utils.getdate()))
+
+	return GPUnreadRecord.mark_all_as_read_for_team(team, frappe.session.user, before)
