@@ -40,12 +40,22 @@ describe('New Discussion - Draft Functionality', () => {
     cy.get('textarea[placeholder="Title"]').should('exist')
     cy.get('[contenteditable=true]').should('exist')
 
+    // Capture draft autosaves so we can wait for the content to actually reach the server,
+    // rather than a fixed delay that races the autosave debounce (the row is created first;
+    // the typed content lands on a later save).
+    const draftContent = 'This is my draft content that should be saved.'
+    let draftContentSaved = false
+    cy.intercept('POST', '**/api/method/frappe.client.*', (req) => {
+      if (JSON.stringify(req.body ?? {}).includes(draftContent)) draftContentSaved = true
+    })
+
     // Create the draft. A draft is only persisted once a space is chosen.
     cy.get('textarea[placeholder="Title"]').type('My Draft Discussion{enter}')
-    cy.get('[contenteditable=true]').click().type('This is my draft content that should be saved.')
+    cy.get('[contenteditable=true]').click().type(draftContent)
     cy.contains('button[aria-haspopup="listbox"]', 'Select Space').click({ force: true })
     cy.get('[role="option"]').contains('Gameplan').click()
-    cy.wait(500) // let the draft auto-save once a space is selected
+    // Retries until an autosave carrying the content has completed.
+    cy.wrap(null).should(() => expect(draftContentSaved, 'draft content autosaved').to.be.true)
 
     // The draft shows up on the global Drafts list.
     cy.visit('/g/drafts')
