@@ -221,6 +221,18 @@ class IntegrationTestGPUnreadRecord(IntegrationTestCase):
 			frappe.utils.get_datetime(frappe.utils.add_days(frappe.utils.nowdate(), 2)),
 		)
 
+	def test_mark_all_as_read_for_team_rejects_malformed_before(self):
+		# A malformed cutoff returns a controlled validation error, not a raw 500.
+		from gameplan.gameplan.doctype.gp_unread_record.api import mark_all_as_read_for_team
+
+		suffix = frappe.generate_hash(length=8)
+		user = create_member(f"team-bad-date-member-{suffix}@example.com", "Team Bad Date Member")
+		team = create_team(f"Team Bad Date Source {suffix}")
+
+		frappe.set_user(user.name)
+		with self.assertRaises(frappe.exceptions.ValidationError):
+			mark_all_as_read_for_team(team=team.name, before="not-a-date")
+
 	def tearDown(self):
 		frappe.set_user("Administrator")
 		super().tearDown()

@@ -38,9 +38,13 @@ def mark_all_as_read_for_team(team=None, before=None):
 		return []
 
 	if before:
-		# Validate and clamp to today: a client must not push the read watermark into the
-		# future (which would mark not-yet-posted discussions read) or crash the endpoint
-		# on a malformed value.
-		before = str(min(frappe.utils.getdate(before), frappe.utils.getdate()))
+		# Reject a malformed cutoff with a controlled error instead of a 500, then clamp to
+		# today so a client can't push the read watermark into the future (which would mark
+		# not-yet-posted discussions read).
+		try:
+			before = frappe.utils.getdate(before)
+		except Exception:
+			frappe.throw(frappe._("Invalid date for 'before': {0}").format(before))
+		before = str(min(before, frappe.utils.getdate()))
 
 	return GPUnreadRecord.mark_all_as_read_for_team(team, frappe.session.user, before)
