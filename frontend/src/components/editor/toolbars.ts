@@ -63,8 +63,6 @@ export const gameplanToolbar: MenuItem[] = [
   Redo,
 ]
 
-export const compactCommentToolbar: MenuItem[] = [Bold, Italic, BulletList, OrderedList, InsertLink]
-
 export const mobileDiscussionToolbar: MenuItem[] = [
   Paragraph,
   H2,

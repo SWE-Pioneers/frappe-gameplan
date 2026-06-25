@@ -1,18 +1,29 @@
-import { CommentKit, SlashCommands } from 'frappe-ui/editor'
+import {
+  CommentKit,
+  SlashCommands,
+  TaskList,
+  TaskItem,
+  Iframe,
+  Toc,
+  TextStyle,
+  Color,
+  Highlight,
+} from 'frappe-ui/editor'
 import { gameplanHeadingLevels, suggestionConfig, richQuoteExtensions } from './config'
 import type { RichQuoteController } from '@/components/RichQuoteExtension/useRichQuotes'
 
 /**
- * The lighter comment stack: CommentKit (no toc / iframe) + tables +
- * @-mentions + #-tags + RichQuote + slash commands. Used by CommentEditor —
- * which also renders the discussion post body — so tables created in a
- * discussion render and edit here too.
+ * The comment stack: CommentKit + tables + task lists + embeds + table of
+ * contents + @-mentions + #-tags + RichQuote + slash commands. Used by
+ * CommentEditor — which also renders the discussion post body — so blocks
+ * created while composing a discussion (RichTextKit) render and edit here too.
  *
- * SlashCommands is layered on top of CommentKit (which omits it by default).
- * Its command registry self-prunes via each command's `isAvailable` predicate,
- * so the "/" menu only offers what the comment schema actually supports
- * (headings, lists, blockquote, code block, image/video, link, table, rule) —
- * toc / embed / task-list entries drop out because those nodes aren't loaded.
+ * SlashCommands self-prunes via each command's `isAvailable` predicate, so the
+ * "/" menu only offers what the loaded schema supports. We layer task-list /
+ * iframe / toc onto CommentKit (a lighter kit that omits them) so the comment
+ * box and the discussion post body get the SAME slash menu as the discussion
+ * compose editor (richTextExtensions) — otherwise editing a saved post loses
+ * the task-list / embed / table-of-contents commands it was composed with.
  *
  * Kept in its own module (not config.ts) so CommentKit only loads in the comment
  * box chunk, never in the rich-editor or shared GPEditor chunks.
@@ -26,6 +37,20 @@ export function commentExtensions(
       table: {},
       ...suggestionConfig(true),
     }),
+    // TaskItem requires TaskList; Iframe ships the `openIframeDialog` command and
+    // Toc the `tocNode` — each unlocks its matching "/" command via isAvailable.
+    TaskList,
+    TaskItem,
+    Iframe,
+    Toc,
+    // Color writes a `color` attribute onto the TextStyle mark (no node of its
+    // own), so the two register together — this is what unlocks the FontColor
+    // toolbar button (isAvailable: hasExtension('namedColor')). Highlight backs
+    // the picker's second column (text + highlight), whose setHighlight path
+    // calls toggleHighlightByName — without it the picker throws.
+    TextStyle,
+    Color,
+    Highlight,
     SlashCommands.configure({}),
     ...richQuoteExtensions(opts.controller, opts.sourceId),
   ]
