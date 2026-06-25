@@ -26,10 +26,15 @@ def get_participating_unread_count(team=None):
 
 
 @frappe.whitelist(methods=["POST"])
-def mark_all_as_read_for_team(team=None):
+def mark_all_as_read_for_team(team=None, before=None):
+	"""Mark discussions in a team as read.
+
+	`before` (optional, YYYY-MM-DD) limits the action to discussions last active on or
+	before that day. When omitted, every unread discussion is marked read.
+	"""
 	from gameplan.gameplan.doctype.gp_unread_record.gp_unread_record import GPUnreadRecord
 
 	if not team:
 		return []
 
-	return GPUnreadRecord.mark_all_as_read_for_team(team, frappe.session.user)
+	return GPUnreadRecord.mark_all_as_read_for_team(team, frappe.session.user, before)

@@ -165,23 +165,31 @@ class GPUnreadRecord(Document):
 		return query.run(as_dict=1)
 
 	@staticmethod
-	def mark_all_as_read_for_team(team, user):
+	def mark_all_as_read_for_team(team, user, before=None):
 		projects = GPUnreadRecord.get_accessible_project_names_for_team(team, user)
 		if not projects:
 			return []
 
-		UnreadRecord = frappe.qb.DocType("GP Unread Record")
-		(
-			frappe.qb.update(UnreadRecord)
-			.set(UnreadRecord.is_unread, 0)
-			.where(
-				(UnreadRecord.user == user)
-				& (UnreadRecord.project.isin(projects))
-				& (UnreadRecord.is_unread == 1)
-			)
-		).run()
+		# `before` (a date) marks only discussions last active up to and including that
+		# day; `cutoff` is the exclusive upper bound (start of the next day).
+		cutoff = frappe.utils.add_days(before, 1) if before else None
 
-		GPUnreadRecord.update_project_visits_for_mark_all_read(projects, user)
+		UnreadRecord = frappe.qb.DocType("GP Unread Record")
+		condition = (
+			(UnreadRecord.user == user)
+			& (UnreadRecord.project.isin(projects))
+			& (UnreadRecord.is_unread == 1)
+		)
+		if cutoff:
+			Discussion = frappe.qb.DocType("GP Discussion")
+			discussions_within_cutoff = (
+				frappe.qb.from_(Discussion).select(Discussion.name).where(Discussion.last_post_at < cutoff)
+			)
+			condition &= UnreadRecord.discussion.isin(discussions_within_cutoff)
+
+		(frappe.qb.update(UnreadRecord).set(UnreadRecord.is_unread, 0).where(condition)).run()
+
+		GPUnreadRecord.update_project_visits_for_mark_all_read(projects, user, cutoff)
 		return projects
 
 	@staticmethod
@@ -198,18 +206,23 @@ class GPUnreadRecord(Document):
 		return [str(row.name) for row in query.run(as_dict=True)]
 
 	@staticmethod
-	def update_project_visits_for_mark_all_read(projects: list[str], user):
+	def update_project_visits_for_mark_all_read(projects: list[str], user, cutoff=None):
+		# `last_visit` reflects that the user acted now (it orders recent spaces), while the
+		# read watermark drives the per-discussion read indicator (last_post_at > watermark
+		# means unread). `cutoff` aligns the watermark with a "before date" action; without
+		# one we mark everything read up to now.
 		now = frappe.utils.now()
+		read_at = cutoff or now
 		existing_visits = GPUnreadRecord.get_project_visit_names(projects, user)
 
 		if existing_visits:
-			GPUnreadRecord.update_existing_project_visits(list(existing_visits.values()), now)
+			GPUnreadRecord.update_existing_project_visits(list(existing_visits.values()), now, read_at)
 
 		missing_projects = [project for project in projects if project not in existing_visits]
 		if missing_projects:
 			# Project access is already scoped by get_accessible_project_names_for_team;
 			# these visit rows are system-managed on behalf of the authenticated user.
-			GPUnreadRecord.create_project_visits(missing_projects, user, now)
+			GPUnreadRecord.create_project_visits(missing_projects, user, now, read_at)
 
 	@staticmethod
 	def get_project_visit_names(projects: list[str], user):
@@ -226,17 +239,28 @@ class GPUnreadRecord(Document):
 		}
 
 	@staticmethod
-	def update_existing_project_visits(project_visit_names: list[str], timestamp):
+	def update_existing_project_visits(project_visit_names: list[str], last_visit, mark_all_read_at):
+		from frappe.query_builder import CustomFunction
+		from frappe.query_builder.functions import Coalesce
+
+		greatest = CustomFunction("GREATEST", ["a", "b"])
+
 		ProjectVisit = frappe.qb.DocType("GP Project Visit")
 		(
 			frappe.qb.update(ProjectVisit)
-			.set(ProjectVisit.last_visit, timestamp)
-			.set(ProjectVisit.mark_all_read_at, timestamp)
+			.set(ProjectVisit.last_visit, last_visit)
+			# Only ever move the watermark forward. A "before date" run computes an earlier
+			# `mark_all_read_at`; without this guard it would rewind an existing, newer
+			# watermark and resurface already-read discussions as unread.
+			.set(
+				ProjectVisit.mark_all_read_at,
+				greatest(Coalesce(ProjectVisit.mark_all_read_at, mark_all_read_at), mark_all_read_at),
+			)
 			.where(ProjectVisit.name.isin(project_visit_names))
 		).run()
 
 	@staticmethod
-	def create_project_visits(projects: list[str], user, timestamp):
+	def create_project_visits(projects: list[str], user, last_visit, mark_all_read_at):
 		visits = []
 		for project in projects:
 			visit = frappe.get_doc(
@@ -245,8 +269,8 @@ class GPUnreadRecord(Document):
 					"name": frappe.generate_hash(length=10),
 					"user": user,
 					"project": project,
-					"last_visit": timestamp,
-					"mark_all_read_at": timestamp,
+					"last_visit": last_visit,
+					"mark_all_read_at": mark_all_read_at,
 				}
 			)
 			visits.append(visit)

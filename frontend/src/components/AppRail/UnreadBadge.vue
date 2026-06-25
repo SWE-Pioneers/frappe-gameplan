@@ -3,27 +3,27 @@
     v-if="showCountBadge"
     ref="referenceEl"
     aria-hidden="true"
-    class="pointer-events-none absolute -top-3 right-2 size-0"
+    class="pointer-events-none absolute -top-2 right-2 size-0"
   />
 
   <span
     v-if="showDot && count > 0"
     aria-hidden="true"
-    class="pointer-events-none absolute -right-0.5 -top-0.5 block size-2 rounded-full bg-surface-amber-6"
+    class="pointer-events-none absolute -right-0.5 -top-0.5 block size-2 rounded-full bg-surface-red-6 border border-[var(--surface-sidebar)]"
   />
 
   <Teleport to="body">
     <span
       v-if="showCountBadge"
       ref="floatingEl"
-      class="pointer-events-none"
+      class="pointer-events-none border border-[var(--surface-sidebar)] rounded-full inline-flex"
       :class="{ invisible: !isPositioned }"
       :style="floatingStyles"
     >
       <Badge
         v-if="style === 'Unread count'"
         variant="solid"
-        theme="amber"
+        theme="red"
         size="sm"
         aria-hidden="true"
       >

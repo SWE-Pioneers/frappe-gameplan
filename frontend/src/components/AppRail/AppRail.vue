@@ -156,7 +156,7 @@ import { currentSidebarBadgeStyle } from '@/data/sidebarPreferences'
 import { getSpaceUnreadCount, spaces } from '@/data/spaces'
 import { isGameplanAdmin, useSessionUser } from '@/data/users'
 import { useConfigureRoute } from '@/composables/useConfigureRoute'
-import { formatUnreadCount, unreadAriaLabel } from '@/utils/formatters'
+import { unreadAriaLabel } from '@/utils/formatters'
 import CommunityImage from '../CommunityImage.vue'
 import GameplanLogo from '../GameplanLogo.vue'
 import CustomizeSidebarDialog from './CustomizeSidebarDialog.vue'
@@ -312,7 +312,7 @@ function showTooltipUnreadCount(unreadCount: number) {
 }
 
 function tooltipUnreadCount(unreadCount: number) {
-  return `${formatUnreadCount(unreadCount)} unread`
+  return `${unreadCount} unread`
 }
 
 function goHome() {
