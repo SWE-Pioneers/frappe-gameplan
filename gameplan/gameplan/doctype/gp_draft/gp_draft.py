@@ -158,6 +158,11 @@ def get_my_drafts():
 	drafts = []
 	for r in rows:
 		if r.type == "Discussion":
+			# A draft pinned to a space the user can no longer reach drops out of the
+			# permission-checked project query above. Skip it instead of leaking the raw
+			# space id (and a route that would 404) the same way the comment branch does.
+			if r.project and not projects.get(str(r.project)):
+				continue
 			project = projects.get(str(r.project)) if r.project else None
 			drafts.append(
 				{
