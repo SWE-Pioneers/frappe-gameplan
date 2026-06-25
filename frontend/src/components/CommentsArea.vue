@@ -311,11 +311,11 @@ interface ComposerUiState {
 const DEFAULT_COMPOSER_EDITOR_HEIGHT = 560
 // Floor for the open composer: it never renders (or restores) shorter than this.
 const MIN_COMPOSER_EDITOR_HEIGHT = 100
-// Drag the resize handle so the editor shrinks past this height and the composer
-// collapses instead of shrinking further. Kept just under the open floor so the editor
-// shrinks most of the way down — but still a reachable drag — before it gives way to the
-// collapsed bar. A literal 0 needed a drag past the full starting height to ever fire.
-const MINIMIZE_COMPOSER_THRESHOLD = 60
+// Drag the resize handle so the editor shrinks past this height and the composer collapses
+// instead of shrinking further. Deliberately 0: the composer only gives way to the
+// collapsed bar once it has shrunk all the way down, which tested as the more natural
+// hand-off than collapsing early. (Intentional — not the unreachable-threshold bug it looks like.)
+const MINIMIZE_COMPOSER_THRESHOLD = 0
 const MAX_COMPOSER_EDITOR_VIEWPORT_RATIO = 0.72
 
 const props = withDefaults(defineProps<Props>(), {
