@@ -155,9 +155,10 @@ const markingAllAsRead = ref(false)
 const showMarkAllAsReadDialog = ref(false)
 // Today is the latest allowed cutoff: a future date can't mark not-yet-posted discussions
 // read, and the backend clamps to it anyway. Defaults to today so the action clears
-// everything unless an earlier date is picked.
-const today = dayjsLocal().format('YYYY-MM-DD')
-const markReadBeforeDate = ref(today)
+// everything unless an earlier date is picked. Held in a ref and refreshed whenever the
+// dialog opens so a page left open past midnight still offers the real current day.
+const today = ref(dayjsLocal().format('YYYY-MM-DD'))
+const markReadBeforeDate = ref(today.value)
 const discussionListRef = useTemplateRef('discussionListRef')
 const router = useRouter()
 const sessionUser = useSessionUser()
@@ -277,7 +278,8 @@ function feedUnreadCount(feedType: string) {
 }
 
 function openMarkAllAsReadDialog() {
-  markReadBeforeDate.value = today
+  today.value = dayjsLocal().format('YYYY-MM-DD')
+  markReadBeforeDate.value = today.value
   showMarkAllAsReadDialog.value = true
 }
 

@@ -49,11 +49,21 @@ export function getProjectUnreadCount(spaceId: string) {
   return unreadCounts[spaceId] ?? 0
 }
 
+// Two watchers (CommunityMenu + Discussions) and the post-mark refresh all call
+// fetchParticipatingUnreadCount on the same shared runMethod instance, so their requests can
+// overlap and resolve out of order — an older response would then write a pre-mark count back
+// over a newer one. Track the latest request per team and apply only that response.
+const participatingRequestSeq: Record<string, number> = {}
+
 /** Fetch (and cache) the participating unread count for a community. */
 export function fetchParticipatingUnreadCount(team: string) {
+  const seq = (participatingRequestSeq[team] ?? 0) + 1
+  participatingRequestSeq[team] = seq
   return participatingCountApi.runMethod
     .submit({ method: 'get_participating_unread_count', params: { team } })
     .then((count: number) => {
+      // A newer fetch for this team superseded us — drop this stale response.
+      if (participatingRequestSeq[team] !== seq) return participatingUnreadCounts[team] ?? 0
       participatingUnreadCounts[team] = Number(count) || 0
       return participatingUnreadCounts[team]
     })
