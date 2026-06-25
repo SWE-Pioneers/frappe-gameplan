@@ -397,71 +397,77 @@ export type DraftSync = ReturnType<typeof useDraftSync>
  */
 export async function recoverOrphanedDrafts(): Promise<number> {
   const records = await listDraftRecords()
-  let recovered = 0
-  for (const record of records) {
-    const id = record.identity
-    // The IndexedDB store is origin-wide, so on a shared browser profile it can hold drafts
-    // authored by a previously logged-in user. Never adopt those as the current user —
-    // inserting them would surface another account's private content under this one. Records
-    // written before the `user` field exists are treated as not-mine and skipped.
-    if (record.user !== session.user) continue
+  // Each orphan has an independent key, so recover them concurrently. Serializing would let
+  // one record's server calls (parent lookup, insert) delay every record after it — enough,
+  // with a few stale orphans queued ahead, to miss a freshly created draft's first render.
+  const results = await Promise.all(records.map((record) => recoverOrphanedDraft(record)))
+  return results.filter(Boolean).length
+}
 
-    // Only brand-new drafts can be orphaned: an Edit draft already has a server doc, and a
-    // record carrying a serverName already created its row.
-    if (id.mode !== 'New' || record.serverName || !hasContent(record.payload)) continue
+/** Adopt a single stranded local draft into a server row. Returns whether it was recovered. */
+async function recoverOrphanedDraft(record: DraftRecord): Promise<boolean> {
+  const id = record.identity
+  // The IndexedDB store is origin-wide, so on a shared browser profile it can hold drafts
+  // authored by a previously logged-in user. Never adopt those as the current user — inserting
+  // them would surface another account's private content under this one. Records written before
+  // the `user` field exists are treated as not-mine and skipped.
+  if (record.user !== session.user) return false
 
-    const isStandaloneDiscussion = id.type === 'Discussion' && !id.referenceName
-    const isCommentReply = id.type === 'Comment' && Boolean(id.referenceName)
-    if (!isStandaloneDiscussion && !isCommentReply) continue
+  // Only brand-new drafts can be orphaned: an Edit draft already has a server doc, and a
+  // record carrying a serverName already created its row.
+  if (id.mode !== 'New' || record.serverName || !hasContent(record.payload)) return false
 
-    // A reply whose parent discussion was deleted or moved out of reach can't be routed to:
-    // get_my_drafts drops it because the parent won't resolve. Recovering it anyway would
-    // create an orphan row and mark the local draft "recovered" so it never retries or shows.
-    // Skip it unless the parent still resolves under the current user's permissions.
-    if (isCommentReply && !(await parentDocResolves(id.referenceDoctype, id.referenceName))) {
-      continue
-    }
+  const isStandaloneDiscussion = id.type === 'Discussion' && !id.referenceName
+  const isCommentReply = id.type === 'Comment' && Boolean(id.referenceName)
+  if (!isStandaloneDiscussion && !isCommentReply) return false
 
-    try {
-      // Comment drafts have a deterministic server identity (type + mode + reference), so a
-      // prior recovery may have inserted the row before crashing ahead of the local update.
-      // Adopt that existing row instead of inserting a duplicate. Standalone discussions have
-      // no such key, so a tiny insert-then-crash window remains (unchanged, pre-existing).
-      let doc = isCommentReply
-        ? await call(FIND_DRAFT, {
-            type: id.type,
-            mode: id.mode,
-            reference_doctype: id.referenceDoctype,
-            reference_name: id.referenceName,
-          })
-        : null
+  // A reply whose parent discussion was deleted or moved out of reach can't be routed to:
+  // get_my_drafts drops it because the parent won't resolve. Recovering it anyway would create
+  // an orphan row and mark the local draft "recovered" so it never retries or shows. Skip it
+  // unless the parent still resolves under the current user's permissions.
+  if (isCommentReply && !(await parentDocResolves(id.referenceDoctype, id.referenceName))) {
+    return false
+  }
 
-      if (!doc) {
-        const fields: Record<string, unknown> = { content: record.payload.content ?? '' }
-        if (record.payload.title !== undefined) fields.title = record.payload.title ?? ''
-        if (record.payload.project !== undefined) fields.project = record.payload.project || null
-        if (isCommentReply) {
-          fields.reference_doctype = id.referenceDoctype
-          fields.reference_name = id.referenceName
-        }
-
-        doc = await call('frappe.client.insert', {
-          doc: { doctype: 'GP Draft', type: id.type, mode: id.mode, ...fields },
+  try {
+    // Comment drafts have a deterministic server identity (type + mode + reference), so a prior
+    // recovery may have inserted the row before crashing ahead of the local update. Adopt that
+    // existing row instead of inserting a duplicate. Standalone discussions have no such key, so
+    // a tiny insert-then-crash window remains (unchanged, pre-existing).
+    let doc = isCommentReply
+      ? await call(FIND_DRAFT, {
+          type: id.type,
+          mode: id.mode,
+          reference_doctype: id.referenceDoctype,
+          reference_name: id.referenceName,
         })
+      : null
+
+    if (!doc) {
+      const fields: Record<string, unknown> = { content: record.payload.content ?? '' }
+      if (record.payload.title !== undefined) fields.title = record.payload.title ?? ''
+      if (record.payload.project !== undefined) fields.project = record.payload.project || null
+      if (isCommentReply) {
+        fields.reference_doctype = id.referenceDoctype
+        fields.reference_name = id.referenceName
       }
 
-      // Standalone discussion drafts re-key from their per-instance id to the server name;
-      // comment replies keep their deterministic singleton key and only gain a serverName.
-      const newKey = isCommentReply ? singletonKey(id) : `Discussion::New::${doc.name}`
-      await putDraftRecord({ ...record, key: newKey, serverName: doc.name, syncedAt: Date.now() })
-      if (newKey !== record.key) await deleteDraftRecord(record.key)
-      broadcastDraftChange(newKey)
-      recovered++
-    } catch (error) {
-      console.error('Failed to recover orphaned draft', error)
+      doc = await call('frappe.client.insert', {
+        doc: { doctype: 'GP Draft', type: id.type, mode: id.mode, ...fields },
+      })
     }
+
+    // Standalone discussion drafts re-key from their per-instance id to the server name;
+    // comment replies keep their deterministic singleton key and only gain a serverName.
+    const newKey = isCommentReply ? singletonKey(id) : `Discussion::New::${doc.name}`
+    await putDraftRecord({ ...record, key: newKey, serverName: doc.name, syncedAt: Date.now() })
+    if (newKey !== record.key) await deleteDraftRecord(record.key)
+    broadcastDraftChange(newKey)
+    return true
+  } catch (error) {
+    console.error('Failed to recover orphaned draft', error)
+    return false
   }
-  return recovered
 }
 
 /** Whether a referenced document still exists and is readable by the current user.
