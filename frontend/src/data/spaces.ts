@@ -126,6 +126,16 @@ export function leaveSpaces(spaceIds: string[]) {
     })
 }
 
+export function archiveSpace(space: Space) {
+  dialog.confirm({
+    title: 'Archive space',
+    message:
+      'You cannot create new discussions, pages or tasks in an archived space. It will remain read-only. You can unarchive it again at any time.',
+    confirmLabel: 'Archive',
+    onConfirm: () => spaceDoctype.runDocMethod.submit({ method: 'archive', name: space.name }),
+  })
+}
+
 export function unarchiveSpace(space: Space) {
   return spaceDoctype.runDocMethod.submit({
     method: 'unarchive',

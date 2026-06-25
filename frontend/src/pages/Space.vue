@@ -44,8 +44,9 @@
     </BottomSheet>
     <PageHeader v-if="!route.meta.hideHeader" class="hidden sm:flex">
       <div class="flex w-full items-center justify-between gap-3">
-        <div class="flex items-center space-x-2">
+        <div class="flex min-w-0 items-center gap-2">
           <SpaceBreadcrumbs :spaceId="spaceId" />
+          <SpaceHeaderActionsTarget placement="title" class="shrink-0" />
           <Badge v-if="space?.archived_at">Archived</Badge>
         </div>
         <SpaceHeaderActionsTarget />

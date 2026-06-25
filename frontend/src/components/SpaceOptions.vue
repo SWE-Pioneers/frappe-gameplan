@@ -17,7 +17,7 @@ import DropdownMoreOptions from './DropdownMoreOptions.vue'
 import MergeSpaceDialog from './MergeSpaceDialog.vue'
 import ChangeSpaceCategoryDialog from './ChangeSpaceCategoryDialog.vue'
 import SpaceAccessDialog from './SpaceAccessDialog.vue'
-import { useSpace } from '@/data/spaces'
+import { useSpace, archiveSpace } from '@/data/spaces'
 import { readOnlyMode } from '@/data/readOnlyMode'
 import { useSessionUser } from '@/data/users'
 import { canManageSpace } from '@/utils/permissions'
@@ -63,15 +63,7 @@ const options = computed(() => [
   {
     label: 'Archive',
     icon: 'lucide-archive',
-    onClick: () => {
-      dialog.confirm({
-        title: 'Archive space',
-        message:
-          'You cannot create new discussions, pages or tasks in an archived space. It will remain read-only. You can unarchive it again at any time.',
-        confirmLabel: 'Archive',
-        onConfirm: () => spaces.runDocMethod.submit({ method: 'archive', name: props.spaceId }),
-      })
-    },
+    onClick: () => space.value && archiveSpace(space.value),
     condition: () => canEditSpace.value,
   },
   {

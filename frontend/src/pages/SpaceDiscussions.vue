@@ -1,17 +1,15 @@
 <template>
   <div class="body-container mt-5">
+    <SpaceHeaderActions placement="title">
+      <DropdownMoreOptions
+        v-if="!isBulkMoveMode"
+        label="Space actions"
+        align="start"
+        :options="spaceActions"
+      />
+    </SpaceHeaderActions>
     <SpaceHeaderActions>
       <template v-if="canEditSpace && !isBulkMoveMode">
-        <DropdownMoreOptions
-          align="end"
-          :options="[
-            {
-              label: 'Move discussions',
-              icon: 'lucide-log-out',
-              onClick: () => (isBulkMoveMode = true),
-            },
-          ]"
-        />
         <Button
           variant="solid"
           icon-left="lucide-plus"
@@ -81,6 +79,7 @@
         </Button>
       </template>
     </Dialog>
+    <SpaceAccessDialog v-model="showSpaceAccessDialog" :spaceId="spaceId" />
   </div>
 </template>
 <script setup lang="ts">
@@ -91,8 +90,12 @@ import DiscussionList from '@/components/DiscussionList.vue'
 import SpaceHeaderActions from '@/components/SpaceHeaderActions.vue'
 import SpaceTabs from '@/components/SpaceTabs.vue'
 import DropdownMoreOptions from '@/components/DropdownMoreOptions.vue'
+import SpaceAccessDialog from '@/components/SpaceAccessDialog.vue'
 import { useGroupedSpaceOptions } from '@/data/groupedSpaces'
-import { useSpace, spaces } from '@/data/spaces'
+import { useSpace, spaces, markAllAsRead, archiveSpace, unarchiveSpace } from '@/data/spaces'
+import { useSessionUser } from '@/data/users'
+import { canManageSpace } from '@/utils/permissions'
+import { copyToClipboard } from '@/utils'
 import { readOnlyMode } from '@/data/readOnlyMode'
 
 interface BulkUpdateResponse {
@@ -115,7 +118,50 @@ const selectedSpace = ref<string | null>(null)
 const discussionListRef = useTemplateRef('discussionListRef')
 const router = useRouter()
 const currentSpace = useSpace(() => props.spaceId)
-const canEditSpace = computed(() => !readOnlyMode && !currentSpace.value?.archived_at)
+const sessionUser = useSessionUser()
+const showSpaceAccessDialog = ref(false)
+const isArchived = computed(() => Boolean(currentSpace.value?.archived_at))
+const canEditSpace = computed(() => !readOnlyMode && !isArchived.value)
+const canManageAccess = computed(
+  () => !readOnlyMode && canManageSpace(currentSpace.value, sessionUser),
+)
+
+const spaceActions = computed(() => [
+  {
+    label: 'Copy link',
+    icon: 'lucide-link',
+    onClick: () => copyToClipboard(window.location.href),
+  },
+  {
+    label: 'Mark all as read',
+    icon: 'lucide-check',
+    onClick: () => currentSpace.value && markAllAsRead([props.spaceId], currentSpace.value.title),
+  },
+  {
+    label: 'Manage access',
+    icon: 'lucide-users',
+    onClick: () => (showSpaceAccessDialog.value = true),
+    condition: () => canManageAccess.value,
+  },
+  {
+    label: 'Move discussions',
+    icon: 'lucide-log-out',
+    onClick: () => (isBulkMoveMode.value = true),
+    condition: () => canEditSpace.value,
+  },
+  {
+    label: 'Archive',
+    icon: 'lucide-archive',
+    onClick: () => currentSpace.value && archiveSpace(currentSpace.value),
+    condition: () => canEditSpace.value,
+  },
+  {
+    label: 'Unarchive',
+    icon: 'lucide-archive-restore',
+    onClick: () => currentSpace.value && unarchiveSpace(currentSpace.value),
+    condition: () => !readOnlyMode && isArchived.value && canManageAccess.value,
+  },
+])
 const selectedSpaceTitle = computed(() => {
   return selectedSpace.value ? useSpace(selectedSpace.value).value?.title : ''
 })
