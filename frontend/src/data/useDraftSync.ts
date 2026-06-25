@@ -455,6 +455,15 @@ async function recoverOrphanedDraft(record: DraftRecord): Promise<boolean> {
       doc = await call('frappe.client.insert', {
         doc: { doctype: 'GP Draft', type: id.type, mode: id.mode, ...fields },
       })
+    } else {
+      // The adopted server draft may be stale (e.g. created on another device), while this local
+      // orphan holds unsynced content that, by our reconciliation rule, wins. Push it so the
+      // user's reply isn't silently replaced by the older server copy on the next open.
+      await call('frappe.client.set_value', {
+        doctype: 'GP Draft',
+        name: doc.name,
+        fieldname: { content: record.payload.content ?? '' },
+      })
     }
 
     // Standalone discussion drafts re-key from their per-instance id to the server name;
