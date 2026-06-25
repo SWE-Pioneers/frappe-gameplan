@@ -293,7 +293,7 @@ import {
   Switch,
   dialog,
 } from 'frappe-ui'
-import { until } from '@vueuse/core'
+import { until, whenever } from '@vueuse/core'
 import type { Editor } from '@tiptap/vue-3'
 import Reactions from './Reactions.vue'
 import UserAvatarWithHover from './UserAvatarWithHover.vue'
@@ -336,6 +336,13 @@ const postTitleEl = useTemplateRef<HTMLElement>('postTitleEl')
 
 const { isScrolled, scrollToTop } = useScrollPosition()
 const discussion = useDiscussion(() => props.postId)
+// In-app navigation skips the router's server canonicalization for speed, so a stale link to
+// a discussion deleted or moved out of reach after local data loaded would otherwise render a
+// blank detail view. The doc fetch still 404s/403s — surface that as NotFound here.
+whenever(
+  () => discussion.error,
+  () => router.replace({ name: 'NotFound' }),
+)
 const showTitleInMobileHeader = ref(false)
 const mobileHeaderTitle = computed(() =>
   showTitleInMobileHeader.value ? discussion.doc?.title || 'Discussion' : 'Discussion',
