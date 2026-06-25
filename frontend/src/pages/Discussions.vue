@@ -81,7 +81,7 @@
     </KeepAlive>
   </div>
 
-  <Dialog v-model="showMarkAllAsReadDialog" title="Mark all as read">
+  <Dialog v-model:open="showMarkAllAsReadDialog" title="Mark all as read">
     <div class="space-y-3">
       <p class="text-p-base text-ink-gray-7">
         Mark discussions in {{ community?.title || 'this community' }} as read up to and including
