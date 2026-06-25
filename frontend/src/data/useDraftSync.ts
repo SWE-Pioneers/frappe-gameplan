@@ -13,7 +13,7 @@
  *    so the local key is per-instance until the server assigns a unique name.
  */
 import { ref, computed, watch, toValue, nextTick, onScopeDispose, type MaybeRefOrGetter } from 'vue'
-import { call, debounce, toast } from 'frappe-ui'
+import { call, debounce, toast, dayjsLocal } from 'frappe-ui'
 import { session } from './session'
 import {
   getDraftRecord,
@@ -408,12 +408,31 @@ export type DraftSync = ReturnType<typeof useDraftSync>
  * Returns how many drafts were recovered.
  */
 export async function recoverOrphanedDrafts(): Promise<number> {
+  // Hold a same-origin lock for the whole sweep so two tabs can't recover the same IndexedDB
+  // orphan at once. The dedup for comment replies is a find-then-insert (find_my_draft, then
+  // client.insert) with no DB-level uniqueness, and standalone discussion orphans skip the find
+  // entirely — so concurrent tabs could each insert and produce duplicate GP Draft rows. The lock
+  // serializes tabs; within one tab the orphans still recover concurrently. Browsers without the
+  // Web Locks API just run the sweep directly (the original, single-tab-racy behavior).
+  return runExclusive('gp-draft-recovery', sweepOrphanedDrafts)
+}
+
+async function sweepOrphanedDrafts(): Promise<number> {
   const records = await listDraftRecords()
   // Each orphan has an independent key, so recover them concurrently. Serializing would let
   // one record's server calls (parent lookup, insert) delay every record after it — enough,
   // with a few stale orphans queued ahead, to miss a freshly created draft's first render.
   const results = await Promise.all(records.map((record) => recoverOrphanedDraft(record)))
   return results.filter(Boolean).length
+}
+
+/** Run `fn` while holding a same-origin exclusive lock, so only one tab runs it at a time.
+ *  Falls back to running directly where the Web Locks API is unavailable. */
+async function runExclusive<T>(name: string, fn: () => Promise<T>): Promise<T> {
+  if (typeof navigator !== 'undefined' && navigator.locks) {
+    return navigator.locks.request(name, fn) as Promise<T>
+  }
+  return fn()
 }
 
 /** Adopt a single stranded local draft into a server row. Returns whether it was recovered. */
@@ -442,6 +461,9 @@ async function recoverOrphanedDraft(record: DraftRecord): Promise<boolean> {
   }
 
   try {
+    // The payload we persist back: usually the local buffer, but server content if a newer server
+    // row wins below. Kept in a local so we never mutate the input record.
+    let payload = record.payload
     // Comment drafts have a deterministic server identity (type + mode + reference), so a prior
     // recovery may have inserted the row before crashing ahead of the local update. Adopt that
     // existing row instead of inserting a duplicate. Standalone discussions have no such key, so
@@ -456,9 +478,9 @@ async function recoverOrphanedDraft(record: DraftRecord): Promise<boolean> {
       : null
 
     if (!doc) {
-      const fields: Record<string, unknown> = { content: record.payload.content ?? '' }
-      if (record.payload.title !== undefined) fields.title = record.payload.title ?? ''
-      if (record.payload.project !== undefined) fields.project = record.payload.project || null
+      const fields: Record<string, unknown> = { content: payload.content ?? '' }
+      if (payload.title !== undefined) fields.title = payload.title ?? ''
+      if (payload.project !== undefined) fields.project = payload.project || null
       if (isCommentReply) {
         fields.reference_doctype = id.referenceDoctype
         fields.reference_name = id.referenceName
@@ -468,20 +490,31 @@ async function recoverOrphanedDraft(record: DraftRecord): Promise<boolean> {
         doc: { doctype: 'GP Draft', type: id.type, mode: id.mode, ...fields },
       })
     } else {
-      // The adopted server draft may be stale (e.g. created on another device), while this local
-      // orphan holds unsynced content that, by our reconciliation rule, wins. Push it so the
-      // user's reply isn't silently replaced by the older server copy on the next open.
-      await call('frappe.client.set_value', {
-        doctype: 'GP Draft',
-        name: doc.name,
-        fieldname: { content: record.payload.content ?? '' },
-      })
+      // A server row already exists for this singleton (created on another tab/device). Only push
+      // our local orphan over it when the content differs AND our last local edit is newer than the
+      // server's `modified` — otherwise recovery would clobber a fresher server copy with a stale
+      // local buffer. dayjsLocal normalizes the server's system-tz timestamp to a comparable epoch.
+      // When the server wins, adopt its content locally so the re-keyed record shows the current copy.
+      const localContent = payload.content ?? ''
+      const serverContent = doc.content ?? ''
+      if (localContent !== serverContent) {
+        const localIsNewer = record.updatedAt > dayjsLocal(doc.modified).valueOf()
+        if (localIsNewer) {
+          await call('frappe.client.set_value', {
+            doctype: 'GP Draft',
+            name: doc.name,
+            fieldname: { content: localContent },
+          })
+        } else {
+          payload = { ...payload, content: serverContent }
+        }
+      }
     }
 
     // Standalone discussion drafts re-key from their per-instance id to the server name;
     // comment replies keep their deterministic singleton key and only gain a serverName.
     const newKey = isCommentReply ? singletonKey(id) : `Discussion::New::${doc.name}`
-    await putDraftRecord({ ...record, key: newKey, serverName: doc.name, syncedAt: Date.now() })
+    await putDraftRecord({ ...record, payload, key: newKey, serverName: doc.name, syncedAt: Date.now() })
     if (newKey !== record.key) await deleteDraftRecord(record.key)
     broadcastDraftChange(newKey)
     return true
