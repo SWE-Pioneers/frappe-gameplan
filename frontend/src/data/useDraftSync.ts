@@ -414,6 +414,14 @@ export async function recoverOrphanedDrafts(): Promise<number> {
     const isCommentReply = id.type === 'Comment' && Boolean(id.referenceName)
     if (!isStandaloneDiscussion && !isCommentReply) continue
 
+    // A reply whose parent discussion was deleted or moved out of reach can't be routed to:
+    // get_my_drafts drops it because the parent won't resolve. Recovering it anyway would
+    // create an orphan row and mark the local draft "recovered" so it never retries or shows.
+    // Skip it unless the parent still resolves under the current user's permissions.
+    if (isCommentReply && !(await parentDocResolves(id.referenceDoctype, id.referenceName))) {
+      continue
+    }
+
     try {
       // Comment drafts have a deterministic server identity (type + mode + reference), so a
       // prior recovery may have inserted the row before crashing ahead of the local update.
@@ -454,4 +462,20 @@ export async function recoverOrphanedDrafts(): Promise<number> {
     }
   }
   return recovered
+}
+
+/** Whether a referenced document still exists and is readable by the current user.
+ *  get_value is permission-checked, so a deleted doc or one in a now-inaccessible space
+ *  comes back empty — exactly the cases where recovering a reply draft would strand it. */
+async function parentDocResolves(
+  doctype: string | null | undefined,
+  name: string | null | undefined,
+): Promise<boolean> {
+  if (!doctype || !name) return false
+  try {
+    const res = await call('frappe.client.get_value', { doctype, filters: { name }, fieldname: 'name' })
+    return Boolean(res?.name)
+  } catch {
+    return false
+  }
 }
