@@ -173,6 +173,7 @@ import PageHeader from '@/components/PageHeader.vue'
 import { onMounted, ref } from 'vue'
 import type { RouteLocationRaw } from 'vue-router'
 import { recoverOrphanedDrafts } from '@/data/useDraftSync'
+import { session } from '@/data/session'
 
 /** A row from `get_my_drafts` — a new-discussion draft or a new-comment draft on a
  *  discussion, already resolved to everything needed to render and route it. */
@@ -303,7 +304,9 @@ function deleteDrafts() {
 // the bare GP Draft row can't express, so the client just renders and routes.
 let drafts = useCall<DraftRow[]>({
   url: '/api/v2/method/gameplan.gameplan.doctype.gp_draft.gp_draft.get_my_drafts',
-  cacheKey: 'drafts',
+  // get_my_drafts is owner-scoped on the server; scope the client cache to the session user
+  // too, so a same-tab account switch can't briefly show the previous user's draft rows.
+  cacheKey: ['drafts', session.user],
   immediate: true,
 })
 
