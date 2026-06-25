@@ -153,7 +153,9 @@ const spaceActions = computed(() => [
     label: 'Archive',
     icon: 'lucide-archive',
     onClick: () => currentSpace.value && archiveSpace(currentSpace.value),
-    condition: () => canEditSpace.value,
+    // Archiving is destructive — gate it behind manage access, mirroring Unarchive, so a
+    // regular member isn't offered (and can't submit) an action they lack permission for.
+    condition: () => canEditSpace.value && canManageAccess.value,
   },
   {
     label: 'Unarchive',
