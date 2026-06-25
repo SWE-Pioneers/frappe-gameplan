@@ -64,7 +64,9 @@ const options = computed(() => [
     label: 'Archive',
     icon: 'lucide-archive',
     onClick: () => space.value && archiveSpace(space.value),
-    condition: () => canEditSpace.value,
+    // Archiving is destructive — require manage access, matching the space header menu, so a
+    // regular member isn't offered an action they lack permission for.
+    condition: () => canEditSpace.value && canManageAccess.value,
   },
   {
     label: 'Delete',

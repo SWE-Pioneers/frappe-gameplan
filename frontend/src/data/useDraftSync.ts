@@ -82,6 +82,11 @@ export function useDraftSync(options: UseDraftSyncOptions) {
   // Standalone drafts get a per-instance local key so two tabs never share IndexedDB
   // state before a unique server name exists.
   const instanceId = `local-${Date.now()}-${++instanceCounter}`
+
+  // The user who owns this draft, captured when the composer opens. Stamped on every local
+  // write so a same-browser account switch can't relabel this composer's draft as the new
+  // user (the global session.user can change while this instance is still alive).
+  const draftOwner = session.user
   const isSingleton = computed(() => {
     const id = toValue(identity)
     return id.mode === 'Edit' || Boolean(id.referenceName)
@@ -139,7 +144,7 @@ export function useDraftSync(options: UseDraftSyncOptions) {
       serverName: serverName.value,
       updatedAt: updatedAt.value,
       syncedAt: syncedAt.value,
-      user: session.user,
+      user: draftOwner,
     }
     await putDraftRecord(record)
     if (previousKey && previousKey !== record.key) {
@@ -277,7 +282,9 @@ export function useDraftSync(options: UseDraftSyncOptions) {
   const unsubscribe = onDraftChange(async (changedKey) => {
     if (changedKey !== key.value || dirty.value || !ready.value) return
     const record = await getDraftRecord(key.value)
-    if (record) {
+    // Same owner guard as load(): on a shared browser another account's tab can write this
+    // deterministic key, and we must not pull their content into this editor.
+    if (record && record.user === session.user) {
       applyPayload(record.payload)
       serverName.value = record.serverName ?? serverName.value
       updatedAt.value = record.updatedAt
