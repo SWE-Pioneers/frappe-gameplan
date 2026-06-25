@@ -223,14 +223,14 @@ export function useDraftSync(options: UseDraftSyncOptions) {
     if (ready.value || loading.value) return
     loading.value = true
     try {
-      // The IndexedDB store is origin-wide, so on a shared browser profile a record under
-      // this deterministic key may belong to a previously logged-in user. Ignore a record
-      // explicitly owned by someone else — restoring it would surface their draft content and
-      // sync our edits against their server row. Legacy records (written before the `user`
-      // field) are kept for continuity and get stamped on the next save.
+      // The IndexedDB store is origin-wide, so on a shared browser profile a record under this
+      // deterministic key may belong to a previously logged-in user. Only restore a record we
+      // can confirm is the current user's — restoring anyone else's (including legacy records
+      // with no `user`, which are indistinguishable from another account's) would surface their
+      // draft content and sync our edits against their server row. A never-synced legacy draft
+      // is dropped here; one that reached the server still loads via fetchServerDraft below.
       const localRaw = await getDraftRecord(key.value)
-      const local =
-        localRaw && localRaw.user != null && localRaw.user !== session.user ? null : localRaw
+      const local = localRaw?.user === session.user ? localRaw : null
       const server = await fetchServerDraft()
 
       if (local && local.updatedAt > (local.syncedAt ?? 0)) {
