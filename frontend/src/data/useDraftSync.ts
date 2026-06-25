@@ -14,6 +14,7 @@
  */
 import { ref, computed, watch, toValue, nextTick, onScopeDispose, type MaybeRefOrGetter } from 'vue'
 import { call, debounce, toast } from 'frappe-ui'
+import { session } from './session'
 import {
   getDraftRecord,
   putDraftRecord,
@@ -138,6 +139,7 @@ export function useDraftSync(options: UseDraftSyncOptions) {
       serverName: serverName.value,
       updatedAt: updatedAt.value,
       syncedAt: syncedAt.value,
+      user: session.user,
     }
     await putDraftRecord(record)
     if (previousKey && previousKey !== record.key) {
@@ -391,6 +393,12 @@ export async function recoverOrphanedDrafts(): Promise<number> {
   let recovered = 0
   for (const record of records) {
     const id = record.identity
+    // The IndexedDB store is origin-wide, so on a shared browser profile it can hold drafts
+    // authored by a previously logged-in user. Never adopt those as the current user —
+    // inserting them would surface another account's private content under this one. Records
+    // written before the `user` field exists are treated as not-mine and skipped.
+    if (record.user !== session.user) continue
+
     // Only brand-new drafts can be orphaned: an Edit draft already has a server doc, and a
     // record carrying a serverName already created its row.
     if (id.mode !== 'New' || record.serverName || !hasContent(record.payload)) continue
@@ -400,17 +408,32 @@ export async function recoverOrphanedDrafts(): Promise<number> {
     if (!isStandaloneDiscussion && !isCommentReply) continue
 
     try {
-      const fields: Record<string, unknown> = { content: record.payload.content ?? '' }
-      if (record.payload.title !== undefined) fields.title = record.payload.title ?? ''
-      if (record.payload.project !== undefined) fields.project = record.payload.project || null
-      if (isCommentReply) {
-        fields.reference_doctype = id.referenceDoctype
-        fields.reference_name = id.referenceName
-      }
+      // Comment drafts have a deterministic server identity (type + mode + reference), so a
+      // prior recovery may have inserted the row before crashing ahead of the local update.
+      // Adopt that existing row instead of inserting a duplicate. Standalone discussions have
+      // no such key, so a tiny insert-then-crash window remains (unchanged, pre-existing).
+      let doc = isCommentReply
+        ? await call(FIND_DRAFT, {
+            type: id.type,
+            mode: id.mode,
+            reference_doctype: id.referenceDoctype,
+            reference_name: id.referenceName,
+          })
+        : null
 
-      const doc = await call('frappe.client.insert', {
-        doc: { doctype: 'GP Draft', type: id.type, mode: id.mode, ...fields },
-      })
+      if (!doc) {
+        const fields: Record<string, unknown> = { content: record.payload.content ?? '' }
+        if (record.payload.title !== undefined) fields.title = record.payload.title ?? ''
+        if (record.payload.project !== undefined) fields.project = record.payload.project || null
+        if (isCommentReply) {
+          fields.reference_doctype = id.referenceDoctype
+          fields.reference_name = id.referenceName
+        }
+
+        doc = await call('frappe.client.insert', {
+          doc: { doctype: 'GP Draft', type: id.type, mode: id.mode, ...fields },
+        })
+      }
 
       // Standalone discussion drafts re-key from their per-instance id to the server name;
       // comment replies keep their deterministic singleton key and only gain a serverName.

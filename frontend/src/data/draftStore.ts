@@ -36,6 +36,11 @@ export interface DraftRecord {
   payload: DraftPayload
   /** GP Draft.name once the row exists on the server, else null. */
   serverName: string | null
+  /** The session user who authored this draft. The IndexedDB store is origin-wide, so this
+   *  guards a shared browser profile: recovery only adopts the current user's own orphans,
+   *  never uploading a logged-out user's draft under the next account. Absent on records
+   *  written before this field existed — treated as "not mine" and skipped. */
+  user?: string | null
   /** Last local edit, epoch ms. Drives reconciliation against the server. */
   updatedAt: number
   /** Last successful server push, epoch ms, or null if never synced. */
