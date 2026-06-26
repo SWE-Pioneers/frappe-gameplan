@@ -17,10 +17,7 @@ import DropdownMoreOptions from './DropdownMoreOptions.vue'
 import MergeSpaceDialog from './MergeSpaceDialog.vue'
 import ChangeSpaceCategoryDialog from './ChangeSpaceCategoryDialog.vue'
 import SpaceAccessDialog from './SpaceAccessDialog.vue'
-import { useSpace, archiveSpace } from '@/data/spaces'
-import { readOnlyMode } from '@/data/readOnlyMode'
-import { useSessionUser } from '@/data/users'
-import { canManageSpace } from '@/utils/permissions'
+import { useSpacePermissions, archiveSpace } from '@/data/spaces'
 import { GPProject } from '@/types/doctypes'
 
 defineOptions({
@@ -31,15 +28,12 @@ const props = defineProps<{
   spaceId: string
 }>()
 
-const space = useSpace(() => props.spaceId)
+const { space, canEditSpace, canManageAccess } = useSpacePermissions(() => props.spaceId)
 const spaces = useDoctype<GPProject>('GP Project')
 
 const showSpaceMergeDialog = ref(false)
 const showSpaceCategoryDialog = ref(false)
 const showSpaceAccessDialog = ref(false)
-const sessionUser = useSessionUser()
-const canEditSpace = computed(() => !readOnlyMode && !space.value?.archived_at)
-const canManageAccess = computed(() => !readOnlyMode && canManageSpace(space.value, sessionUser))
 
 const options = computed(() => [
   {

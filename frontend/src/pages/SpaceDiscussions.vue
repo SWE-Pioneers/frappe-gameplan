@@ -92,9 +92,14 @@ import SpaceTabs from '@/components/SpaceTabs.vue'
 import DropdownMoreOptions from '@/components/DropdownMoreOptions.vue'
 import SpaceAccessDialog from '@/components/SpaceAccessDialog.vue'
 import { useGroupedSpaceOptions } from '@/data/groupedSpaces'
-import { useSpace, spaces, markAllAsRead, archiveSpace, unarchiveSpace } from '@/data/spaces'
-import { useSessionUser } from '@/data/users'
-import { canManageSpace } from '@/utils/permissions'
+import {
+  useSpace,
+  useSpacePermissions,
+  spaces,
+  markAllAsRead,
+  archiveSpace,
+  unarchiveSpace,
+} from '@/data/spaces'
 import { copyToClipboard } from '@/utils'
 import { readOnlyMode } from '@/data/readOnlyMode'
 
@@ -117,14 +122,13 @@ const showMoveDialog = ref(false)
 const selectedSpace = ref<string | null>(null)
 const discussionListRef = useTemplateRef('discussionListRef')
 const router = useRouter()
-const currentSpace = useSpace(() => props.spaceId)
-const sessionUser = useSessionUser()
+const {
+  space: currentSpace,
+  isArchived,
+  canEditSpace,
+  canManageAccess,
+} = useSpacePermissions(() => props.spaceId)
 const showSpaceAccessDialog = ref(false)
-const isArchived = computed(() => Boolean(currentSpace.value?.archived_at))
-const canEditSpace = computed(() => !readOnlyMode && !isArchived.value)
-const canManageAccess = computed(
-  () => !readOnlyMode && canManageSpace(currentSpace.value, sessionUser),
-)
 
 const spaceActions = computed(() => [
   {

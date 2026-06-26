@@ -49,6 +49,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { Button, FormControl, Popover } from 'frappe-ui'
 import { gemoji } from 'gemoji'
+import { getRandomNumber } from '@/utils'
 
 const props = withDefaults(
   defineProps<{
@@ -100,11 +101,7 @@ function selectEmoji(value: string, close?: () => void) {
 }
 
 function setRandom() {
-  selectEmoji(gemoji[randomInt(0, gemoji.length - 1)].emoji)
-}
-
-function randomInt(min: number, max: number) {
-  return Math.floor(Math.random() * (max - min + 1) + min)
+  selectEmoji(gemoji[getRandomNumber(0, gemoji.length - 1)].emoji)
 }
 
 defineExpose({ setRandom })
