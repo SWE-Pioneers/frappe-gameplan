@@ -76,3 +76,38 @@ class IntegrationTestGPDraft(IntegrationTestCase):
 
 		# Share-by-link still works: a direct read by name resolves.
 		self.assertTrue(frappe.has_permission("GP Draft", "read", doc=draft.name, user=bob.name))
+
+	def test_duplicate_singleton_drafts_self_heal_on_read(self):
+		"""Singleton draft creation is a find-then-insert, so a rare race can leave two rows for
+		one reply. Reads collapse them: find_my_draft keeps the newest and deletes the rest, so the
+		composer resumes a single draft and the duplicate can't linger."""
+		from gameplan.gameplan.doctype.gp_draft.gp_draft import find_my_draft
+		from gameplan.tests.utils import create_discussion, create_project, create_team
+
+		# reference_name is a Dynamic Link, validated on insert — point at a real discussion.
+		team = create_team("Draft Heal Team")
+		project = create_project("Draft Heal Space", team.name)
+		discussion = create_discussion("Draft Heal Target", project.name)
+
+		alice = create_member("draft_alice@example.com", "Alice")
+		frappe.set_user(alice.name)
+
+		# Simulate the race: two rows for the same (owner, type, mode, reference). reference_name is
+		# a Dynamic Link stored as a string, and find_my_draft (whitelisted) type-checks it as str —
+		# mirror the client, which always sends the name as a string.
+		ref = dict(
+			type="Comment",
+			mode="New",
+			reference_doctype="GP Discussion",
+			reference_name=str(discussion.name),
+		)
+		older = frappe.get_doc(doctype="GP Draft", content="older", **ref).insert()
+		newer = frappe.get_doc(doctype="GP Draft", content="newer", **ref).insert()
+
+		result = find_my_draft(**ref)
+
+		# The newest survives; the stale duplicate is gone.
+		self.assertEqual(result["name"], newer.name)
+		remaining = frappe.get_all("GP Draft", filters={"owner": alice.name, **ref}, pluck="name")
+		self.assertEqual(remaining, [newer.name])
+		self.assertFalse(frappe.db.exists("GP Draft", older.name))

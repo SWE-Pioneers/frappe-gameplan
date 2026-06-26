@@ -69,6 +69,20 @@ class GPDraft(Document):
 			)
 
 
+def _keep_newest_singleton(filters: dict) -> str | None:
+	"""Resolve a singleton draft to one row, self-healing duplicates.
+
+	A singleton is keyed by (owner, type, mode, reference), but creation is a check-then-act
+	(find then insert), so two tabs/devices racing — or the offline orphan-recovery sweep — can
+	rarely leave more than one row for the same logical draft. Rather than lock every create, we
+	collapse on read: keep the most recently modified row and delete the stale siblings. Returns
+	the surviving name, or None."""
+	names = frappe.get_all("GP Draft", filters=filters, order_by="modified desc", pluck="name")
+	for stale in names[1:]:
+		frappe.delete_doc("GP Draft", stale, ignore_permissions=False, delete_permanently=True)
+	return names[0] if names else None
+
+
 @frappe.whitelist()
 def find_my_draft(
 	type: str,
@@ -83,11 +97,14 @@ def find_my_draft(
 	resolves to one row across tabs and devices. New-discussion drafts are standalone
 	and looked up by name instead, so they are not served here."""
 	filters = {"owner": frappe.session.user, "type": type, "mode": mode}
-	if reference_name:
-		filters["reference_doctype"] = reference_doctype
-		filters["reference_name"] = reference_name
+	if not reference_name:
+		# Without a reference this isn't a singleton lookup; keep the simple single-row read.
+		name = frappe.db.get_value("GP Draft", filters, "name")
+		return frappe.get_doc("GP Draft", name).as_dict() if name else None
 
-	name = frappe.db.get_value("GP Draft", filters, "name")
+	filters["reference_doctype"] = reference_doctype
+	filters["reference_name"] = reference_name
+	name = _keep_newest_singleton(filters)
 	if not name:
 		return None
 	return frappe.get_doc("GP Draft", name).as_dict()
@@ -123,6 +140,21 @@ def get_my_drafts():
 		order_by="modified desc",
 		ignore_permissions=False,
 	).run(as_dict=True)
+
+	# Collapse duplicate comment singletons (a rare create race can leave more than one row for
+	# one reply): rows are newest-first, so keep the first per (reference_doctype, reference_name)
+	# and delete the stale siblings — the Drafts list then shows one entry per reply.
+	seen = set()
+	deduped = []
+	for r in rows:
+		if r.type == "Comment" and r.reference_name:
+			key = (r.reference_doctype, r.reference_name)
+			if key in seen:
+				frappe.delete_doc("GP Draft", r.name, ignore_permissions=False, delete_permanently=True)
+				continue
+			seen.add(key)
+		deduped.append(r)
+	rows = deduped
 
 	# Resolve parent discussions for comment drafts (permission-checked, so inaccessible
 	# ones simply fall out and their drafts get skipped below).
