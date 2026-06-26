@@ -32,11 +32,13 @@ build_pid=$!
 
 echo "Creating SQLite Site..."
 # SQLite is a serverless backend, so no database server/credentials are needed.
+# Redirect stdin from /dev/null so an unexpected interactive prompt fails fast
+# (and prints the prompt to the log) instead of hanging until the job times out.
 bench new-site gameplan.test \
 	--db-type sqlite \
 	--admin-password admin \
 	--force \
-	--verbose
+	--verbose </dev/null
 
 # Test/runtime flags that the MariaDB site gets from .github/helper/site_config.json.
 # Set them with --parse so they are stored as native JSON types (booleans), not strings.
@@ -46,7 +48,10 @@ bench --site gameplan.test set-config --parse server_script_enabled true
 bench --site gameplan.test set-config --parse mute_emails true
 bench --site gameplan.test set-config --parse ignore_csrf 1
 
+echo "Installing Gameplan app..."
 bench --site gameplan.test install-app gameplan
+
+echo "Building search index..."
 bench --site gameplan.test execute gameplan.search_sqlite.build_index
 
 # wait till assets are built succesfully
