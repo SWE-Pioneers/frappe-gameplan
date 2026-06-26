@@ -233,6 +233,56 @@ class IntegrationTestGPUnreadRecord(IntegrationTestCase):
 		with self.assertRaises(frappe.exceptions.ValidationError):
 			mark_all_as_read_for_team(team=team.name, before="not-a-date")
 
+	def test_mark_all_as_read_for_team_with_before_marks_discussion_with_null_last_post_at(self):
+		# A discussion with no activity has a NULL last_post_at. The dated mark-all must still
+		# clear it: a naive `last_post_at < cutoff` evaluates to UNKNOWN for NULLs and drops
+		# them, stranding the discussion as permanently unread.
+		suffix = frappe.generate_hash(length=8)
+		user = create_member(f"team-null-lpa-member-{suffix}@example.com", "Team Null LPA Member")
+		team = create_team(f"Team Null LPA Source {suffix}")
+		project = create_project(f"Team Null LPA Source Space {suffix}", team.name)
+		discussion = create_discussion(f"Team Null LPA Discussion {suffix}", project.name)
+		frappe.db.set_value("GP Discussion", discussion.name, "last_post_at", None, update_modified=False)
+		record = create_unread_record(user.name, discussion.name, project.name)
+
+		frappe.set_user(user.name)
+		GPUnreadRecord.mark_all_as_read_for_team(team.name, user.name, before=frappe.utils.today())
+
+		self.assertEqual(frappe.db.get_value("GP Unread Record", record, "is_unread"), 0)
+
+	def test_update_project_for_discussion_realigns_records_to_current_space(self):
+		# A discussion's unread records must follow it when it moves, otherwise the count stays
+		# attributed to (and stuck in) the old space.
+		suffix = frappe.generate_hash(length=8)
+		user = create_member(f"realign-member-{suffix}@example.com", "Realign Member")
+		team = create_team(f"Realign Team {suffix}")
+		old_project = create_project(f"Realign Old Space {suffix}", team.name)
+		new_project = create_project(f"Realign New Space {suffix}", team.name)
+		discussion = create_discussion(f"Realign Discussion {suffix}", new_project.name)
+		# Record left pointing at the old space, as if the discussion was moved after creation.
+		record = create_unread_record(user.name, discussion.name, old_project.name)
+
+		GPUnreadRecord.update_project_for_discussion(discussion.name, new_project.name)
+
+		self.assertEqual(frappe.db.get_value("GP Unread Record", record, "project"), str(new_project.name))
+
+	def test_moving_discussion_realigns_unread_records(self):
+		# End-to-end: moving a discussion to another space updates its unread records' project,
+		# so mark_all_as_read_for_team on the new space can clear them.
+		from gameplan.gameplan.doctype.gp_discussion.gp_discussion import move_discussion
+
+		suffix = frappe.generate_hash(length=8)
+		user = create_member(f"move-member-{suffix}@example.com", "Move Member")
+		team = create_team(f"Move Team {suffix}")
+		source_project = create_project(f"Move Source Space {suffix}", team.name)
+		target_project = create_project(f"Move Target Space {suffix}", team.name)
+		discussion = create_discussion(f"Move Discussion {suffix}", source_project.name)
+		record = create_unread_record(user.name, discussion.name, source_project.name)
+
+		move_discussion(discussion, target_project.name)
+
+		self.assertEqual(frappe.db.get_value("GP Unread Record", record, "project"), str(target_project.name))
+
 	def tearDown(self):
 		frappe.set_user("Administrator")
 		super().tearDown()

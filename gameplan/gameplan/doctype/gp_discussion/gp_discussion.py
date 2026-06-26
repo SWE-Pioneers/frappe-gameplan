@@ -91,6 +91,13 @@ class GPDiscussion(HasActivity, HasAttachments, HasMentions, HasReactions, HasTa
 		self.log_title_update()
 		self.update_participants_count()
 		self.attach_files_in_content()
+		self.sync_unread_records_on_move()
+
+	def sync_unread_records_on_move(self):
+		# When a discussion moves to another space, realign its unread records so the count
+		# follows it instead of staying attributed to (and stuck in) the old space.
+		if self.has_value_changed("project"):
+			GPUnreadRecord.update_project_for_discussion(self.name, self.project)
 
 	def before_save(self):
 		self.update_slug()

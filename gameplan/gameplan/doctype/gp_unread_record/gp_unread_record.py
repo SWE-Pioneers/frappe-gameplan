@@ -98,6 +98,25 @@ class GPUnreadRecord(Document):
 		frappe.qb.from_(UnreadRecord).where(UnreadRecord.project == str(project)).delete().run()
 
 	@staticmethod
+	def update_project_for_discussion(discussion: str, project: str):
+		"""Keep a discussion's unread records pointing at its current space.
+
+		Moving a discussion changes its `project`, but the unread records keep the old one.
+		The unread count groups by the record's project and `mark_all_as_read_for_team`
+		clears by it, so a stale project misattributes the count to the old space and can
+		leave it uncleared (e.g. when the old space is archived or inaccessible).
+		"""
+		if frappe.flags.in_migrate or frappe.flags.in_patch:
+			return
+
+		UnreadRecord = frappe.qb.DocType("GP Unread Record")
+		(
+			frappe.qb.update(UnreadRecord)
+			.set(UnreadRecord.project, str(project))
+			.where((UnreadRecord.discussion == str(discussion)) & (UnreadRecord.project != str(project)))
+		).run()
+
+	@staticmethod
 	def mark_discussion_as_read_for_user(discussion, user):
 		"""Mark all unread records for this discussion and user as read"""
 		UnreadRecord = frappe.qb.DocType("GP Unread Record")
