@@ -205,18 +205,28 @@ const isBulkDeleteMode = ref(false)
 const selectedDrafts = ref<string[]>([])
 const showDeleteConfirm = ref(false)
 
-// Comment drafts open their discussion with the reply composer focused (?draft=comment).
-// Discussion drafts open the scoped composer; those without a resolvable community fall
-// back to the unscoped route.
+// Comment drafts always open their parent discussion with the reply composer focused
+// (?draft=comment) — never the new-discussion composer, which would resurface a saved reply
+// as a brand-new discussion. Discussion drafts open the scoped composer; those without a
+// resolvable community fall back to the unscoped route.
 function draftRoute(draft: DraftRow): RouteLocationRaw {
-  if (draft.kind === 'comment' && draft.discussion && draft.community && draft.space) {
+  if (draft.kind === 'comment' && draft.discussion && draft.space) {
+    // When the community resolved server-side, route fully scoped. Otherwise use the
+    // space-scoped path and let the router fill in the community — so the reply still opens
+    // in place (and its content is never silently rerouted into a new discussion).
+    if (draft.community) {
+      return {
+        name: 'Discussion',
+        params: {
+          communityId: draft.community,
+          spaceId: draft.space,
+          postId: draft.discussion,
+        },
+        query: { draft: 'comment' },
+      }
+    }
     return {
-      name: 'Discussion',
-      params: {
-        communityId: draft.community,
-        spaceId: draft.space,
-        postId: draft.discussion,
-      },
+      path: `/space/${draft.space}/discussion/${draft.discussion}`,
       query: { draft: 'comment' },
     }
   }
