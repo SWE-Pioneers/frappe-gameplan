@@ -56,3 +56,23 @@ class IntegrationTestGPDraft(IntegrationTestCase):
 		self.assertFalse(frappe.has_permission("GP Draft", "write", doc=draft.name, user=bob.name))
 		with self.assertRaises(frappe.PermissionError):
 			frappe.client.set_value("GP Draft", draft.name, "content", "Bob's edit")
+
+	def test_drafts_are_not_enumerable_across_users(self):
+		"""Share-by-link only: a member can read another's draft by name (the share URL), but a
+		list/report query must not enumerate it — permission_query_conditions scopes lists to the
+		owner. Guards the v1 frappe.client.get_list path, which bypasses the controller get_list."""
+		alice = create_member("draft_alice@example.com", "Alice")
+		bob = create_member("draft_bob@example.com", "Bob")
+
+		frappe.set_user(alice.name)
+		draft = frappe.get_doc(
+			doctype="GP Draft", type="Discussion", mode="New", content="Alice's private draft"
+		).insert()
+
+		frappe.set_user(bob.name)
+		# Enumeration (the leak path) must not surface Alice's draft for Bob.
+		names = frappe.get_list("GP Draft", pluck="name")
+		self.assertNotIn(draft.name, names)
+
+		# Share-by-link still works: a direct read by name resolves.
+		self.assertTrue(frappe.has_permission("GP Draft", "read", doc=draft.name, user=bob.name))

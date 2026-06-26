@@ -106,7 +106,7 @@ def get_my_drafts():
 	into N+1 lookups. Comment drafts whose discussion was deleted — or whose space the user
 	can no longer access — are dropped, since they can't be shown or routed."""
 	user = frappe.session.user
-	rows = frappe.get_all(
+	rows = frappe.qb.get_query(
 		"GP Draft",
 		filters={"owner": user, "mode": "New", "type": ["in", ["Discussion", "Comment"]]},
 		fields=[
@@ -121,7 +121,8 @@ def get_my_drafts():
 			"modified",
 		],
 		order_by="modified desc",
-	)
+		ignore_permissions=False,
+	).run(as_dict=True)
 
 	# Resolve parent discussions for comment drafts (permission-checked, so inaccessible
 	# ones simply fall out and their drafts get skipped below).
