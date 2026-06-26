@@ -96,6 +96,11 @@ jobs:
           working-directory: frontend
         env:
           CYPRESS_BASE_URL: http://gameplan.test:8000
+          # The istanbul-instrumented bundle is heavier, so the editor takes longer
+          # to become interactive — enough to brush the default 4s cy.type() window
+          # (e.g. discussion.cy.js). Give CI headroom; local/un-instrumented runs are
+          # unaffected (CYPRESS_* only overrides config for this run).
+          CYPRESS_defaultCommandTimeout: '10000'
 
       # @cypress/code-coverage writes frontend/coverage/coverage-summary.json (nyc
       # json-summary). The PR-comment workflow turns it into a delta line.
