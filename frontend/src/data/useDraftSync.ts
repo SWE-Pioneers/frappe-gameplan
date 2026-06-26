@@ -13,11 +13,13 @@
  *    so the local key is per-instance until the server assigns a unique name.
  */
 import { ref, computed, watch, toValue, nextTick, onScopeDispose, type MaybeRefOrGetter } from 'vue'
-import { call, debounce } from 'frappe-ui'
+import { call, debounce, toast, dayjsLocal } from 'frappe-ui'
+import { session } from './session'
 import {
   getDraftRecord,
   putDraftRecord,
   deleteDraftRecord,
+  listDraftRecords,
   singletonKey,
   broadcastDraftChange,
   onDraftChange,
@@ -67,6 +69,8 @@ export function useDraftSync(options: UseDraftSyncOptions) {
   const saving = ref(false)
   const savedAt = ref<number | null>(null)
   const restored = ref(false)
+  // Tracks whether the last server push failed, so we toast once per streak (not per keystroke).
+  const pushFailed = ref(false)
   const serverName = ref<string | null>(toValue(options.draftName ?? null))
 
   // Last local edit vs last successful push, on THIS device. Drives reconciliation
@@ -78,6 +82,11 @@ export function useDraftSync(options: UseDraftSyncOptions) {
   // Standalone drafts get a per-instance local key so two tabs never share IndexedDB
   // state before a unique server name exists.
   const instanceId = `local-${Date.now()}-${++instanceCounter}`
+
+  // The user who owns this draft, captured when the composer opens. Stamped on every local
+  // write so a same-browser account switch can't relabel this composer's draft as the new
+  // user (the global session.user can change while this instance is still alive).
+  const draftOwner = session.user
   const isSingleton = computed(() => {
     const id = toValue(identity)
     return id.mode === 'Edit' || Boolean(id.referenceName)
@@ -85,7 +94,9 @@ export function useDraftSync(options: UseDraftSyncOptions) {
   const key = computed(() => {
     const id = toValue(identity)
     if (isSingleton.value) return singletonKey(id)
-    return serverName.value ? `Discussion::New::${serverName.value}` : `Discussion::New::${instanceId}`
+    return serverName.value
+      ? `Discussion::New::${serverName.value}`
+      : `Discussion::New::${instanceId}`
   })
 
   const isEnabled = () => toValue(options.enabled ?? true)
@@ -133,6 +144,7 @@ export function useDraftSync(options: UseDraftSyncOptions) {
       serverName: serverName.value,
       updatedAt: updatedAt.value,
       syncedAt: syncedAt.value,
+      user: draftOwner,
     }
     await putDraftRecord(record)
     if (previousKey && previousKey !== record.key) {
@@ -162,9 +174,18 @@ export function useDraftSync(options: UseDraftSyncOptions) {
       syncedAt.value = Date.now()
       savedAt.value = syncedAt.value
       await persistLocal()
+      pushFailed.value = false
     } catch (error) {
-      // Keep the local copy; the next edit (or unmount flush) retries.
+      // Keep the local copy; the next edit (or unmount flush) retries. Standalone
+      // new-discussion drafts that never land here are adopted later by
+      // recoverOrphanedDrafts(), so a missed push no longer strands a draft locally.
       console.error('Draft sync failed', error)
+      // Tell the user once per failure streak so a silently-failing save can't quietly
+      // lose server-side persistence. Reset on the next success above.
+      if (!pushFailed.value) {
+        pushFailed.value = true
+        toast.error('Could not save your draft to the server — keeping a local copy and retrying.')
+      }
     } finally {
       saving.value = false
     }
@@ -207,8 +228,20 @@ export function useDraftSync(options: UseDraftSyncOptions) {
     if (ready.value || loading.value) return
     loading.value = true
     try {
-      const local = await getDraftRecord(key.value)
+      // The IndexedDB store is origin-wide, so on a shared browser profile a record under this
+      // deterministic key may belong to a previously logged-in user. Only restore a record we
+      // can confirm is the current user's — restoring anyone else's (including legacy records
+      // with no `user`, which are indistinguishable from another account's) would surface their
+      // draft content and sync our edits against their server row. A never-synced legacy draft
+      // is dropped here; one that reached the server still loads via fetchServerDraft below.
+      const localRaw = await getDraftRecord(key.value)
+      const local = localRaw?.user === session.user ? localRaw : null
       const server = await fetchServerDraft()
+      // A draft is readable by anyone with its name (e.g. a shared `?draft=` URL), but only its
+      // owner can write it. If we loaded someone else's draft, restore its content but don't bind
+      // our edits to their server row — that write is forbidden and would retry-toast forever.
+      // Forking (serverName = null) lets the reader's edits insert their own draft instead.
+      const serverIsForeign = Boolean(server?.owner && server.owner !== session.user)
 
       if (local && local.updatedAt > (local.syncedAt ?? 0)) {
         // Un-pushed local edits take precedence over the server copy.
@@ -220,7 +253,7 @@ export function useDraftSync(options: UseDraftSyncOptions) {
         restored.value = hasContent(local.payload)
       } else if (server) {
         applyPayload(payloadFromDoc(server))
-        serverName.value = server.name
+        serverName.value = serverIsForeign ? null : server.name
         syncedAt.value = Date.now()
         updatedAt.value = syncedAt.value
         await persistLocal()
@@ -241,16 +274,22 @@ export function useDraftSync(options: UseDraftSyncOptions) {
     }
   }
 
-  watch(() => isEnabled(), (enabled) => {
-    if (enabled) void load()
-  }, { immediate: true })
+  watch(
+    () => isEnabled(),
+    (enabled) => {
+      if (enabled) void load()
+    },
+    { immediate: true },
+  )
 
   // Keep sibling tabs of the same draft coherent — but never clobber un-pushed edits
   // typed in this tab.
   const unsubscribe = onDraftChange(async (changedKey) => {
     if (changedKey !== key.value || dirty.value || !ready.value) return
     const record = await getDraftRecord(key.value)
-    if (record) {
+    // Same owner guard as load(): on a shared browser another account's tab can write this
+    // deterministic key, and we must not pull their content into this editor.
+    if (record && record.user === session.user) {
       applyPayload(record.payload)
       serverName.value = record.serverName ?? serverName.value
       updatedAt.value = record.updatedAt
@@ -352,3 +391,172 @@ export function useDraftSync(options: UseDraftSyncOptions) {
 }
 
 export type DraftSync = ReturnType<typeof useDraftSync>
+
+/**
+ * Adopt new drafts that are stranded in IndexedDB with no server row. A draft only reaches
+ * the (server-backed) Drafts list once its `GP Draft` row is created on the first
+ * successful push. If that push never lands — offline, a server hiccup, or the composer
+ * closing inside the debounce window — the draft lives on only locally and never appears in
+ * the list. This covers both orphan shapes:
+ *  - Standalone new discussions: keyed per-instance, so a later session never reconstructs
+ *    the key to retry the push.
+ *  - Comment replies: keyed deterministically (singleton), so a revisit would retry — but
+ *    only if the user reopens that exact discussion. Until then the draft is invisible.
+ *
+ * This sweep is the safety net: it finds those orphans (mode New, no serverName, has
+ * content), creates their rows, and lines the local record up with the new server name.
+ * Returns how many drafts were recovered.
+ */
+export async function recoverOrphanedDrafts(): Promise<number> {
+  // Hold a same-origin lock for the whole sweep so two tabs can't recover the same IndexedDB
+  // orphan at once. The dedup for comment replies is a find-then-insert (find_my_draft, then
+  // client.insert) with no DB-level uniqueness, and standalone discussion orphans skip the find
+  // entirely — so concurrent tabs could each insert and produce duplicate GP Draft rows. The lock
+  // serializes tabs; within one tab the orphans still recover concurrently. Browsers without the
+  // Web Locks API just run the sweep directly (the original, single-tab-racy behavior).
+  return runExclusive('gp-draft-recovery', sweepOrphanedDrafts)
+}
+
+async function sweepOrphanedDrafts(): Promise<number> {
+  const records = await listDraftRecords()
+  // Each orphan has an independent key, so recover them concurrently. Serializing would let
+  // one record's server calls (parent lookup, insert) delay every record after it — enough,
+  // with a few stale orphans queued ahead, to miss a freshly created draft's first render.
+  const results = await Promise.all(records.map((record) => recoverOrphanedDraft(record)))
+  return results.filter(Boolean).length
+}
+
+/** Run `fn` while holding a same-origin exclusive lock, so only one tab runs it at a time.
+ *  Falls back to running directly where the Web Locks API is unavailable. */
+async function runExclusive<T>(name: string, fn: () => Promise<T>): Promise<T> {
+  if (typeof navigator !== 'undefined' && navigator.locks) {
+    return navigator.locks.request(name, fn) as Promise<T>
+  }
+  return fn()
+}
+
+/** Adopt a single stranded local draft into a server row. Returns whether it was recovered. */
+async function recoverOrphanedDraft(record: DraftRecord): Promise<boolean> {
+  const id = record.identity
+  // The IndexedDB store is origin-wide, so on a shared browser profile it can hold drafts
+  // authored by a previously logged-in user. Never adopt those as the current user — inserting
+  // them would surface another account's private content under this one. Records written before
+  // the `user` field exists are treated as not-mine and skipped.
+  if (record.user !== session.user) return false
+
+  // Only brand-new drafts can be orphaned: an Edit draft already has a server doc, and a
+  // record carrying a serverName already created its row.
+  if (id.mode !== 'New' || record.serverName || !hasContent(record.payload)) return false
+
+  const isStandaloneDiscussion = id.type === 'Discussion' && !id.referenceName
+  const isCommentReply = id.type === 'Comment' && Boolean(id.referenceName)
+  if (!isStandaloneDiscussion && !isCommentReply) return false
+
+  // A reply whose parent discussion was deleted or moved out of reach can't be routed to:
+  // get_my_drafts drops it because the parent won't resolve. Recovering it anyway would create
+  // an orphan row and mark the local draft "recovered" so it never retries or shows. Skip it
+  // unless the parent still resolves under the current user's permissions.
+  if (isCommentReply && !(await parentDocResolves(id.referenceDoctype, id.referenceName))) {
+    return false
+  }
+
+  // Symmetric guard for standalone discussions: if the draft is pinned to a space the user can no
+  // longer access, recovering it inserts a row that get_my_drafts then hides (its permission-checked
+  // project query won't return that space) — the draft would be marked "recovered" yet never appear.
+  if (
+    isStandaloneDiscussion &&
+    record.payload.project &&
+    !(await parentDocResolves('GP Project', record.payload.project))
+  ) {
+    return false
+  }
+
+  try {
+    // The payload we persist back: usually the local buffer, but server content if a newer server
+    // row wins below. Kept in a local so we never mutate the input record.
+    let payload = record.payload
+    // Comment drafts have a deterministic server identity (type + mode + reference), so a prior
+    // recovery may have inserted the row before crashing ahead of the local update. Adopt that
+    // existing row instead of inserting a duplicate. Standalone discussions have no such key, so
+    // a tiny insert-then-crash window remains (unchanged, pre-existing).
+    let doc = isCommentReply
+      ? await call(FIND_DRAFT, {
+          type: id.type,
+          mode: id.mode,
+          reference_doctype: id.referenceDoctype,
+          reference_name: id.referenceName,
+        })
+      : null
+
+    if (!doc) {
+      const fields: Record<string, unknown> = { content: payload.content ?? '' }
+      if (payload.title !== undefined) fields.title = payload.title ?? ''
+      if (payload.project !== undefined) fields.project = payload.project || null
+      if (isCommentReply) {
+        fields.reference_doctype = id.referenceDoctype
+        fields.reference_name = id.referenceName
+      }
+
+      doc = await call('frappe.client.insert', {
+        doc: { doctype: 'GP Draft', type: id.type, mode: id.mode, ...fields },
+      })
+    } else {
+      // A server row already exists for this singleton (created on another tab/device). Only push
+      // our local orphan over it when the content differs AND our last local edit is newer than the
+      // server's `modified` — otherwise recovery would clobber a fresher server copy with a stale
+      // local buffer. dayjsLocal normalizes the server's system-tz timestamp to a comparable epoch.
+      // When the server wins, adopt its content locally so the re-keyed record shows the current copy.
+      const localContent = payload.content ?? ''
+      const serverContent = doc.content ?? ''
+      if (localContent !== serverContent) {
+        const localIsNewer = record.updatedAt > dayjsLocal(doc.modified).valueOf()
+        if (localIsNewer) {
+          await call('frappe.client.set_value', {
+            doctype: 'GP Draft',
+            name: doc.name,
+            fieldname: { content: localContent },
+          })
+        } else {
+          payload = { ...payload, content: serverContent }
+        }
+      }
+    }
+
+    // Standalone discussion drafts re-key from their per-instance id to the server name;
+    // comment replies keep their deterministic singleton key and only gain a serverName.
+    const newKey = isCommentReply ? singletonKey(id) : `Discussion::New::${doc.name}`
+    await putDraftRecord({
+      ...record,
+      payload,
+      key: newKey,
+      serverName: doc.name,
+      syncedAt: Date.now(),
+    })
+    if (newKey !== record.key) await deleteDraftRecord(record.key)
+    broadcastDraftChange(newKey)
+    return true
+  } catch (error) {
+    console.error('Failed to recover orphaned draft', error)
+    return false
+  }
+}
+
+/** Whether a referenced document still exists and is readable by the current user.
+ *  get_value is permission-checked, so a deleted doc or one in a now-inaccessible space
+ *  comes back empty — exactly the cases where recovering a reply draft would strand it. */
+async function parentDocResolves(
+  doctype: string | null | undefined,
+  name: string | null | undefined,
+): Promise<boolean> {
+  if (!doctype || !name) return false
+  try {
+    const res = await call('frappe.client.get_value', {
+      doctype,
+      filters: { name },
+      fieldname: 'name',
+    })
+    return Boolean(res?.name)
+  } catch {
+    return false
+  }
+}

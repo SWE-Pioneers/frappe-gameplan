@@ -17,10 +17,7 @@ import DropdownMoreOptions from './DropdownMoreOptions.vue'
 import MergeSpaceDialog from './MergeSpaceDialog.vue'
 import ChangeSpaceCategoryDialog from './ChangeSpaceCategoryDialog.vue'
 import SpaceAccessDialog from './SpaceAccessDialog.vue'
-import { useSpace } from '@/data/spaces'
-import { readOnlyMode } from '@/data/readOnlyMode'
-import { useSessionUser } from '@/data/users'
-import { canManageSpace } from '@/utils/permissions'
+import { useSpacePermissions, archiveSpace } from '@/data/spaces'
 import { GPProject } from '@/types/doctypes'
 
 defineOptions({
@@ -31,15 +28,12 @@ const props = defineProps<{
   spaceId: string
 }>()
 
-const space = useSpace(() => props.spaceId)
+const { space, canEditSpace, canManageAccess } = useSpacePermissions(() => props.spaceId)
 const spaces = useDoctype<GPProject>('GP Project')
 
 const showSpaceMergeDialog = ref(false)
 const showSpaceCategoryDialog = ref(false)
 const showSpaceAccessDialog = ref(false)
-const sessionUser = useSessionUser()
-const canEditSpace = computed(() => !readOnlyMode && !space.value?.archived_at)
-const canManageAccess = computed(() => !readOnlyMode && canManageSpace(space.value, sessionUser))
 
 const options = computed(() => [
   {
@@ -63,16 +57,10 @@ const options = computed(() => [
   {
     label: 'Archive',
     icon: 'lucide-archive',
-    onClick: () => {
-      dialog.confirm({
-        title: 'Archive space',
-        message:
-          'You cannot create new discussions, pages or tasks in an archived space. It will remain read-only. You can unarchive it again at any time.',
-        confirmLabel: 'Archive',
-        onConfirm: () => spaces.runDocMethod.submit({ method: 'archive', name: props.spaceId }),
-      })
-    },
-    condition: () => canEditSpace.value,
+    onClick: () => space.value && archiveSpace(space.value),
+    // Archiving is destructive — require manage access, matching the space header menu, so a
+    // regular member isn't offered an action they lack permission for.
+    condition: () => canEditSpace.value && canManageAccess.value,
   },
   {
     label: 'Delete',

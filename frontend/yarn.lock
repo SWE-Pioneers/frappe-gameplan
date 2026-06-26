@@ -2261,10 +2261,10 @@ framer-motion@^12.25.0:
     motion-utils "^12.39.0"
     tslib "^2.4.0"
 
-frappe-ui@1.0.0-beta.13:
-  version "1.0.0-beta.13"
-  resolved "https://registry.yarnpkg.com/frappe-ui/-/frappe-ui-1.0.0-beta.13.tgz#ec3a42c8a06cf715a90657074f9d107638526807"
-  integrity sha512-k7cRKR5grWD0ZOQpfBkkbZ05qqnGMvHsxGeKPdvvXraSfMTozfpCUJq57Detx5S2R21LUcSZ7l0BFx7bs1DWhA==
+frappe-ui@1.0.0-beta.15:
+  version "1.0.0-beta.15"
+  resolved "https://registry.yarnpkg.com/frappe-ui/-/frappe-ui-1.0.0-beta.15.tgz#6932c5ba8b73d7ec40a7db9b52809643a816ab14"
+  integrity sha512-Egq5V51r+wKkQIkjRahKOnXu7g2KpK0Xir9gt8lQYafdqY5e+SyVFLify9M7IciphXgKX3bmpr/PrNsFyopytA==
   dependencies:
     "@codemirror/lang-css" "^6.3.0"
     "@codemirror/lang-html" "^6.4.9"
@@ -2372,6 +2372,11 @@ fuzzysort@^3.1.0:
   version "3.1.0"
   resolved "https://registry.yarnpkg.com/fuzzysort/-/fuzzysort-3.1.0.tgz#4d7832d8fa48ad381753eaa7a7aae9927bdc10a8"
   integrity sha512-sR9BNCjBg6LNgwvxlBd0sBABvQitkLzoVY9MYYROQVX/FvfJ4Mai9LsGhDgd8qYdds0bY77VzYd5iuB+v5rwQQ==
+
+gemoji@^7.1.0:
+  version "7.1.0"
+  resolved "https://registry.yarnpkg.com/gemoji/-/gemoji-7.1.0.tgz#165403777681a9690d649aabd104da037bdd7739"
+  integrity sha512-wI0YWDIfQraQMDs0yXAVQiVBZeMm/rIYssf8LZlMDdssKF19YqJKOHkv4zvwtVQTBJ0LNmErv1S+DqlVUudz8g==
 
 gensync@^1.0.0-beta.2:
   version "1.0.0-beta.2"

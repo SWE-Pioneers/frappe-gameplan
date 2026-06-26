@@ -2,6 +2,9 @@ import { computed, MaybeRefOrGetter, toValue } from 'vue'
 import { useCall, useList, useDoctype, dialog } from 'frappe-ui'
 import { GPProject, GPMember } from '@/types/doctypes'
 import { getProjectUnreadCount, markSpacesAsRead } from './unreadCount'
+import { useSessionUser } from './users'
+import { canManageSpace } from '@/utils/permissions'
+import { readOnlyMode } from './readOnlyMode'
 
 interface Member extends Pick<GPMember, 'user'> {}
 
@@ -56,6 +59,22 @@ export function useSpace(name: MaybeRefOrGetter<string | undefined>) {
     if (!_name) return null
     return getSpace(_name)
   })
+}
+
+/**
+ * Shared gates for the space-action menus (the options dropdown and the discussions-header
+ * menu). Kept in one place so a permission-rule change can't leave the two menus disagreeing
+ * about who may edit vs. manage a space. `canEditSpace` covers non-destructive edits on a live
+ * space; `canManageAccess` mirrors the backend `can_manage_space` and additionally gates the
+ * destructive/admin actions (manage access, archive, unarchive).
+ */
+export function useSpacePermissions(spaceId: MaybeRefOrGetter<string | undefined>) {
+  const space = useSpace(spaceId)
+  const sessionUser = useSessionUser()
+  const isArchived = computed(() => Boolean(space.value?.archived_at))
+  const canEditSpace = computed(() => !readOnlyMode && !isArchived.value)
+  const canManageAccess = computed(() => !readOnlyMode && canManageSpace(space.value, sessionUser))
+  return { space, isArchived, canEditSpace, canManageAccess }
 }
 
 export function getSpace(name: string) {
@@ -124,6 +143,16 @@ export function leaveSpaces(spaceIds: string[]) {
     .then(() => {
       joinedSpaces.reload()
     })
+}
+
+export function archiveSpace(space: Space) {
+  dialog.confirm({
+    title: 'Archive space',
+    message:
+      'You cannot create new discussions, pages or tasks in an archived space. It will remain read-only. You can unarchive it again at any time.',
+    confirmLabel: 'Archive',
+    onConfirm: () => spaceDoctype.runDocMethod.submit({ method: 'archive', name: space.name }),
+  })
 }
 
 export function unarchiveSpace(space: Space) {

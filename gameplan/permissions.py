@@ -211,6 +211,17 @@ def comment_query_conditions(user=None, **kwargs):
 	return criterion_sql(criterion)
 
 
+def draft_query_conditions(user=None, **kwargs):
+	# Drafts are private to their owner in list/report queries. Share-by-link still works:
+	# that reads a single draft by name through the doctype's open `read` permission, which
+	# this does not touch — only enumeration (list/report) is scoped. Mirrors GPDraft.get_list
+	# (the v2 query path); this closes the v1 frappe.client.get_list path, which does not invoke
+	# the controller get_list for non-virtual doctypes and so was returning every user's drafts.
+	user = user or frappe.session.user
+	Draft = frappe.qb.DocType("GP Draft")
+	return criterion_sql(Draft.owner == user)
+
+
 def content_project_query_conditions(doctype, user=None):
 	user = user or frappe.session.user
 	if is_global_admin(user):

@@ -1,11 +1,28 @@
 <script setup lang="ts">
 import { computed, useTemplateRef } from 'vue'
-import { Button, Tooltip } from 'frappe-ui'
-import { EditorFixedMenu } from 'frappe-ui/editor'
+import { Button, TooltipProvider } from 'frappe-ui'
+import {
+  Blockquote,
+  Bold,
+  BulletList,
+  EditorFixedMenu,
+  FontColor,
+  H2,
+  H3,
+  H4,
+  InsertLink,
+  Italic,
+  OrderedList,
+  Paragraph,
+  Separator,
+  Strike,
+  type Editor,
+  type MenuItem,
+} from 'frappe-ui/editor'
+import EmojiPicker from '@/components/EmojiPicker.vue'
 import GPEditor from './GPEditor.vue'
 import QuoteReplyButton from '@/components/RichQuoteExtension/QuoteReplyButton.vue'
 import { useRichQuotes, useBacklinkRefresh } from '@/components/RichQuoteExtension/useRichQuotes'
-import { compactCommentToolbar, gameplanToolbar } from './toolbars'
 import { commentExtensions } from './commentExtensions'
 
 // gameplan's comment box: the lighter CommentKit (no toc / iframe) + tables +
@@ -42,13 +59,86 @@ const extensions = commentExtensions({ controller, sourceId: props.quoteSourceId
 
 const gp = useTemplateRef<InstanceType<typeof GPEditor>>('gp')
 const editor = computed(() => gp.value?.editor ?? null)
-const toolbarItems = computed(() =>
-  props.toolbarExpanded ? gameplanToolbar : compactCommentToolbar,
-)
+const expandedToolbarItems = computed<MenuItem[]>(() => [
+  insertItem,
+  textToolsItem,
+  Separator,
+  Paragraph,
+  H2,
+  H3,
+  H4,
+  Separator,
+  Bold,
+  Italic,
+  Strike,
+  FontColor,
+  Separator,
+  BulletList,
+  OrderedList,
+  Blockquote,
+  Separator,
+  InsertLink,
+])
 
 useBacklinkRefresh(editor, props.quoteSourceId, () => props.editable ?? false)
 
 defineExpose({ editor })
+
+function hasEditorCommand(editor: Editor, command: string) {
+  return typeof (editor.commands as Record<string, unknown>)[command] === 'function'
+}
+
+// Mirrors the collapsed "+" Insert button so it keeps the same slot when the
+// toolbar expands — otherwise the Text tools toggle shifts left and feels unstable.
+const insertItem: MenuItem = {
+  label: 'Insert',
+  icon: 'lucide-plus',
+  action: (editor) => openSlashCommands(editor),
+}
+
+const textToolsItem: MenuItem = {
+  label: 'Text tools',
+  icon: 'lucide-case-sensitive',
+  getLabel: () => (props.toolbarExpanded ? 'Hide text tools' : 'Show text tools'),
+  action: () => emit('update:toolbarExpanded', !props.toolbarExpanded),
+  isActive: () => props.toolbarExpanded,
+}
+
+function openSlashCommands(editor: Editor) {
+  editor.chain().focus().insertContent(' /').run()
+}
+
+function insertTrigger(editor: Editor, trigger: '@') {
+  editor.chain().focus().insertContent(` ${trigger}`).run()
+}
+
+function insertEmoji(editor: Editor, emoji: string) {
+  editor.chain().focus().insertContent(emoji).run()
+}
+
+function insertImage(editor: Editor) {
+  if (canInsertImage(editor)) editor.chain().focus().selectAndUploadImage().run()
+}
+
+function insertVideo(editor: Editor) {
+  if (canInsertVideo(editor)) editor.chain().focus().selectAndUploadVideo().run()
+}
+
+function insertCodeBlock(editor: Editor) {
+  if (canInsertCodeBlock(editor)) editor.chain().focus().toggleCodeBlock().run()
+}
+
+function canInsertImage(editor: Editor) {
+  return 'image' in editor.schema.nodes && hasEditorCommand(editor, 'selectAndUploadImage')
+}
+
+function canInsertVideo(editor: Editor) {
+  return 'video' in editor.schema.nodes && hasEditorCommand(editor, 'selectAndUploadVideo')
+}
+
+function canInsertCodeBlock(editor: Editor) {
+  return 'codeBlock' in editor.schema.nodes
+}
 </script>
 
 <template>
@@ -68,16 +158,82 @@ defineExpose({ editor })
     </template>
     <template v-if="editable" #bottom="{ editor: e }">
       <div class="mt-2 flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
-        <div class="flex min-w-0 items-center">
-          <EditorFixedMenu :editor="e" :items="toolbarItems" class="-ml-1 overflow-x-auto" />
-          <Tooltip :text="toolbarExpanded ? 'Show fewer tools' : 'Show more tools'">
-            <Button
-              variant="ghost"
-              :icon="toolbarExpanded ? 'lucide-list-minus' : 'lucide-list-plus'"
-              :aria-label="toolbarExpanded ? 'Show fewer editor tools' : 'Show more editor tools'"
-              @click="emit('update:toolbarExpanded', !toolbarExpanded)"
+        <div class="flex min-w-0 items-center gap-1 overflow-x-auto">
+          <template v-if="toolbarExpanded">
+            <EditorFixedMenu
+              :editor="e"
+              :items="expandedToolbarItems"
+              button-size="sm"
+              class="overflow-x-auto"
             />
-          </Tooltip>
+          </template>
+          <template v-else>
+            <TooltipProvider>
+              <Button
+                size="sm"
+                variant="ghost"
+                icon="lucide-plus"
+                label="Insert"
+                tooltip="Insert"
+                @click="openSlashCommands(e)"
+              />
+              <Button
+                size="sm"
+                variant="ghost"
+                icon="lucide-case-sensitive"
+                label="Text tools"
+                tooltip="Text tools"
+                @click="emit('update:toolbarExpanded', true)"
+              />
+              <Button
+                size="sm"
+                variant="ghost"
+                icon="lucide-at-sign"
+                label="Mention"
+                tooltip="Mention"
+                @click="insertTrigger(e, '@')"
+              />
+              <EmojiPicker @select="insertEmoji(e, $event)">
+                <template #trigger>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    icon="lucide-smile"
+                    label="Emoji"
+                    tooltip="Emoji"
+                  />
+                </template>
+              </EmojiPicker>
+              <span class="mx-1 h-5 border-l border-outline-gray-2" aria-hidden="true" />
+              <Button
+                size="sm"
+                variant="ghost"
+                icon="lucide-image"
+                label="Image"
+                tooltip="Image"
+                :disabled="!canInsertImage(e)"
+                @click="insertImage(e)"
+              />
+              <Button
+                size="sm"
+                variant="ghost"
+                icon="lucide-video"
+                label="Video"
+                tooltip="Video"
+                :disabled="!canInsertVideo(e)"
+                @click="insertVideo(e)"
+              />
+              <Button
+                size="sm"
+                variant="ghost"
+                icon="lucide-code"
+                label="Code block"
+                tooltip="Code block"
+                :disabled="!canInsertCodeBlock(e)"
+                @click="insertCodeBlock(e)"
+              />
+            </TooltipProvider>
+          </template>
         </div>
         <div class="flex items-center justify-between gap-2 sm:justify-end">
           <div class="sm:hidden">

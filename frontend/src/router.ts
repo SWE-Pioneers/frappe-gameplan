@@ -774,7 +774,7 @@ router.beforeEach(async (to, from) => {
     return getHomeRoute()
   }
 
-  const canonicalContentRoute = await getCanonicalContentRoute(to)
+  const canonicalContentRoute = await getCanonicalContentRoute(to, from)
   if (canonicalContentRoute) {
     return canonicalContentRoute
   }
@@ -878,12 +878,23 @@ function redirectCurrentRouteToCommunity(to: RouteLocationNormalized, communityI
 
 async function getCanonicalContentRoute(
   to: RouteLocationNormalized,
+  from: RouteLocationNormalized,
 ): Promise<RouteLocationRaw | undefined> {
   const descriptor = getContentRouteDescriptor(to)
   if (!descriptor) return
 
   const documentName = routeParam(to.params[descriptor.documentParam])
   if (!documentName) return
+
+  // Fast path: in-app links (list rows, sidebar, command palette) already carry a fully
+  // resolved community + space derived from local data, so a locally-valid space means the
+  // URL is already canonical — skip the blocking server fetch and let the route change
+  // immediately (the detail page shows its own skeleton). Restricted to in-app navigation:
+  // deep links (first load, refresh, pasted or hand-edited URLs — from is START_LOCATION
+  // with no matched records) still hit the server so a deleted document 404s and a stale
+  // space/slug rewrites to canonical.
+  const isInAppNavigation = from.matched.length > 0
+  if (isInAppNavigation && hasCanonicalLocalParams(to, descriptor)) return
 
   const doc = await getProjectContentDoc(descriptor.doctype, documentName)
   if (!doc?.project) return { name: 'NotFound' }
@@ -909,6 +920,25 @@ async function getCanonicalContentRoute(
     hash: to.hash,
     replace: true,
   }
+}
+
+function hasCanonicalLocalParams(
+  to: RouteLocationNormalized,
+  descriptor: ContentRouteDescriptor,
+): boolean {
+  if (to.name !== descriptor.routeName) return false
+
+  const communityId = optionalRouteParam(to.params.communityId)
+  const spaceId = optionalRouteParam(to.params.spaceId)
+  if (!communityId || !spaceId) return false
+
+  // A missing slug means the URL still needs canonicalizing to add it, so fall through.
+  if (descriptor.slugParam && !optionalRouteParam(to.params.slug)) return false
+
+  // The space must exist locally and belong to the community in the URL; otherwise the
+  // link is stale or cross-community and needs the server to resolve the real mapping.
+  const space = getSpace(spaceId)
+  return Boolean(space?.team) && space?.team === communityId
 }
 
 function getContentRouteDescriptor(to: RouteLocationNormalized): ContentRouteDescriptor | null {

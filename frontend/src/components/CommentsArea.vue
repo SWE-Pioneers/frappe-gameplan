@@ -110,7 +110,7 @@
           </div>
           <div
             v-else-if="composerMinimized"
-            class="flex cursor-pointer items-center gap-3 text-left focus:outline-none sm:-mx-3 sm:gap-0 sm:rounded-lg sm:border sm:bg-surface-base sm:px-2 sm:py-2 sm:shadow-sm sm:hover:border-outline-gray-3 sm:hover:bg-surface-gray-1 sm:focus:border-outline-gray-3"
+            class="flex cursor-pointer items-center gap-3 text-left focus:outline-none sm:-mx-3 sm:gap-0 sm:rounded-lg sm:border sm:bg-surface-base sm:pl-2 sm:pr-1 sm:py-1 sm:shadow-sm sm:hover:border-outline-gray-3 sm:hover:bg-surface-gray-1 sm:focus:border-outline-gray-3"
             role="button"
             tabindex="0"
             @click="restoreComposer"
@@ -253,6 +253,7 @@ import {
   useTemplateRef,
 } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { useEventListener } from '@vueuse/core'
 import { useList, TabButtons, ErrorMessage, Button, Tooltip } from 'frappe-ui'
 import CommentEditor from '@/components/editor/CommentEditor.vue'
 import Comment from './Comment.vue'
@@ -307,8 +308,14 @@ interface ComposerUiState {
   poll?: NewPoll
 }
 
-const DEFAULT_COMPOSER_EDITOR_MAX_HEIGHT = 560
-const MIN_COMPOSER_EDITOR_MAX_HEIGHT = 260
+const DEFAULT_COMPOSER_EDITOR_HEIGHT = 560
+// Floor for the open composer: it never renders (or restores) shorter than this.
+const MIN_COMPOSER_EDITOR_HEIGHT = 100
+// Drag the resize handle so the editor shrinks past this height and the composer collapses
+// instead of shrinking further. Deliberately 0: the composer only gives way to the
+// collapsed bar once it has shrunk all the way down, which tested as the more natural
+// hand-off than collapsing early. (Intentional — not the unreachable-threshold bug it looks like.)
+const MINIMIZE_COMPOSER_THRESHOLD = 0
 const MAX_COMPOSER_EDITOR_VIEWPORT_RATIO = 0.72
 
 const props = withDefaults(defineProps<Props>(), {
@@ -327,7 +334,7 @@ const showCommentBox = ref(false)
 const composerMinimized = ref(false)
 const mobileComposerFullscreen = ref(false)
 const composerToolbarExpanded = ref(false)
-const composerEditorMaxHeight = ref(DEFAULT_COMPOSER_EDITOR_MAX_HEIGHT)
+const composerEditorMaxHeight = ref(DEFAULT_COMPOSER_EDITOR_HEIGHT)
 const composerEditorMinHeight = ref<number | null>(null)
 const composerStateLoaded = ref(false)
 const newCommentType = ref<'Comment' | 'Poll'>('Comment')
@@ -492,8 +499,11 @@ const draftContentPreview = computed(() => {
 })
 
 const composerEditorMaxHeightStyle = computed(() => `${composerEditorMaxHeight.value}px`)
-const composerEditorMinHeightStyle = computed(() =>
-  composerEditorMinHeight.value == null ? undefined : `${composerEditorMinHeight.value}px`,
+// Before an explicit resize (min unset) the composer still keeps a floor so it
+// never opens shorter than the resize minimum — that's what makes drag-resizing
+// start from a stable height instead of snapping up from a content-sized box.
+const composerEditorMinHeightStyle = computed(
+  () => `${composerEditorMinHeight.value ?? MIN_COMPOSER_EDITOR_HEIGHT}px`,
 )
 const mobileComposerEditorHeightStyle = 'calc(100dvh - var(--mobile-header-height) - 10.5rem)'
 const mobileComposerEditorShortHeightStyle = '12rem'
@@ -544,6 +554,9 @@ function minimizeComposer() {
 }
 
 function restoreComposer() {
+  // Ignore the synthetic click that fires when a resize-drag is released on the
+  // collapsed bar — that same gesture just minimized it.
+  if (Date.now() - dragMinimizedAt < 300) return
   composerMinimized.value = false
   mobileComposerFullscreen.value = false
   nextTick(() => {
@@ -792,6 +805,25 @@ watch(
   { immediate: true },
 )
 
+// Opened from the Drafts list (?draft=comment): surface the restored reply by expanding
+// and focusing the composer, then drop the flag so later edits don't re-trigger it.
+watch(
+  () => draft.ready.value,
+  (ready) => {
+    if (!ready || route.query.draft !== 'comment') return
+    showCommentBox.value = true
+    composerMinimized.value = false
+    nextTick(() => {
+      editorObject.value?.commands.focus('end')
+      scrollToEnd()
+    })
+    const query = { ...route.query }
+    delete query.draft
+    router.replace({ query })
+  },
+  { immediate: true },
+)
+
 onMounted(() => {
   // Announce this area's reply box (quote insert target) and its comments (scroll
   // targets) to the rich-quote controller, instead of being reached into.
@@ -907,17 +939,27 @@ function firstTextBlock(html: string) {
 }
 
 let resizeStartY = 0
-let resizeStartHeight = DEFAULT_COMPOSER_EDITOR_MAX_HEIGHT
+let resizeStartHeight = DEFAULT_COMPOSER_EDITOR_HEIGHT
 let resizeHandle: HTMLElement | null = null
 let resizePointerId: number | null = null
+// Timestamp of a drag that ended in the minimized state — used to swallow the
+// click the browser synthesizes on release so it doesn't instantly reopen.
+let dragMinimizedAt = 0
 
 function startComposerResize(event: PointerEvent) {
   event.preventDefault()
-  resizeHandle = event.currentTarget as HTMLElement
+  // Capture on the stable composer container, not the handle button — the button
+  // unmounts when the drag minimizes the composer, but the container stays put, so
+  // capture (and thus an upward drag back to reopen) survives the collapse.
+  resizeHandle = addComment.value ?? (event.currentTarget as HTMLElement)
   resizePointerId = event.pointerId
   resizeHandle.setPointerCapture?.(event.pointerId)
   resizeStartY = event.clientY
-  resizeStartHeight = composerEditorMaxHeight.value
+  // Seed from the editor's actual rendered height (not the stored max), so the
+  // drag continues smoothly from where the box currently is instead of jumping
+  // to the cap on the first pointer move.
+  const editorEl = editorObject.value?.view?.dom as HTMLElement | undefined
+  resizeStartHeight = editorEl?.getBoundingClientRect().height ?? composerEditorMaxHeight.value
   document.body.style.cursor = 'ns-resize'
   document.body.style.userSelect = 'none'
   window.addEventListener('pointermove', resizeComposer)
@@ -927,9 +969,21 @@ function startComposerResize(event: PointerEvent) {
 
 function resizeComposer(event: PointerEvent) {
   const nextHeight = resizeStartHeight + resizeStartY - event.clientY
-  const normalizedHeight = normalizeComposerHeight(nextHeight)
-  composerEditorMaxHeight.value = normalizedHeight
-  composerEditorMinHeight.value = normalizedHeight
+  // Below the threshold the composer collapses, but the drag stays live: keep
+  // tracking so pulling back up past the threshold reopens and resizes it.
+  if (nextHeight < MINIMIZE_COMPOSER_THRESHOLD) {
+    composerMinimized.value = true
+    // Heights shrank with the drag; reset them so a later restore (or a drag back
+    // up) reopens at the normal size instead of the ~50px we collapsed through.
+    composerEditorMinHeight.value = null
+    composerEditorMaxHeight.value = DEFAULT_COMPOSER_EDITOR_HEIGHT
+    return
+  }
+  composerMinimized.value = false
+  const viewportMax = Math.floor(window.innerHeight * MAX_COMPOSER_EDITOR_VIEWPORT_RATIO)
+  const height = Math.min(nextHeight, viewportMax)
+  composerEditorMaxHeight.value = height
+  composerEditorMinHeight.value = height
 }
 
 function stopComposerResize() {
@@ -942,6 +996,8 @@ function stopComposerResize() {
   }
   resizeHandle = null
   resizePointerId = null
+  // Arm the click-swallow only when the drag actually left the composer collapsed.
+  if (composerMinimized.value) dragMinimizedAt = Date.now()
   document.body.style.cursor = ''
   document.body.style.userSelect = ''
   window.removeEventListener('pointermove', resizeComposer)
@@ -951,13 +1007,22 @@ function stopComposerResize() {
 
 function normalizeComposerHeight(height?: number) {
   const viewportMaxHeight = Math.floor(window.innerHeight * MAX_COMPOSER_EDITOR_VIEWPORT_RATIO)
-  const maxHeight = Math.max(MIN_COMPOSER_EDITOR_MAX_HEIGHT, viewportMaxHeight)
+  const maxHeight = Math.max(MIN_COMPOSER_EDITOR_HEIGHT, viewportMaxHeight)
   return Math.min(
-    Math.max(
-      Math.round(height || DEFAULT_COMPOSER_EDITOR_MAX_HEIGHT),
-      MIN_COMPOSER_EDITOR_MAX_HEIGHT,
-    ),
+    Math.max(Math.round(height || DEFAULT_COMPOSER_EDITOR_HEIGHT), MIN_COMPOSER_EDITOR_HEIGHT),
     maxHeight,
   )
 }
+
+// Re-clamp a previously-sized composer when the window shrinks, so a tall box
+// never spills past the (smaller) viewport. normalizeComposerHeight folds in the
+// current viewport cap; the min is only touched when it was explicitly set
+// (coupled by a resize) — grow mode leaves it null so the floor still applies.
+function clampComposerToViewport() {
+  composerEditorMaxHeight.value = normalizeComposerHeight(composerEditorMaxHeight.value)
+  if (composerEditorMinHeight.value != null) {
+    composerEditorMinHeight.value = normalizeComposerHeight(composerEditorMinHeight.value)
+  }
+}
+useEventListener(window, 'resize', clampComposerToViewport)
 </script>
