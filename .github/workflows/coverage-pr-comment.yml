@@ -15,6 +15,15 @@ permissions:
   actions: read
   contents: read
 
+# The Backend and Frontend runs both edit the same PR body (read whole body →
+# swap one marker block → write whole body). If they overlap, the later write
+# clobbers the other's block. Serialize per PR (head_branch is shared by both of
+# a PR's runs) with cancel-in-progress:false so the second run reads the body the
+# first one already wrote, instead of racing it.
+concurrency:
+  group: coverage-comment-${{ github.event.workflow_run.head_branch }}
+  cancel-in-progress: false
+
 jobs:
   comment:
     if: >
