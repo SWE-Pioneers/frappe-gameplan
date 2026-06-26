@@ -203,13 +203,15 @@ class GPUnreadRecord(Document):
 		)
 		if cutoff:
 			Discussion = frappe.qb.DocType("GP Discussion")
-			# A NULL last_post_at means the discussion has no activity, so it is by definition
-			# before any cutoff. Include it explicitly: `last_post_at < cutoff` alone evaluates to
-			# UNKNOWN for NULLs and drops them, stranding those discussions as permanently unread.
+			# `last_post_at` is always set: `before_insert` defaults it to the creation time and the
+			# `backfill_null_last_post_at` patch repaired legacy NULL rows, so a plain `< cutoff` is
+			# safe and no longer drops NULLs.
+			# Repeat the project filter here so the subquery can use the (project, last_post_at)
+			# index range scan instead of full-scanning every discussion across all communities.
 			discussions_within_cutoff = (
 				frappe.qb.from_(Discussion)
 				.select(Discussion.name)
-				.where(Discussion.last_post_at.isnull() | (Discussion.last_post_at < cutoff))
+				.where(Discussion.project.isin(projects) & (Discussion.last_post_at < cutoff))
 			)
 			condition &= UnreadRecord.discussion.isin(discussions_within_cutoff)
 

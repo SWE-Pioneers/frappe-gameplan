@@ -233,10 +233,12 @@ class IntegrationTestGPUnreadRecord(IntegrationTestCase):
 		with self.assertRaises(frappe.exceptions.ValidationError):
 			mark_all_as_read_for_team(team=team.name, before="not-a-date")
 
-	def test_mark_all_as_read_for_team_with_before_marks_discussion_with_null_last_post_at(self):
-		# A discussion with no activity has a NULL last_post_at. The dated mark-all must still
-		# clear it: a naive `last_post_at < cutoff` evaluates to UNKNOWN for NULLs and drops
-		# them, stranding the discussion as permanently unread.
+	def test_mark_all_as_read_for_team_with_before_skips_null_last_post_at(self):
+		# `last_post_at` is invariably set in practice: `before_insert` defaults it to the
+		# creation time and the `backfill_null_last_post_at` patch repaired legacy NULL rows.
+		# The dated path therefore filters on a concrete `last_post_at < cutoff`; a row forced
+		# to NULL (only reachable via a raw insert) has no timestamp to place against the
+		# cutoff and is intentionally left untouched rather than guessed into the read set.
 		suffix = frappe.generate_hash(length=8)
 		user = create_member(f"team-null-lpa-member-{suffix}@example.com", "Team Null LPA Member")
 		team = create_team(f"Team Null LPA Source {suffix}")
@@ -246,9 +248,36 @@ class IntegrationTestGPUnreadRecord(IntegrationTestCase):
 		record = create_unread_record(user.name, discussion.name, project.name)
 
 		frappe.set_user(user.name)
+		# Dated mark-all: the NULL row has no timestamp, so the cutoff filter skips it.
 		GPUnreadRecord.mark_all_as_read_for_team(team.name, user.name, before=frappe.utils.today())
+		self.assertEqual(frappe.db.get_value("GP Unread Record", record, "is_unread"), 1)
 
+		# Undated mark-all has no cutoff subquery, so the same row is cleared.
+		GPUnreadRecord.mark_all_as_read_for_team(team.name, user.name)
 		self.assertEqual(frappe.db.get_value("GP Unread Record", record, "is_unread"), 0)
+
+	def test_mark_all_as_read_for_team_with_before_does_not_cross_project_boundaries(self):
+		# The dated subquery repeats the project filter (for the (project, last_post_at) index);
+		# an old discussion in another community must not be cleared by this team's mark-all.
+		suffix = frappe.generate_hash(length=8)
+		user = create_member(f"team-scope-member-{suffix}@example.com", "Team Scope Member")
+		source_team = create_team(f"Team Scope Source {suffix}")
+		other_team = create_team(f"Team Scope Other {suffix}")
+		source_project = create_project(f"Team Scope Source Space {suffix}", source_team.name)
+		other_project = create_project(f"Team Scope Other Space {suffix}", other_team.name)
+		source_discussion = create_discussion(f"Team Scope Source Discussion {suffix}", source_project.name)
+		other_discussion = create_discussion(f"Team Scope Other Discussion {suffix}", other_project.name)
+		# Both are old enough to fall before the cutoff; only the source team's should clear.
+		set_last_post_at(source_discussion.name, "2026-01-10 09:00:00")
+		set_last_post_at(other_discussion.name, "2026-01-10 09:00:00")
+		source_record = create_unread_record(user.name, source_discussion.name, source_project.name)
+		other_record = create_unread_record(user.name, other_discussion.name, other_project.name)
+
+		frappe.set_user(user.name)
+		GPUnreadRecord.mark_all_as_read_for_team(source_team.name, user.name, before="2026-01-15")
+
+		self.assertEqual(frappe.db.get_value("GP Unread Record", source_record, "is_unread"), 0)
+		self.assertEqual(frappe.db.get_value("GP Unread Record", other_record, "is_unread"), 1)
 
 	def test_update_project_for_discussion_realigns_records_to_current_space(self):
 		# A discussion's unread records must follow it when it moves, otherwise the count stays
