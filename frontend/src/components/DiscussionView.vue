@@ -254,6 +254,14 @@
           fieldname="content"
         />
       </template>
+      <EmptyStateBox v-else-if="notFound" class="mx-auto mt-14 max-w-2xl px-6">
+        <LucideTriangleAlert class="mb-3 size-7 text-ink-gray-4" />
+        <div class="text-base text-ink-gray-7">Discussion not found</div>
+        <p class="mt-2 max-w-md text-center text-p-sm text-ink-gray-5">
+          This discussion may have been deleted, or you no longer have access to it. Refresh to try
+          again.
+        </p>
+      </EmptyStateBox>
     </div>
     <div
       v-if="!isMobileViewport && !editingPost"
@@ -293,7 +301,7 @@ import {
   Switch,
   dialog,
 } from 'frappe-ui'
-import { until, whenever } from '@vueuse/core'
+import { until } from '@vueuse/core'
 import type { Editor } from '@tiptap/vue-3'
 import Reactions from './Reactions.vue'
 import UserAvatarWithHover from './UserAvatarWithHover.vue'
@@ -306,6 +314,7 @@ import MobileBackButton from './MobileBackButton.vue'
 import MobileHeader from './MobileHeader.vue'
 import PageHeader from './PageHeader.vue'
 import SpaceBreadcrumbs from './SpaceBreadcrumbs.vue'
+import EmptyStateBox from './EmptyStateBox.vue'
 import { copyToClipboard } from '@/utils'
 import { getSpace, useSpace } from '@/data/spaces'
 import { useCommunity } from '@/data/communities'
@@ -336,20 +345,21 @@ const postTitleEl = useTemplateRef<HTMLElement>('postTitleEl')
 
 const { isScrolled, scrollToTop } = useScrollPosition()
 const discussion = useDiscussion(() => props.postId)
-// In-app navigation skips the router's server canonicalization for speed, so a stale link to
-// a discussion deleted or moved out of reach after local data loaded would otherwise render a
-// blank detail view. Redirect to NotFound only on a definitive missing/forbidden response —
-// never a transient network/5xx error, which would wrongly (and, with the cached error,
-// stickily) bury a valid discussion. immediate, because useDiscussion caches by id: a revisit
-// to an already-failed discussion mounts with error already set, which a lazy watcher misses.
-whenever(
-  () => isMissingOrForbidden(discussion.error),
-  () => router.replace({ name: 'NotFound' }),
-  { immediate: true },
-)
+// In-app navigation skips the router's server canonicalization for speed, so a stale link to a
+// discussion deleted or moved out of reach after local data loaded would otherwise render a blank
+// detail view. Show a not-found state in place (keeping the URL) rather than redirecting to the
+// NotFound route: the URL stays valid, so refreshing re-runs the load and recovers if access was
+// only transiently denied (e.g. a just-joined community still propagating). Only a definitive
+// missing/forbidden response counts — never a transient network/5xx error, which would wrongly
+// bury a valid discussion.
+const notFound = computed(() => isMissingOrForbidden(discussion.error))
 function isMissingOrForbidden(error: unknown): boolean {
-  const status = (error as { status?: number } | null)?.status
-  return status === 404 || status === 403
+  // useDoc surfaces a FrappeResponseError whose `type` is the backend exception name (there's no
+  // HTTP status on it). A deleted/never-existed doc is DoesNotExistError; one in a now-inaccessible
+  // space is PermissionError. Anything else (network/5xx) is transient and must NOT bury a valid
+  // discussion behind the not-found state.
+  const type = (error as { type?: string } | null)?.type
+  return type === 'DoesNotExistError' || type === 'PermissionError'
 }
 const showTitleInMobileHeader = ref(false)
 const mobileHeaderTitle = computed(() =>
@@ -444,7 +454,12 @@ watch([() => discussion.doc?.title, editingPost, isMobileViewport], () => {
 
 async function scrollToUnread() {
   if (!discussion.doc) {
-    await until(() => discussion.doc).toBeTruthy()
+    // Wait for the doc to load, but give up the moment it resolves to missing/forbidden — both so
+    // we don't await a doc that will never arrive, and so we stop reading the errored resource
+    // (which throws once its store entry is dropped). notFound is checked first so the `||`
+    // short-circuits before touching discussion.doc when the fetch failed.
+    await until(() => notFound.value || Boolean(discussion.doc)).toBeTruthy()
+    if (notFound.value || !discussion.doc) return
   }
 
   canonicalizeRoute()
@@ -618,6 +633,14 @@ function canonicalizeRoute() {
   // Only rewrite the space when its community resolves locally too — otherwise we'd strand the
   // new spaceId under the old communityId. If the space isn't cached yet, leave the route as-is
   // (the slug is independent and always safe to correct).
+  //
+  // KNOWN LIMITATION: when the destination space is NOT in the local cache, the route keeps the
+  // stale spaceId/communityId. The discussion body still renders (it reads doc.project directly),
+  // but route-param-derived actions (e.g. "new discussion in this space", sidebar active-space)
+  // target the OLD space until the new one happens to be cached. Self-corrects on a refresh, which
+  // routes through the server canonicalization. Acceptable because moving a discussion is rare and
+  // the alternative (stranding the new space under the wrong community) is worse. If this becomes a
+  // real problem, fetch the destination space here instead of relying on it already being cached.
   const spaceMismatch =
     canonicalSpaceId &&
     canonicalCommunityId &&
