@@ -460,6 +460,17 @@ async function recoverOrphanedDraft(record: DraftRecord): Promise<boolean> {
     return false
   }
 
+  // Symmetric guard for standalone discussions: if the draft is pinned to a space the user can no
+  // longer access, recovering it inserts a row that get_my_drafts then hides (its permission-checked
+  // project query won't return that space) — the draft would be marked "recovered" yet never appear.
+  if (
+    isStandaloneDiscussion &&
+    record.payload.project &&
+    !(await parentDocResolves('GP Project', record.payload.project))
+  ) {
+    return false
+  }
+
   try {
     // The payload we persist back: usually the local buffer, but server content if a newer server
     // row wins below. Kept in a local so we never mutate the input record.
@@ -514,7 +525,13 @@ async function recoverOrphanedDraft(record: DraftRecord): Promise<boolean> {
     // Standalone discussion drafts re-key from their per-instance id to the server name;
     // comment replies keep their deterministic singleton key and only gain a serverName.
     const newKey = isCommentReply ? singletonKey(id) : `Discussion::New::${doc.name}`
-    await putDraftRecord({ ...record, payload, key: newKey, serverName: doc.name, syncedAt: Date.now() })
+    await putDraftRecord({
+      ...record,
+      payload,
+      key: newKey,
+      serverName: doc.name,
+      syncedAt: Date.now(),
+    })
     if (newKey !== record.key) await deleteDraftRecord(record.key)
     broadcastDraftChange(newKey)
     return true
@@ -533,7 +550,11 @@ async function parentDocResolves(
 ): Promise<boolean> {
   if (!doctype || !name) return false
   try {
-    const res = await call('frappe.client.get_value', { doctype, filters: { name }, fieldname: 'name' })
+    const res = await call('frappe.client.get_value', {
+      doctype,
+      filters: { name },
+      fieldname: 'name',
+    })
     return Boolean(res?.name)
   } catch {
     return false
