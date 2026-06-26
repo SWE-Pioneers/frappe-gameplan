@@ -87,13 +87,20 @@ jobs:
         run: |
           bench --site gameplan.test run-tests --app gameplan --coverage
 
-      # `--coverage` writes a Cobertura coverage.xml in the bench root. Normalize it
-      # to the shared summary shape so the PR-comment workflow can render a delta.
+      # `--coverage` writes a Cobertura coverage.xml relative to the process cwd,
+      # which bench sets to the sites/ dir — so locate it rather than assume a path.
+      # Normalize it to the shared summary shape for the PR-comment workflow.
       - name: Build backend coverage summary
         working-directory: /home/runner/frappe-bench
         run: |
+          xml="$(find . -name coverage.xml -type f -print -quit)"
+          if [ -z "$xml" ]; then
+            echo "coverage.xml not found under $(pwd):"; find . -name 'coverage*' -maxdepth 3
+            exit 1
+          fi
+          echo "Using coverage report at: $xml"
           python "${GITHUB_WORKSPACE}/.github/scripts/cobertura_to_summary.py" \
-            coverage.xml coverage-summary.json
+            "$xml" coverage-summary.json
 
       - name: Upload backend coverage summary
         uses: actions/upload-artifact@v4
