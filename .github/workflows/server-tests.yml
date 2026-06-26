@@ -75,6 +75,13 @@ jobs:
           BEFORE: ${{ env.GITHUB_EVENT_PATH.before }}
           AFTER: ${{ env.GITHUB_EVENT_PATH.after }}
 
+      # `coverage` is a Frappe dev-dependency, so a bare `bench init` doesn't install
+      # it. `run-tests --coverage` imports it directly, so make sure it's in the bench
+      # venv. No-op when already present.
+      - name: Ensure coverage tool is available
+        working-directory: /home/runner/frappe-bench
+        run: env/bin/pip install "coverage~=7.13.5"
+
       - name: Run Tests
         working-directory: /home/runner/frappe-bench
         run: |
