@@ -40,15 +40,26 @@ describe('Community composer and drafts', () => {
     cy.url().should('include', `/community/${community}/new-discussion`)
     cy.contains('New Discussion').should('exist')
 
+    // Capture draft autosaves so we can wait for the content to actually reach the server
+    // before publishing, rather than a fixed delay that races the autosave debounce (the row
+    // is created on space-select; the title/content land on a following autosave).
+    const draftContent = 'Published from the scoped composer.'
+    let draftContentSaved = false
+    cy.intercept('POST', '**/api/method/frappe.client.*', (req) => {
+      if (JSON.stringify(req.body ?? {}).includes(draftContent)) draftContentSaved = true
+    })
+
     cy.get('textarea[placeholder="Title"]').type('Scoped composer discussion{enter}')
-    cy.get('[contenteditable=true]').click().type('Published from the scoped composer.')
+    cy.get('[contenteditable=true]').click().type(draftContent)
 
     // The scoped space picker only offers spaces from the route's community.
     // The metadata combobox can sit under the sticky editor toolbar, so force
     // the trigger open, then pick the option.
     cy.contains('button[aria-haspopup="listbox"]', 'Select Space').click({ force: true })
     cy.get('[role="option"]').contains('Gameplan').click()
-    cy.wait(500) // let the draft auto-save once a space is selected
+
+    // Retries until an autosave carrying the content (and so the title) has completed.
+    cy.wrap(null).should(() => expect(draftContentSaved, 'draft content autosaved').to.be.true)
 
     cy.button('Publish').click()
 
