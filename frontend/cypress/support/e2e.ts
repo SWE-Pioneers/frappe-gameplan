@@ -16,6 +16,10 @@
 // Import commands using ES2015 syntax:
 import './commands'
 
+// Collects per-test coverage from the istanbul-instrumented build. Harmless when
+// the bundle isn't instrumented (no window.__coverage__ to read).
+import '@cypress/code-coverage/support'
+
 // "ResizeObserver loop completed with undelivered notifications" is a benign
 // browser warning emitted while layout settles (e.g. after dialogs/menus open).
 // It is not an app error, so don't let it fail otherwise-passing tests.

@@ -3,8 +3,14 @@ import vue from '@vitejs/plugin-vue'
 import vueJsx from '@vitejs/plugin-vue-jsx'
 import path from 'path'
 import { visualizer } from 'rollup-plugin-visualizer'
+import istanbul from 'vite-plugin-istanbul'
 // @ts-expect-error frappe-ui/vite ships untyped JS; drop this once it gains types.
 import frappeui from 'frappe-ui/vite'
+
+// Only instrument the bundle for coverage when explicitly asked (the Cypress CI
+// build sets COVERAGE=true). Normal dev/prod builds stay un-instrumented so we
+// never ship istanbul counters or pay their build/runtime cost.
+const withCoverage = process.env.COVERAGE === 'true'
 
 // frappe-ui is resolved through node_modules — the published package by default,
 // or the local ../frappe-ui checkout when symlinked via `yarn dev:local`. Either
@@ -42,8 +48,19 @@ export default defineConfig({
     }),
     vue(),
     vueJsx(),
+    withCoverage &&
+      (istanbul({
+        include: 'src/**/*',
+        exclude: ['node_modules', 'cypress', '**/*.spec.*'],
+        extension: ['.js', '.ts', '.vue', '.jsx', '.tsx'],
+        requireEnv: false,
+        // Cypress exercises the *built* bundle, so we must instrument at build
+        // time. The plugin otherwise only applies in dev (`serve`). Safe because
+        // the plugin is only in the array when COVERAGE=true.
+        forceBuildInstrument: true,
+      }) as PluginOption),
     visualizer({ emitFile: true }) as PluginOption,
-  ],
+  ].filter(Boolean) as PluginOption[],
   server: {
     host: '0.0.0.0',
     allowedHosts: true,

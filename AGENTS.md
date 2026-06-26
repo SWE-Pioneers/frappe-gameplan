@@ -29,6 +29,15 @@ Local dev site is `gameplan-demo.test` (CI uses `gameplan.test`).
 - frappe-ui units: `cd frappe-ui && yarn test` (Vitest)
 - Lint: `pre-commit run --all-files` (ruff for Python — tabs, double quotes, line 110; Prettier for frontend)
 
+## Code coverage
+
+Every PR gets two coverage lines in its description, each with a `±% vs <base branch>` delta:
+
+- **Backend** — `bench run-tests --app gameplan --coverage` emits a Cobertura `coverage.xml`; `server-tests.yml` reduces it to a summary.
+- **Frontend** — Cypress e2e against an istanbul-instrumented build (`vite-plugin-istanbul`, gated by the `COVERAGE=true` build env in `ui-test.yml`); `@cypress/code-coverage` + `nyc` produce the summary.
+
+Each test workflow uploads a `coverage-summary-*` artifact. The fork-safe `coverage-pr-comment.yml` (`workflow_run`) reads it, compares against the base branch baseline, and edits the PR body. Scripts live in `.github/scripts/`. The instrumented build only happens when `COVERAGE=true`, so normal `yarn build` ships clean.
+
 ## Frontend conventions
 
 - `<script setup lang="ts">` + Composition API. Small component → single file; large → folder with `index.ts`.

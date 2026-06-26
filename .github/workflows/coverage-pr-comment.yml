@@ -1,0 +1,97 @@
+name: Coverage PR comment
+
+# Runs after a test workflow finishes. workflow_run executes in the base repo's
+# context with a write-capable GITHUB_TOKEN, so it can edit PRs from forks (which
+# the test workflows themselves cannot). It only consumes artifacts — never checks
+# out or runs PR code. One run handles one source (Backend or Frontend), picked
+# from the triggering workflow's name, and writes that source's own marker block.
+on:
+  workflow_run:
+    workflows: [Server Tests, UI Test]
+    types: [completed]
+
+permissions:
+  pull-requests: write
+  actions: read
+  contents: read
+
+jobs:
+  comment:
+    if: >
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # Map the triggering workflow to its coverage source. Server Tests → Backend,
+      # UI Test → Frontend. Everything downstream keys off these.
+      - name: Resolve coverage source
+        run: |
+          case "${{ github.event.workflow_run.name }}" in
+            "Server Tests")
+              echo "SOURCE_KEY=backend"            >> "$GITHUB_ENV"
+              echo "SOURCE_LABEL=Backend"          >> "$GITHUB_ENV"
+              echo "ARTIFACT_NAME=coverage-summary-backend" >> "$GITHUB_ENV"
+              echo "BASELINE_WORKFLOW=server-tests.yml"     >> "$GITHUB_ENV"
+              ;;
+            "UI Test")
+              echo "SOURCE_KEY=frontend"           >> "$GITHUB_ENV"
+              echo "SOURCE_LABEL=Frontend"         >> "$GITHUB_ENV"
+              echo "ARTIFACT_NAME=coverage-summary-frontend" >> "$GITHUB_ENV"
+              echo "BASELINE_WORKFLOW=ui-test.yml"           >> "$GITHUB_ENV"
+              ;;
+            *)
+              echo "Unknown workflow — nothing to do."; exit 0 ;;
+          esac
+
+      - name: Download HEAD coverage summary
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ env.ARTIFACT_NAME }}
+          path: head
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+
+      - name: Download PR info
+        uses: actions/download-artifact@v4
+        with:
+          name: pr-info
+          path: pr-info
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Resolve PR number and base branch
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR_NUMBER="$(cat pr-info/pr-number.txt)"
+          echo "PR_NUMBER=$PR_NUMBER" >> "$GITHUB_ENV"
+          BASE_BRANCH="$(gh pr view "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --json baseRefName --jq .baseRefName)"
+          echo "BASE_BRANCH=$BASE_BRANCH" >> "$GITHUB_ENV"
+
+      # Baseline = the same source's summary from the latest push run on the PR's
+      # base branch. Missing baseline (e.g. first run) just omits the delta.
+      - name: Download base-branch baseline summary
+        uses: dawidd6/action-download-artifact@v6
+        with:
+          workflow: ${{ env.BASELINE_WORKFLOW }}
+          branch: ${{ env.BASE_BRANCH }}
+          event: push
+          name: ${{ env.ARTIFACT_NAME }}
+          path: baseline
+          if_no_artifact_found: warn
+        continue-on-error: true
+
+      - name: Update PR description with coverage
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HEAD_SUMMARY: head/coverage-summary.json
+          BASE_SUMMARY: baseline/coverage-summary.json
+        run: node .github/scripts/update-pr-coverage.mjs

@@ -78,7 +78,35 @@ jobs:
       - name: Run Tests
         working-directory: /home/runner/frappe-bench
         run: |
-          bench --site gameplan.test run-tests --app gameplan
+          bench --site gameplan.test run-tests --app gameplan --coverage
+
+      # `--coverage` writes a Cobertura coverage.xml in the bench root. Normalize it
+      # to the shared summary shape so the PR-comment workflow can render a delta.
+      - name: Build backend coverage summary
+        working-directory: /home/runner/frappe-bench
+        run: |
+          python "${GITHUB_WORKSPACE}/.github/scripts/cobertura_to_summary.py" \
+            coverage.xml coverage-summary.json
+
+      - name: Upload backend coverage summary
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-summary-backend
+          path: /home/runner/frappe-bench/coverage-summary.json
+          if-no-files-found: warn
+
+      # The PR-comment runs in a separate workflow_run-triggered workflow that has a
+      # write token even for fork PRs; it needs the PR number to know what to edit.
+      - name: Record PR number for follow-up workflow
+        if: github.event_name == 'pull_request'
+        run: echo "${{ github.event.pull_request.number }}" > pr-number.txt
+
+      - name: Upload PR info artifact
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr-info
+          path: pr-number.txt
 
       - name: Stop server
         if: ${{ always() }}

@@ -80,6 +80,9 @@ jobs:
         env:
           BEFORE: ${{ env.GITHUB_EVENT_PATH.before }}
           AFTER: ${{ env.GITHUB_EVENT_PATH.after }}
+          # Instrument the SPA bundle so Cypress can harvest line coverage. Only the
+          # UI-test build sets this; server-tests builds stay un-instrumented.
+          COVERAGE: 'true'
 
       - name: Site Setup
         run: |
@@ -93,6 +96,27 @@ jobs:
           working-directory: frontend
         env:
           CYPRESS_BASE_URL: http://gameplan.test:8000
+
+      # @cypress/code-coverage writes frontend/coverage/coverage-summary.json (nyc
+      # json-summary). The PR-comment workflow turns it into a delta line.
+      - name: Upload frontend coverage summary
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-summary-frontend
+          path: frontend/coverage/coverage-summary.json
+          if-no-files-found: warn
+
+      - name: Record PR number for follow-up workflow
+        if: ${{ always() && github.event_name == 'pull_request' }}
+        run: echo "${{ github.event.pull_request.number }}" > pr-number.txt
+
+      - name: Upload PR info artifact
+        if: ${{ always() && github.event_name == 'pull_request' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr-info
+          path: pr-number.txt
 
       # Same-repo PRs have a read-write token, so comment directly here for instant
       # feedback. Fork PRs (read-only token) are handled by ui-test-report.yml, which
