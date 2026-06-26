@@ -37,10 +37,22 @@ if (!HEAD_SUMMARY || !existsSync(HEAD_SUMMARY)) {
   process.exit(0);
 }
 
-const pctOf = (path) => JSON.parse(readFileSync(path, "utf8")).total.lines.pct;
+// nyc reports `pct: "Unknown"` (a string) when no coverage was collected; treat
+// that — and any non-numeric value — as "no data" rather than crashing toFixed().
+const pctOf = (path) => {
+  const pct = JSON.parse(readFileSync(path, "utf8")).total.lines.pct;
+  return typeof pct === "number" ? pct : null;
+};
 const head = pctOf(HEAD_SUMMARY);
 const base =
   BASE_SUMMARY && existsSync(BASE_SUMMARY) ? pctOf(BASE_SUMMARY) : null;
+
+if (head === null) {
+  console.log(
+    `No numeric coverage in ${HEAD_SUMMARY} — skipping ${SOURCE_LABEL}.`,
+  );
+  process.exit(0);
+}
 
 const fmtPct = (n) => `${n.toFixed(2)}%`;
 const fmtDelta = (h, b) => {
