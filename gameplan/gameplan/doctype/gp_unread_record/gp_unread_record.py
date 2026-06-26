@@ -184,8 +184,13 @@ class GPUnreadRecord(Document):
 		)
 		if cutoff:
 			Discussion = frappe.qb.DocType("GP Discussion")
+			# A NULL last_post_at means the discussion has no activity, so it is by definition
+			# before any cutoff. Include it explicitly: `last_post_at < cutoff` alone evaluates to
+			# UNKNOWN for NULLs and drops them, stranding those discussions as permanently unread.
 			discussions_within_cutoff = (
-				frappe.qb.from_(Discussion).select(Discussion.name).where(Discussion.last_post_at < cutoff)
+				frappe.qb.from_(Discussion)
+				.select(Discussion.name)
+				.where(Discussion.last_post_at.isnull() | (Discussion.last_post_at < cutoff))
 			)
 			condition &= UnreadRecord.discussion.isin(discussions_within_cutoff)
 

@@ -38,3 +38,4 @@ gameplan.gameplan.doctype.gp_member.patches.backfill_team_admins
 gameplan.gameplan.doctype.gp_team.patches.remove_disabled_users_from_communities
 gameplan.gameplan.doctype.gp_user_profile.patches.backfill_community_order
 gameplan.patches.backfill_private_file_attachments
+gameplan.gameplan.doctype.gp_discussion.patches.backfill_null_last_post_at

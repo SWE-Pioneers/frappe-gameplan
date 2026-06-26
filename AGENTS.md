@@ -40,6 +40,7 @@ Local dev site is `gameplan-demo.test` (CI uses `gameplan.test`).
 ## Backend conventions
 
 - Prefer `frappe.qb.get_query()` over `frappe.db.get_all()` (pass `ignore_permissions=False` when checks are needed).
+- Prefer `frappe.qb` for writing database patches as well.
 - Permissions: `has_permission` hooks in `hooks.py` (e.g. `GP Page`); community/space membership gates access.
 - Debugging: add `def execute():` to a file like `gameplan/debug.py`, run via `bench --site gameplan-demo.test execute gameplan.debug.execute`.
 
