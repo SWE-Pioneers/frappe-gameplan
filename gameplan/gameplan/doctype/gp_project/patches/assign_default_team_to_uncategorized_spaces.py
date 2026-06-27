@@ -63,12 +63,21 @@ def backfill_denormalized_team():
 	"""Run unconditionally: a fully-categorized site can still have null-`team` rows."""
 	for doctype in PROJECT_LINKED_DOCTYPES:
 		table = f"tab{doctype}"
+		# Correlated-subquery form (instead of UPDATE ... JOIN) so the patch runs on
+		# both MariaDB and SQLite; the EXISTS guard limits the update to rows whose
+		# project actually carries a team, matching the original INNER JOIN.
 		frappe.db.sql(
 			f"""
-			UPDATE `{table}` AS doc
-			INNER JOIN `tabGP Project` AS project ON project.name = doc.project
-			SET doc.team = project.team
-			WHERE (doc.team IS NULL OR doc.team = '')
-				AND project.team IS NOT NULL AND project.team != ''
+			UPDATE `{table}`
+			SET team = (
+				SELECT project.team FROM `tabGP Project` AS project
+				WHERE project.name = `{table}`.project
+			)
+			WHERE (team IS NULL OR team = '')
+				AND EXISTS (
+					SELECT 1 FROM `tabGP Project` AS project
+					WHERE project.name = `{table}`.project
+						AND project.team IS NOT NULL AND project.team != ''
+				)
 			"""
 		)

@@ -272,22 +272,21 @@ class GPUnreadRecord(Document):
 
 	@staticmethod
 	def update_existing_project_visits(project_visit_names: list[str], last_visit, mark_all_read_at):
-		from frappe.query_builder import CustomFunction
+		from frappe.query_builder import Case
 		from frappe.query_builder.functions import Coalesce
 
-		greatest = CustomFunction("GREATEST", ["a", "b"])
-
 		ProjectVisit = frappe.qb.DocType("GP Project Visit")
+		current = Coalesce(ProjectVisit.mark_all_read_at, mark_all_read_at)
+		# Only ever move the watermark forward. A "before date" run computes an earlier
+		# `mark_all_read_at`; without this guard it would rewind an existing, newer
+		# watermark and resurface already-read discussions as unread. Expressed as a
+		# CASE (= GREATEST(current, mark_all_read_at)) so it runs on both MariaDB and
+		# SQLite, which lack each other's two-argument max function.
+		forward_watermark = Case().when(current > mark_all_read_at, current).else_(mark_all_read_at)
 		(
 			frappe.qb.update(ProjectVisit)
 			.set(ProjectVisit.last_visit, last_visit)
-			# Only ever move the watermark forward. A "before date" run computes an earlier
-			# `mark_all_read_at`; without this guard it would rewind an existing, newer
-			# watermark and resurface already-read discussions as unread.
-			.set(
-				ProjectVisit.mark_all_read_at,
-				greatest(Coalesce(ProjectVisit.mark_all_read_at, mark_all_read_at), mark_all_read_at),
-			)
+			.set(ProjectVisit.mark_all_read_at, forward_watermark)
 			.where(ProjectVisit.name.isin(project_visit_names))
 		).run()
 
