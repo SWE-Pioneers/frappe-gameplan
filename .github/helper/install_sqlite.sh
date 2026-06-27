@@ -43,10 +43,11 @@ timeout 600 bench new-site gameplan.test \
 
 # Test/runtime flags that the MariaDB site gets from .github/helper/site_config.json.
 # Stored with --parse so they are native JSON types (booleans), not strings.
-bench --site gameplan.test set-config --parse allow_tests true
-bench --site gameplan.test set-config --parse enable_ui_tests true
-bench --site gameplan.test set-config --parse server_script_enabled true
-bench --site gameplan.test set-config --parse mute_emails true
+# --parse runs ast.literal_eval, so values must be Python literals (True/1), not true.
+bench --site gameplan.test set-config --parse allow_tests True
+bench --site gameplan.test set-config --parse enable_ui_tests True
+bench --site gameplan.test set-config --parse server_script_enabled True
+bench --site gameplan.test set-config --parse mute_emails True
 bench --site gameplan.test set-config --parse ignore_csrf 1
 
 echo "Installing Gameplan app..."
