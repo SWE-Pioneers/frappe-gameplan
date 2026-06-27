@@ -27,6 +27,11 @@ cat ./config/redis_cache.conf
 echo "Starting Bench..."
 bench start &> bench_start.log &
 
+# Build frontend assets in parallel (matches the MariaDB install.sh): backend
+# tests that render a page or resolve the asset manifest need them present.
+CI=Yes bench build &> bench_build.log &
+build_pid=$!
+
 # Site creation / migrate talk to redis_cache & redis_queue, so wait for the
 # bench processes (started above) to come up before provisioning the site.
 sleep 20
@@ -54,3 +59,6 @@ timeout 600 bench --site gameplan.test install-app gameplan </dev/null
 
 echo "Building search index..."
 timeout 300 bench --site gameplan.test execute gameplan.search_sqlite.build_index </dev/null
+
+# Wait for the asset build started above to finish before tests run.
+wait $build_pid
