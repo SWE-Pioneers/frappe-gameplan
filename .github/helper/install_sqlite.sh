@@ -1,7 +1,7 @@
 #!/bin/bash
 # Provision a Frappe bench with a SQLite-backed Gameplan site for CI.
 # SQLite is a serverless backend, so no database server/credentials are needed.
-set -ex
+set -e
 cd ~ || exit
 
 echo "Setting Up Bench..."
@@ -38,8 +38,7 @@ echo "Creating SQLite Site..."
 timeout 600 bench new-site gameplan.test \
 	--db-type sqlite \
 	--admin-password admin \
-	--force \
-	--verbose </dev/null
+	--force </dev/null
 
 # Test/runtime flags that the MariaDB site gets from .github/helper/site_config.json.
 # Stored with --parse so they are native JSON types (booleans), not strings.
