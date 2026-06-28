@@ -10,14 +10,6 @@ def after_install():
 	download_rembg_model()
 
 
-def before_tests():
-	# Frappe assigns autoincrement names via DB sequences, which SQLite lacks.
-	# Enable the emulation shim so the suite can run on a SQLite-backed site.
-	from gameplan.sqlite_sequence_compat import enable
-
-	enable()
-
-
 def check_frappe_version():
 	from frappe import __version__
 	from semantic_version import Version
