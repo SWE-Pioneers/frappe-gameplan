@@ -124,6 +124,10 @@ function insertVideo(editor: Editor) {
   if (canInsertVideo(editor)) editor.chain().focus().selectAndUploadVideo().run()
 }
 
+function insertAttachment(editor: Editor) {
+  if (canInsertAttachment(editor)) editor.chain().focus().selectAndUploadFile().run()
+}
+
 function insertCodeBlock(editor: Editor) {
   if (canInsertCodeBlock(editor)) editor.chain().focus().toggleCodeBlock().run()
 }
@@ -134,6 +138,10 @@ function canInsertImage(editor: Editor) {
 
 function canInsertVideo(editor: Editor) {
   return 'video' in editor.schema.nodes && hasEditorCommand(editor, 'selectAndUploadVideo')
+}
+
+function canInsertAttachment(editor: Editor) {
+  return 'attachment' in editor.schema.nodes && hasEditorCommand(editor, 'selectAndUploadFile')
 }
 
 function canInsertCodeBlock(editor: Editor) {
@@ -222,6 +230,15 @@ function canInsertCodeBlock(editor: Editor) {
                 tooltip="Video"
                 :disabled="!canInsertVideo(e)"
                 @click="insertVideo(e)"
+              />
+              <Button
+                size="sm"
+                variant="ghost"
+                icon="lucide-paperclip"
+                label="Attach"
+                tooltip="Attach file"
+                :disabled="!canInsertAttachment(e)"
+                @click="insertAttachment(e)"
               />
               <Button
                 size="sm"
