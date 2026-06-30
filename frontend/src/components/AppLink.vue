@@ -11,7 +11,6 @@
   >
     <a
       v-bind="$attrs"
-      class="focus:outline-none focus-visible:ring focus-visible:ring-gray-400"
       :href="href"
       @click="navigate"
       :class="computedIsActive(slotIsActive) ? activeClass : inactiveClass"
