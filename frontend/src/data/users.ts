@@ -6,6 +6,16 @@ import { loadQuickReactionSlots } from './reactionPreferences'
 import { setSidebarBadgeStyle, type SidebarBadgeStyle } from './sidebarPreferences'
 import { session } from './session'
 
+export type EmailDigestFrequency = 'Off' | 'Weekly' | 'Fortnightly' | 'Monthly'
+export type EmailDigestDayOfWeek =
+  | 'Monday'
+  | 'Tuesday'
+  | 'Wednesday'
+  | 'Thursday'
+  | 'Friday'
+  | 'Saturday'
+  | 'Sunday'
+
 let usersByName = reactive<Record<string, UserInfo>>({})
 
 interface UserInfo {
@@ -24,6 +34,9 @@ interface UserInfo {
   community_order?: unknown
   quick_reaction_emojis?: unknown
   sidebar_badge_style?: SidebarBadgeStyle
+  email_digest_frequency?: EmailDigestFrequency
+  email_digest_day_of_week?: EmailDigestDayOfWeek
+  email_digest_last_sent_on?: string
   bio: string
   role: 'Gameplan Admin' | 'Gameplan Member' | 'Gameplan Guest'
   isGuest?: boolean

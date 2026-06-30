@@ -1,5 +1,5 @@
 <template>
-  <div class="flex min-h-0 flex-1 flex-col">
+  <SettingsPanel>
     <SettingsHeader>
       <div class="flex flex-col gap-4">
         <h2 class="text-lg-semibold text-ink-gray-8">Users</h2>
@@ -84,14 +84,24 @@
     <Dialog v-model:open="showInviteDialog">
       <InvitePeople />
     </Dialog>
-  </div>
+  </SettingsPanel>
 </template>
 <script setup lang="ts">
 import { computed, h, ref, watch } from 'vue'
-import { Button, Dialog, Select, Tooltip, dialog, dayjsLocal, useCall, useList } from 'frappe-ui'
+import {
+  Button,
+  Dialog,
+  SettingsBody,
+  SettingsHeader,
+  SettingsPanel,
+  Select,
+  Tooltip,
+  dialog,
+  dayjsLocal,
+  useCall,
+  useList,
+} from 'frappe-ui'
 import InvitePeople from './InvitePeople.vue'
-import SettingsBody from './SettingsBody.vue'
-import SettingsHeader from './SettingsHeader.vue'
 import { users, activeUsers } from '@/data/users'
 import { GPInvitation } from '@/types/doctypes'
 

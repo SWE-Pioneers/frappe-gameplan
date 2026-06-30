@@ -1,0 +1,266 @@
+body {
+	margin: 0;
+}
+
+.gp-email-digest {
+	background: #f9fafb;
+	color: #111827;
+	font-family: Inter, Arial, sans-serif;
+	padding: 32px 16px;
+}
+
+.gp-email-digest__brand {
+	margin-bottom: 16px;
+	text-align: center;
+}
+
+.gp-email-digest__brand-logo {
+	border-radius: 6px;
+	display: inline-block;
+	height: 24px;
+	vertical-align: middle;
+	width: 24px;
+}
+
+.gp-email-digest__brand-name {
+	color: #111827;
+	display: inline-block;
+	font-size: 15px;
+	font-weight: 600;
+	line-height: 24px;
+	margin-left: 4px;
+	vertical-align: middle;
+}
+
+.gp-email-digest__card {
+	background: #ffffff;
+	border: 1px solid #e5e7eb;
+	border-radius: 16px;
+	margin: 0 auto;
+	max-width: 600px;
+	padding: 28px;
+}
+
+.gp-email-digest__title {
+	font-size: 18px;
+	line-height: 30px;
+	margin: 0;
+}
+
+.gp-email-digest__site-url {
+	color: #6b7280;
+	font-size: 13px;
+	line-height: 20px;
+	margin-top: 2px;
+}
+
+.gp-email-digest__section {
+	margin-top: 28px;
+}
+
+.gp-email-digest__section-title {
+	font-size: 16px;
+	line-height: 24px;
+	margin: 0 0 10px;
+}
+
+.gp-email-digest__section-title--muted {
+	color: #6b7280;
+	font-size: 14px;
+	font-weight: 400;
+	line-height: 20px;
+}
+
+.gp-email-digest__group-title {
+	border-bottom: 1px solid #e5e7eb;
+	border-collapse: collapse;
+	margin-bottom: 8px;
+	margin-top: 12px;
+	width: 100%;
+}
+
+.gp-email-digest__group-title--spaced {
+	margin-top: 40px;
+}
+
+.gp-email-digest__group-image-cell {
+	padding-bottom: 8px;
+	text-align: left;
+	vertical-align: middle;
+	width: 28px;
+}
+
+.gp-email-digest__group-image,
+.gp-email-digest__group-fallback {
+	border-radius: 4px;
+	display: block;
+	height: 20px;
+	margin: 0 8px 0 0;
+	width: 20px;
+}
+
+.gp-email-digest__group-image {
+	object-fit: cover;
+}
+
+.gp-email-digest__group-fallback {
+	background: #f3f4f6;
+	color: #374151;
+	font-size: 13px;
+	font-weight: 600;
+	line-height: 20px;
+	text-align: center;
+}
+
+.gp-email-digest__group-name {
+	color: #111827;
+	font-size: 15px;
+	font-weight: 500;
+	line-height: 22px;
+	padding-bottom: 8px;
+	vertical-align: middle;
+}
+
+.gp-email-digest__item {
+	border-collapse: collapse;
+	table-layout: fixed;
+	width: 100%;
+}
+
+.gp-email-digest__avatar-cell {
+	vertical-align: middle;
+	width: 48px;
+}
+
+.gp-email-digest__content-cell {
+	vertical-align: top;
+}
+
+.gp-email-digest__content-cell--divided {
+	border-top: 1px solid #e5e7eb;
+}
+
+.gp-email-digest__avatar-image,
+.gp-email-digest__avatar-fallback {
+	border-radius: 50%;
+	display: block;
+	height: 36px;
+	width: 36px;
+}
+
+.gp-email-digest__avatar-image {
+	object-fit: cover;
+}
+
+.gp-email-digest__avatar-content {
+	display: block;
+	padding: 10px 12px 10px 0;
+}
+
+.gp-email-digest__avatar-fallback {
+	background: #f3f4f6;
+	color: #374151;
+	font-size: 13px;
+	font-weight: 600;
+	line-height: 36px;
+	text-align: center;
+}
+
+.gp-email-digest__content-link,
+.gp-email-digest__content {
+	color: #111827;
+	display: block;
+	padding: 10px 0;
+	text-decoration: none;
+}
+
+.gp-email-digest__item-title {
+	font-size: 14px;
+	font-weight: 400;
+	line-height: 20px;
+}
+
+.gp-email-digest__discussion-title {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.gp-email-digest__unread-label {
+	color: #6b7280;
+	float: right;
+	font-size: 13px;
+	font-weight: 400;
+	line-height: 20px;
+	margin-left: 12px;
+	white-space: nowrap;
+}
+
+.gp-email-digest__description {
+	color: #6b7280;
+	font-size: 13px;
+	line-height: 20px;
+	margin-top: 2px;
+}
+
+.gp-email-digest__metadata,
+.gp-email-digest__footer {
+	color: #6b7280;
+	font-size: 13px;
+	line-height: 20px;
+}
+
+.gp-email-digest__metadata {
+	margin-top: 4px;
+}
+
+.gp-email-digest__cta-wrap {
+	margin-top: 28px;
+	text-align: center;
+}
+
+.gp-email-digest__cta {
+	background: #111827;
+	border-radius: 8px;
+	color: #ffffff;
+	display: inline-block;
+	font-size: 14px;
+	font-weight: 400;
+	line-height: 20px;
+	padding: 4px 9px;
+	text-decoration: none;
+}
+
+.gp-email-digest__footer {
+	border-top: 1px solid #e5e7eb;
+	margin: 28px 0 0;
+	padding-top: 16px;
+}
+
+.gp-email-digest__footer-link {
+	color: #374151;
+	display: block;
+	margin-top: 8px;
+	text-decoration: underline;
+}
+
+@media only screen and (max-width: 600px) {
+	.gp-email-digest {
+		background: #ffffff !important;
+		padding: 24px 0 !important;
+	}
+
+	.gp-email-digest__brand {
+		margin-bottom: 12px !important;
+		padding: 0 16px !important;
+		text-align: left !important;
+	}
+
+	.gp-email-digest__card {
+		border: 0 !important;
+		border-radius: 0 !important;
+		margin: 0 !important;
+		max-width: none !important;
+		padding: 24px 16px !important;
+	}
+}

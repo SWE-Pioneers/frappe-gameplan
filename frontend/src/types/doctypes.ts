@@ -63,6 +63,19 @@ export interface GPUserProfile extends DocType {
   community_order?: unknown
   /** Sidebar Badge Style: Select */
   sidebar_badge_style?: 'Unread count' | 'Dot'
+  /** Email Digest Frequency: Select */
+  email_digest_frequency?: 'Off' | 'Weekly' | 'Fortnightly' | 'Monthly'
+  /** Email Digest Day of Week: Select */
+  email_digest_day_of_week?:
+    | 'Monday'
+    | 'Tuesday'
+    | 'Wednesday'
+    | 'Thursday'
+    | 'Friday'
+    | 'Saturday'
+    | 'Sunday'
+  /** Email Digest Last Sent On: Date */
+  email_digest_last_sent_on?: string
   /** Image: Attach Image */
   image?: string
   /** Is Image Background Removed: Check */
@@ -367,15 +380,6 @@ export interface GPTag extends DocType {
   label?: string
 }
 
-export interface GPCustomEmoji extends DocType {
-  /** Title: Data */
-  title: string
-  /** Image: Attach Image */
-  image: string
-  /** Keywords: Small Text */
-  keywords?: string
-}
-
 // Last updated: 2023-01-31 15:15:16.167656
 export interface GPPinnedProject extends DocType {
   /** Project: Link (GP Project) */
@@ -386,4 +390,14 @@ export interface GPPinnedProject extends DocType {
   user: string
   /** Order: Int */
   order?: number
+}
+
+// Last updated: 2026-06-30 00:00:00.000000
+export interface GPCustomEmoji extends DocType {
+  /** Title: Data */
+  title: string
+  /** Image: Attach Image */
+  image: string
+  /** Keywords: Small Text */
+  keywords?: string
 }

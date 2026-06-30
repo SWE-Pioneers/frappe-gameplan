@@ -1,5 +1,5 @@
 <template>
-  <div class="flex min-h-0 flex-1 flex-col">
+  <SettingsPanel>
     <SettingsHeader>
       <div class="w-full max-w-[800px]">
         <!-- Selected community: back button, title, and the Spaces/Users switcher. -->
@@ -142,12 +142,12 @@
         />
       </div>
     </SettingsBody>
-  </div>
+  </SettingsPanel>
 </template>
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { Button, Select } from 'frappe-ui'
+import { Button, SettingsBody, SettingsHeader, SettingsPanel, Select } from 'frappe-ui'
 import NewSpaceDialog from '@/components/NewSpaceDialog.vue'
 import { communities } from '@/data/communities'
 import { useSessionUser } from '@/data/users'
@@ -160,8 +160,6 @@ import CommunityMembersListControls from '@/pages/Configure/CommunityMembersList
 import CommunitySpacesList from '@/pages/Configure/CommunitySpacesList.vue'
 import CommunitySpacesListControls from '@/pages/Configure/CommunitySpacesListControls.vue'
 import NewCommunityDialog from '@/pages/Configure/NewCommunityDialog.vue'
-import SettingsBody from './SettingsBody.vue'
-import SettingsHeader from './SettingsHeader.vue'
 import { communitiesTarget } from './index'
 
 type CommunityView = 'spaces' | 'members'

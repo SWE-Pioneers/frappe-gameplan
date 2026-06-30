@@ -1,18 +1,26 @@
 import { ref, type Component } from 'vue'
+import router from '@/router'
 
 type LucideIconString = `lucide-${string}`
 
 export interface Tab {
   label: string
+  /** URL slug for this tab, e.g. `users` → /settings/users */
+  slug: string
   icon: Component | LucideIconString
   component: Component
   group?: string
 }
 
-// Global state for the settings dialog
+// Global state for the settings dialog. The URL is the source of truth: opening,
+// closing, and switching tabs all go through the router (see SettingsDialog.vue),
+// and these refs are derived from the active route.
 export const show = ref(false)
 export const activeTab = ref<Tab | null>(null)
-const requestedTab = ref<string | null>(null)
+
+// Path of the page the dialog is layered over, so App.vue can keep rendering it
+// behind the overlay while the URL is a /settings/* route. Set by the router guard.
+export const settingsBackgroundPath = ref<string | null>(null)
 
 // Lets callers deep-link into the Communities tab with a community + view
 // pre-selected (e.g. a discussion's "Manage spaces" action). Read once by
@@ -31,43 +39,25 @@ export function showCommunitiesSettings(
   showSettingsDialog('Communities')
 }
 
-// Available tabs - these will be imported by SettingsDialog.vue
+// Registered tabs (kept in sync by SettingsDialog.vue). Used to map a tab's
+// display label to its URL slug for the imperative open helper below.
 export const tabs: Tab[] = []
 
-export function showSettingsDialog(defaultTab: string | null = null) {
-  show.value = true
-  requestedTab.value = defaultTab
-  activateTab()
-}
-
-// Function to register tabs (called by SettingsDialog.vue)
 export function registerTabs(tabsArray: Tab[]) {
   tabs.splice(0, tabs.length, ...tabsArray)
-  activateTab()
 }
 
-function activateTab() {
-  if (!tabs.length) return
-
-  if (requestedTab.value) {
-    const matchingTab = tabs.find((tab) => tab.label === requestedTab.value)
-    if (matchingTab) {
-      activeTab.value = matchingTab
-      requestedTab.value = null
-      return
-    }
-
-    if (!isRegisteredTab(activeTab.value)) {
-      activeTab.value = tabs[0]
-    }
-    return
-  }
-
-  if (!isRegisteredTab(activeTab.value)) {
-    activeTab.value = tabs[0]
-  }
+/**
+ * Open the settings dialog at a tab, addressed by its display label. Kept for
+ * back-compat with existing callers (e.g. `showSettingsDialog('Notifications')`).
+ * Navigates to the tab's URL; SettingsDialog.vue reacts to the route change.
+ */
+export function showSettingsDialog(defaultTab: string | null = null) {
+  const slug = slugForLabel(defaultTab) ?? tabs[0]?.slug ?? 'profile'
+  router.push({ name: 'SettingsTab', params: { tab: slug } })
 }
 
-function isRegisteredTab(tab: Tab | null) {
-  return Boolean(tab && tabs.some((registeredTab) => registeredTab.label === tab.label))
+function slugForLabel(label: string | null): string | null {
+  if (!label) return null
+  return tabs.find((tab) => tab.label === label)?.slug ?? label.toLowerCase()
 }

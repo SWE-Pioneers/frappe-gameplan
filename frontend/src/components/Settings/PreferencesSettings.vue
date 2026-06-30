@@ -1,15 +1,15 @@
 <template>
-  <div class="flex min-h-0 flex-1 flex-col">
+  <SettingsPanel>
     <SettingsHeader>
-      <h2 class="text-lg-semibold text-ink-gray-8">Appearance</h2>
+      <h2 class="text-lg-semibold text-ink-gray-8">Preferences</h2>
     </SettingsHeader>
 
     <SettingsBody>
-      <div class="divide-y divide-outline-gray-1">
-        <section class="space-y-6 pb-8 pt-6">
+      <div class="space-y-11 pt-6">
+        <section>
           <SettingsRow
-            title="Theme"
-            description="Choose a light, dark, or system-matched interface."
+            title="Appearance"
+            description="Choose a light, dark, or system-matched interface"
           >
             <Select :options="themeOptions" v-model="selectedTheme">
               <template #item-prefix="{ item }">
@@ -30,68 +30,85 @@
           </SettingsRow>
         </section>
 
-        <section class="space-y-6 py-8">
+        <section>
           <h2 class="text-lg-semibold text-ink-gray-8">Sidebar</h2>
 
-          <SettingsRow title="Unread badge" description="Show unread activity as a dot or a count.">
-            <Select
-              :options="badgeStyleOptions"
-              :model-value="currentSidebarBadgeStyle"
-              :disabled="savingBadgeStyle"
-              @update:model-value="saveBadgeStyle"
-            />
-          </SettingsRow>
+          <div class="mt-2 divide-y divide-outline-gray-1">
+            <SettingsRow
+              title="Unread badge"
+              description="Show unread activity as a dot or a count"
+            >
+              <Select
+                :options="badgeStyleOptions"
+                :model-value="currentSidebarBadgeStyle"
+                :disabled="savingBadgeStyle"
+                @update:model-value="saveBadgeStyle"
+              />
+            </SettingsRow>
 
-          <SettingsRow
-            title="Communities"
-            description="Show, hide, and reorder communities in the left rail."
-          >
-            <Button @click="showCustomizeSidebar = true">Customize</Button>
-          </SettingsRow>
+            <SettingsRow
+              title="Communities"
+              description="Show, hide, and reorder communities in the left rail"
+            >
+              <Button @click="showCustomizeSidebar = true">Customize</Button>
+            </SettingsRow>
 
-          <SettingsRow
-            title="Space sorting"
-            description="Choose how spaces are ordered in the current community sidebar."
-          >
-            <Select :options="spaceSortOptions" v-model="selectedSpaceSort" />
-          </SettingsRow>
+            <SettingsRow
+              title="Space sorting"
+              description="Choose how spaces are ordered in the current community sidebar"
+            >
+              <Select :options="spaceSortOptions" v-model="selectedSpaceSort" />
+            </SettingsRow>
 
-          <SettingsRow
-            title="Inactive spaces"
-            description="Hide spaces with no activity for the last 2 months."
-          >
-            <Switch v-model="hideInactiveSpaces" />
-          </SettingsRow>
+            <SettingsRow
+              title="Inactive spaces"
+              description="Hide spaces with no activity for the last 2 months"
+            >
+              <Switch v-model="hideInactiveSpaces" />
+            </SettingsRow>
+          </div>
         </section>
 
-        <section class="space-y-6 py-8">
+        <section>
           <h2 class="text-lg-semibold text-ink-gray-8">Reactions</h2>
 
-          <SettingsRow
-            title="Quick reactions"
-            description="Choose the emoji shown in the reaction picker. Drag to reorder."
-          >
-            <Button
-              variant="subtle"
-              icon-left="lucide-rotate-ccw"
-              @click="resetQuickReactionEmojis"
+          <div class="mt-2 divide-y divide-outline-gray-1">
+            <SettingsRow
+              title="Quick reactions"
+              description="Choose the emoji shown in the reaction picker. Drag to reorder"
             >
-              Reset
-            </Button>
-          </SettingsRow>
+              <Button
+                variant="subtle"
+                icon-left="lucide-rotate-ccw"
+                @click="resetQuickReactionEmojis"
+              >
+                Reset
+              </Button>
+            </SettingsRow>
+          </div>
 
-          <QuickReactionsEditor />
+          <QuickReactionsEditor class="mt-2" />
         </section>
       </div>
     </SettingsBody>
 
     <CustomizeSidebarDialog v-model="showCustomizeSidebar" />
-  </div>
+  </SettingsPanel>
 </template>
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { Button, Select, Switch, toast, useDoctype } from 'frappe-ui'
+import {
+  Button,
+  SettingsBody,
+  SettingsHeader,
+  SettingsPanel,
+  SettingsRow,
+  Select,
+  Switch,
+  toast,
+  useDoctype,
+} from 'frappe-ui'
 import CustomizeSidebarDialog from '@/components/AppRail/CustomizeSidebarDialog.vue'
 import { resetQuickReactionEmojis } from '@/data/reactionPreferences'
 import {
@@ -108,9 +125,6 @@ import { useSessionUser } from '@/data/users'
 import { useTheme, type Theme } from '@/utils/useTheme'
 import type { GPUserProfile } from '@/types/doctypes'
 import QuickReactionsEditor from './QuickReactionsEditor.vue'
-import SettingsBody from './SettingsBody.vue'
-import SettingsHeader from './SettingsHeader.vue'
-import SettingsRow from './SettingsRow.vue'
 
 const sessionUser = useSessionUser()
 const { currentTheme, setTheme } = useTheme()

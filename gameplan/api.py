@@ -73,6 +73,9 @@ def get_user_info(user=None):
 			"community_order",
 			"quick_reaction_emojis",
 			"sidebar_badge_style",
+			"email_digest_frequency",
+			"email_digest_day_of_week",
+			"email_digest_last_sent_on",
 		],
 		filters={"user": ["in", [u.name for u in users]]},
 	)
@@ -91,6 +94,9 @@ def get_user_info(user=None):
 				user.community_order = user_profile.community_order
 				user.quick_reaction_emojis = user_profile.quick_reaction_emojis
 				user.sidebar_badge_style = user_profile.sidebar_badge_style
+				user.email_digest_frequency = user_profile.email_digest_frequency
+				user.email_digest_day_of_week = user_profile.email_digest_day_of_week
+				user.email_digest_last_sent_on = user_profile.email_digest_last_sent_on
 		user_roles = [r.role for r in roles if r.parent == user.name]
 		user.role = None
 		for role in ["Gameplan Guest", "Gameplan Member", "Gameplan Admin"]:

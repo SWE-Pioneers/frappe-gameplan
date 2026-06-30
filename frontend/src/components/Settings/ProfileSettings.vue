@@ -1,12 +1,12 @@
 <template>
-  <div class="flex min-h-0 flex-1 flex-col">
+  <SettingsPanel>
     <SettingsHeader>
       <h2 class="text-lg-semibold text-ink-gray-8">Profile</h2>
     </SettingsHeader>
 
     <SettingsBody>
-      <div v-if="profile && user" class="divide-y divide-outline-gray-1">
-        <section class="space-y-6 pb-8 pt-6">
+      <div v-if="profile && user" class="space-y-11 pt-6">
+        <section class="space-y-6">
           <div class="flex items-center gap-4">
             <div>
               <input
@@ -78,24 +78,26 @@
           </div>
         </section>
 
-        <section class="space-y-6 py-8">
+        <section>
           <h2 class="text-lg-semibold text-ink-gray-8">Account</h2>
 
-          <SettingsRow
-            title="Public profile"
-            description="View your public page or customize its card layout."
-          >
-            <div class="flex gap-2">
-              <Button icon-left="lucide-user" @click="goToMyProfile">View</Button>
-              <Button icon-left="lucide-layout-dashboard" @click="goToProfileCustomize">
-                Customize
-              </Button>
-            </div>
-          </SettingsRow>
+          <div class="mt-2 divide-y divide-outline-gray-1">
+            <SettingsRow
+              title="Public profile"
+              description="View your public page or customize its card layout"
+            >
+              <div class="flex gap-2">
+                <Button icon-left="lucide-user" @click="goToMyProfile">View</Button>
+                <Button icon-left="lucide-layout-dashboard" @click="goToProfileCustomize">
+                  Customize
+                </Button>
+              </div>
+            </SettingsRow>
 
-          <SettingsRow title="Password" description="Manage password and account access.">
-            <Button link="/update-password">Update Password</Button>
-          </SettingsRow>
+            <SettingsRow title="Password" description="Manage password and account access">
+              <Button link="/update-password">Update Password</Button>
+            </SettingsRow>
+          </div>
         </section>
       </div>
     </SettingsBody>
@@ -109,21 +111,30 @@
         @cancel="closeAvatarEditor"
       />
     </Dialog>
-  </div>
+  </SettingsPanel>
 </template>
 
 <script setup lang="ts">
 import { computed, ref, useTemplateRef, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { Button, Dialog, Dropdown, Textarea, TextInput, toast, useDoc } from 'frappe-ui'
+import {
+  Button,
+  Dialog,
+  Dropdown,
+  SettingsBody,
+  SettingsHeader,
+  SettingsPanel,
+  SettingsRow,
+  Textarea,
+  TextInput,
+  toast,
+  useDoc,
+} from 'frappe-ui'
 import type { DropdownOptions } from 'frappe-ui'
 import ProfileImageEditor from '@/components/ProfileImageEditor.vue'
 import UserAvatar from '@/components/UserAvatar.vue'
 import { useSessionUser } from '@/data/users'
 import type { GPUserProfile } from '@/types/doctypes'
-import SettingsBody from './SettingsBody.vue'
-import SettingsHeader from './SettingsHeader.vue'
-import SettingsRow from './SettingsRow.vue'
 
 interface ProfileMethods {
   setImage: (data: { image: string | null }) => void

@@ -1,68 +1,54 @@
 <template>
-  <Dialog v-model:open="show" size="5xl" bare>
-    <div
-      class="flex h-[100dvh] min-h-0 w-[100vw] flex-col overflow-hidden sm:h-[min(860px,calc(100vh-8rem))] sm:min-h-[560px] sm:w-auto sm:flex-row"
-    >
-      <div
-        class="flex max-h-[38vh] w-full shrink-0 flex-col overflow-y-auto border-b border-outline-gray-1 bg-surface-sidebar p-2 sm:max-h-none sm:w-[220px] sm:border-b-0 sm:border-r"
-      >
-        <Dialog.Title as-child>
-          <h1 class="sr-only">Settings</h1>
-        </Dialog.Title>
-        <div class="space-y-4">
-          <div v-for="group in tabGroups" :key="group.label">
-            <div class="flex h-[30px] items-center px-2 text-base text-ink-gray-5">
-              {{ group.label }}
-            </div>
-            <div class="flex flex-col gap-0.5">
-              <button
-                v-for="tab in group.tabs"
-                :key="tab.label"
-                class="flex h-[30px] w-full items-center gap-2 rounded px-2 text-left"
-                :class="[
-                  activeTab?.label == tab.label
-                    ? 'bg-surface-elevation-3 shadow-sm'
-                    : 'hover:bg-surface-gray-2',
-                ]"
-                @click="selectTab(tab)"
-              >
-                <UserAvatar
-                  v-if="tab.prefix === 'session-avatar'"
-                  :user="sessionUser.name"
-                  size="xs"
-                  class="shrink-0"
-                />
-                <span v-else :class="[tab.icon, 'size-4 shrink-0 text-ink-gray-6']" />
-                <span class="min-w-0 truncate text-base text-ink-gray-7">
-                  {{ tab.label }}
-                </span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="flex min-h-0 flex-1">
-        <div class="flex min-h-0 flex-1 justify-stretch">
-          <component v-if="activeTab" :is="activeTab.component" @close-dialog="show = false" />
-        </div>
-      </div>
-    </div>
-  </Dialog>
+  <SettingsDialog v-model="show" size="5xl" :shortcut="false">
+    <SettingsSidebar>
+      <SettingsNavGroup v-for="group in tabGroups" :key="group.label" :label="group.label">
+        <SettingsNavItem
+          v-for="tab in group.tabs"
+          :key="tab.label"
+          :active="activeTab?.label == tab.label"
+          @click="selectTab(tab)"
+        >
+          <template #prefix>
+            <UserAvatar
+              v-if="tab.prefix === 'session-avatar'"
+              :user="sessionUser.name"
+              size="xs"
+              class="shrink-0"
+            />
+            <span v-else :class="[tab.icon, 'size-4 shrink-0 text-ink-gray-6']" />
+          </template>
+          {{ tab.label }}
+        </SettingsNavItem>
+      </SettingsNavGroup>
+    </SettingsSidebar>
+    <SettingsContent>
+      <component v-if="activeTab" :is="activeTab.component" @close-dialog="show = false" />
+    </SettingsContent>
+  </SettingsDialog>
 </template>
 
 <script setup lang="ts">
-import { computed, markRaw, watchEffect } from 'vue'
+import { computed, markRaw, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useEventListener } from '@vueuse/core'
-import { Dialog } from 'frappe-ui'
-import { show, activeTab, registerTabs, showSettingsDialog, type Tab } from './index'
+import {
+  SettingsDialog,
+  SettingsSidebar,
+  SettingsNavGroup,
+  SettingsNavItem,
+  SettingsContent,
+} from 'frappe-ui'
+import { show, activeTab, registerTabs, settingsBackgroundPath, type Tab } from './index'
+import { getHomeRoute } from '@/router'
 import UserAvatar from '@/components/UserAvatar.vue'
 import { isGameplanAdmin, useSessionUser } from '@/data/users'
 import { useCanManageCommunities } from '@/composables/useCanManageCommunities'
 import Members from './Members.vue'
 import CommunitiesSettings from './CommunitiesSettings.vue'
+import NotificationsSettings from './NotificationsSettings.vue'
 import ProfileSettings from './ProfileSettings.vue'
 import EmojiSettings from './EmojiSettings.vue'
-import SettingsTabDialog from './SettingsTab.vue'
+import PreferencesSettings from './PreferencesSettings.vue'
 
 interface SettingsTab extends Tab {
   // Tabs that drive global role management / invites; these only make sense for
@@ -71,6 +57,9 @@ interface SettingsTab extends Tab {
   condition?: () => boolean
   prefix?: 'session-avatar'
 }
+
+const route = useRoute()
+const router = useRouter()
 
 interface TabGroup {
   label: string
@@ -83,6 +72,7 @@ const sessionUser = useSessionUser()
 const allTabs: SettingsTab[] = [
   {
     label: 'Profile',
+    slug: 'profile',
     group: 'User settings',
     icon: 'lucide-user',
     prefix: 'session-avatar',
@@ -90,12 +80,21 @@ const allTabs: SettingsTab[] = [
   },
   {
     label: 'Preferences',
+    slug: 'preferences',
     group: 'User settings',
     icon: 'lucide-sliders-horizontal',
-    component: markRaw(SettingsTabDialog),
+    component: markRaw(PreferencesSettings),
+  },
+  {
+    label: 'Notifications',
+    slug: 'notifications',
+    group: 'User settings',
+    icon: 'lucide-bell',
+    component: markRaw(NotificationsSettings),
   },
   {
     label: 'Communities',
+    slug: 'communities',
     group: 'App settings',
     icon: 'lucide-building-2',
     component: markRaw(CommunitiesSettings),
@@ -103,6 +102,7 @@ const allTabs: SettingsTab[] = [
   },
   {
     label: 'Emojis',
+    slug: 'emojis',
     group: 'App settings',
     icon: 'lucide-smile-plus',
     component: markRaw(EmojiSettings),
@@ -110,6 +110,7 @@ const allTabs: SettingsTab[] = [
   },
   {
     label: 'Users',
+    slug: 'users',
     group: 'Administration',
     icon: 'lucide-users',
     component: markRaw(Members),
@@ -140,18 +141,61 @@ const tabGroups = computed<TabGroup[]>(() => {
   return groups
 })
 
-watchEffect(() => registerTabs(tabs.value))
+// Keep the label→slug registry in sync for the imperative showSettingsDialog().
+watch(tabs, (list) => registerTabs(list), { immediate: true })
+
+const onSettingsRoute = computed(() => route.matched.some((r) => r.meta?.settingsOverlay))
+const routeTab = computed(() =>
+  Array.isArray(route.params.tab) ? route.params.tab[0] : route.params.tab,
+)
+
+// Route → store: the URL drives which tab is shown and whether the dialog is open.
+// Re-runs when admin-only tabs resolve async, so a deep link to an admin tab works
+// once permissions load.
+watch(
+  [routeTab, onSettingsRoute, tabs],
+  () => {
+    if (!onSettingsRoute.value) {
+      show.value = false
+      return
+    }
+    const match = tabs.value.find((tab) => tab.slug === routeTab.value)
+    if (!match) {
+      // Bare /settings, an unknown slug, or a tab the user can't access: fall back
+      // to the first available tab once the tab list is known.
+      if (tabs.value.length) {
+        router.replace({ name: 'SettingsTab', params: { tab: tabs.value[0].slug } })
+      }
+      return
+    }
+    activeTab.value = match
+    show.value = true
+  },
+  { immediate: true },
+)
+
+// Closing the dialog (Esc, backdrop click, or the X) returns to the underlying page.
+watch(show, (open) => {
+  if (!open && onSettingsRoute.value) {
+    router.push(settingsBackgroundPath.value || getHomeRoute())
+  }
+})
 
 function selectTab(tab: SettingsTab) {
-  showSettingsDialog(tab.label)
+  router.push({ name: 'SettingsTab', params: { tab: tab.slug } })
 }
 
-// Cmd/Ctrl+Shift+. toggles Settings. Use e.code (physical key) since Shift
-// rewrites e.key for "." to ">" on most layouts. useEventListener auto-cleans up.
+// Route-aware Cmd/Ctrl+Shift+. toggle. The kit's built-in shortcut is disabled
+// (:shortcut="false") because the dialog's open state is driven by the URL here.
+// Use e.code since Shift rewrites e.key for "." to ">" on most layouts.
 useEventListener(window, 'keydown', (e: KeyboardEvent) => {
-  if (e.code === 'Comma' && e.shiftKey && (e.metaKey || e.ctrlKey)) {
-    e.preventDefault()
-    show.value ? (show.value = false) : showSettingsDialog()
+  if (e.code !== 'Comma' || !e.shiftKey || !(e.metaKey || e.ctrlKey)) return
+  e.preventDefault()
+  if (onSettingsRoute.value) {
+    router.push(settingsBackgroundPath.value || getHomeRoute())
+    return
   }
+  const slug = activeTab.value?.slug || tabs.value[0]?.slug
+  if (slug) router.push({ name: 'SettingsTab', params: { tab: slug } })
 })
 </script>

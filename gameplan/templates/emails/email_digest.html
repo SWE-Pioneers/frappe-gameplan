@@ -1,0 +1,144 @@
+<div class="gp-email-digest">
+	<div class="gp-email-digest__brand">
+		{% if logo_url %}
+		<img
+			alt=""
+			class="gp-email-digest__brand-logo"
+			height="24"
+			src="{{ logo_url | e }}"
+			width="24"
+		>
+		{% endif %}
+		<span class="gp-email-digest__brand-name">Gameplan</span>
+	</div>
+	<div class="gp-email-digest__card">
+		<h2 class="gp-email-digest__title">Your {{ frequency | lower | e }} digest</h2>
+		<div class="gp-email-digest__site-url">{{ site_url | e }}</div>
+
+		{% if notifications %}
+		<div class="gp-email-digest__section">
+			<h3 class="gp-email-digest__section-title gp-email-digest__section-title--muted">Unread notifications</h3>
+			{% for item in notifications %}
+			<table class="gp-email-digest__item" role="presentation" cellpadding="0" cellspacing="0">
+				<tr>
+					<td class="gp-email-digest__avatar-cell">
+						<span class="gp-email-digest__avatar-content">
+						{% if item.avatar.url %}
+						<img
+							alt="{{ item.avatar.label | e }}"
+							class="gp-email-digest__avatar-image"
+							height="36"
+							src="{{ item.avatar.url | e }}"
+							width="36"
+						>
+						{% else %}
+						<span class="gp-email-digest__avatar-fallback">{{ item.avatar.initials | e }}</span>
+						{% endif %}
+						</span>
+					</td>
+					<td class="gp-email-digest__content-cell{% if not loop.first %} gp-email-digest__content-cell--divided{% endif %}">
+						{% if item.url %}
+						<a class="gp-email-digest__content-link" href="{{ item.url | e }}">
+						{% else %}
+						<div class="gp-email-digest__content">
+						{% endif %}
+							<div class="gp-email-digest__item-title">
+								{{ item.title | e }}
+							</div>
+							<div class="gp-email-digest__description">{{ item.description | e }}</div>
+							{% if item.metadata %}
+							<div class="gp-email-digest__metadata">{{ item.metadata | e }}</div>
+							{% endif %}
+						{% if item.url %}
+						</a>
+						{% else %}
+						</div>
+						{% endif %}
+					</td>
+				</tr>
+			</table>
+			{% endfor %}
+		</div>
+		{% endif %}
+
+		{% if discussion_groups %}
+		<div class="gp-email-digest__section">
+			<h3 class="gp-email-digest__section-title gp-email-digest__section-title--muted">Unread discussions</h3>
+			{% for group in discussion_groups %}
+			<table class="gp-email-digest__group-title{% if not loop.first %} gp-email-digest__group-title--spaced{% endif %}" role="presentation" cellpadding="0" cellspacing="0">
+				<tr>
+					<td class="gp-email-digest__group-image-cell">
+						{% if group.image_url %}
+						<img
+							alt="{{ group.title | e }}"
+							class="gp-email-digest__group-image"
+							height="20"
+							src="{{ group.image_url | e }}"
+							width="20"
+						>
+						{% else %}
+						<span class="gp-email-digest__group-fallback">{{ group.initials | e }}</span>
+						{% endif %}
+					</td>
+					<td class="gp-email-digest__group-name">{{ group.title | e }}</td>
+				</tr>
+			</table>
+				{% for item in group.discussions %}
+				<table class="gp-email-digest__item" role="presentation" cellpadding="0" cellspacing="0">
+					<tr>
+						<td class="gp-email-digest__avatar-cell">
+							<span class="gp-email-digest__avatar-content">
+							{% if item.avatar.url %}
+							<img
+								alt="{{ item.avatar.label | e }}"
+								class="gp-email-digest__avatar-image"
+								height="36"
+								src="{{ item.avatar.url | e }}"
+								width="36"
+							>
+							{% else %}
+							<span class="gp-email-digest__avatar-fallback">{{ item.avatar.initials | e }}</span>
+							{% endif %}
+							</span>
+						</td>
+						<td class="gp-email-digest__content-cell{% if not loop.first %} gp-email-digest__content-cell--divided{% endif %}">
+							{% if item.url %}
+							<a class="gp-email-digest__content-link" href="{{ item.url | e }}">
+							{% else %}
+							<div class="gp-email-digest__content">
+							{% endif %}
+								<div class="gp-email-digest__item-title gp-email-digest__discussion-title">
+									<span class="gp-email-digest__unread-label">{{ item.unread_label | e }}</span>
+									{{ item.title | e }}
+								</div>
+								{% if item.metadata %}
+								<div class="gp-email-digest__metadata">{{ item.metadata | e }}</div>
+								{% endif %}
+							{% if item.url %}
+							</a>
+							{% else %}
+							</div>
+							{% endif %}
+						</td>
+					</tr>
+				</table>
+				{% endfor %}
+			{% endfor %}
+		</div>
+		{% endif %}
+
+		{% if open_gameplan_url %}
+		<div class="gp-email-digest__cta-wrap">
+			<a class="gp-email-digest__cta" href="{{ open_gameplan_url | e }}">Open Gameplan</a>
+		</div>
+		{% endif %}
+
+		<div class="gp-email-digest__footer">
+			<div>You are receiving this because email digests are enabled in Gameplan.</div>
+			<div>Sent from {{ site_url | e }}</div>
+			{% if preferences_url %}
+			<a class="gp-email-digest__footer-link" href="{{ preferences_url | e }}">Manage preferences</a>
+			{% endif %}
+		</div>
+	</div>
+</div>

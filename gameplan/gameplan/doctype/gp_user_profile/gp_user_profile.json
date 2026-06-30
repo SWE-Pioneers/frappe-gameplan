@@ -12,6 +12,9 @@
   "community_order",
   "quick_reaction_emojis",
   "sidebar_badge_style",
+  "email_digest_frequency",
+  "email_digest_day_of_week",
+  "email_digest_last_sent_on",
   "bio",
   "readme",
   "bento_section",
@@ -128,6 +131,26 @@
    "fieldtype": "Select",
    "label": "Sidebar Badge Style",
    "options": "Unread count\nDot"
+  },
+  {
+   "default": "Off",
+   "fieldname": "email_digest_frequency",
+   "fieldtype": "Select",
+   "label": "Email Digest Frequency",
+   "options": "Off\nWeekly\nFortnightly\nMonthly"
+  },
+  {
+   "default": "Monday",
+   "fieldname": "email_digest_day_of_week",
+   "fieldtype": "Select",
+   "label": "Email Digest Day of Week",
+   "options": "Monday\nTuesday\nWednesday\nThursday\nFriday\nSaturday\nSunday"
+  },
+  {
+   "fieldname": "email_digest_last_sent_on",
+   "fieldtype": "Date",
+   "label": "Email Digest Last Sent On",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,

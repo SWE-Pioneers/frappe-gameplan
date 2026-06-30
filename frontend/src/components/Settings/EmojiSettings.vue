@@ -1,5 +1,5 @@
 <template>
-  <div class="flex min-h-0 flex-1 flex-col">
+  <SettingsPanel>
     <SettingsHeader>
       <div class="flex flex-col gap-4">
         <h2 class="text-lg-semibold text-ink-gray-8">Custom Emojis</h2>
@@ -122,7 +122,7 @@
         </Button>
       </template>
     </Dialog>
-  </div>
+  </SettingsPanel>
 </template>
 
 <script setup lang="ts">
@@ -133,14 +133,15 @@ import {
   ErrorMessage,
   FileUploader,
   FormControl,
+  SettingsBody,
+  SettingsHeader,
+  SettingsPanel,
   TextInput,
   Tooltip,
   toast,
 } from 'frappe-ui'
 import { customEmojis, type CustomEmoji } from '@/data/customEmojis'
 import UserAvatar from '@/components/UserAvatar.vue'
-import SettingsBody from './SettingsBody.vue'
-import SettingsHeader from './SettingsHeader.vue'
 
 const search = ref('')
 const showUploadDialog = ref(false)

@@ -41,3 +41,4 @@ gameplan.patches.backfill_private_file_attachments
 gameplan.gameplan.doctype.gp_discussion.patches.backfill_null_last_post_at
 gameplan.gameplan.doctype.gp_unread_record.patches.realign_unread_record_project
 gameplan.gameplan.doctype.gp_user_profile.patches.merge_profile_bento_card_types
+gameplan.gameplan.doctype.gp_user_profile.patches.set_email_digest_off_by_default
