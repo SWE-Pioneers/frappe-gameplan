@@ -71,6 +71,7 @@ def get_user_info(user=None):
 			"is_image_background_removed",
 			"bio",
 			"community_order",
+			"quick_reaction_emojis",
 			"sidebar_badge_style",
 		],
 		filters={"user": ["in", [u.name for u in users]]},
@@ -88,6 +89,7 @@ def get_user_info(user=None):
 			user.bio = user_profile.bio
 			if frappe.session.user == user.name:
 				user.community_order = user_profile.community_order
+				user.quick_reaction_emojis = user_profile.quick_reaction_emojis
 				user.sidebar_badge_style = user_profile.sidebar_badge_style
 		user_roles = [r.role for r in roles if r.parent == user.name]
 		user.role = None

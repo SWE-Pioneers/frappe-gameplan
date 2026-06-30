@@ -367,6 +367,15 @@ export interface GPTag extends DocType {
   label?: string
 }
 
+export interface GPCustomEmoji extends DocType {
+  /** Title: Data */
+  title: string
+  /** Image: Attach Image */
+  image: string
+  /** Keywords: Small Text */
+  keywords?: string
+}
+
 // Last updated: 2023-01-31 15:15:16.167656
 export interface GPPinnedProject extends DocType {
   /** Project: Link (GP Project) */

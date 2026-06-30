@@ -36,6 +36,7 @@ export default defineConfig({
             'gp_draft',
             'gp_tag',
             'gp_pinned_project',
+            'gp_custom_emoji',
           ],
         },
       },

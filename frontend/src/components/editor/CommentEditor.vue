@@ -20,6 +20,7 @@ import {
   type MenuItem,
 } from 'frappe-ui/editor'
 import EmojiPicker from '@/components/EmojiPicker.vue'
+import { isImageEmoji } from '@/utils/emoji'
 import GPEditor from './GPEditor.vue'
 import QuoteReplyButton from '@/components/RichQuoteExtension/QuoteReplyButton.vue'
 import { useRichQuotes, useBacklinkRefresh } from '@/components/RichQuoteExtension/useRichQuotes'
@@ -113,7 +114,14 @@ function insertTrigger(editor: Editor, trigger: '@') {
 }
 
 function insertEmoji(editor: Editor, emoji: string) {
-  editor.chain().focus().insertContent(emoji).run()
+  // Custom emoji are image URLs — insert them via the inline customEmoji node so
+  // they sit in the text at ~20px, instead of the block image node (which adds
+  // resize/viewer chrome and centers on its own line).
+  if (isImageEmoji(emoji)) {
+    editor.chain().focus().insertCustomEmoji({ src: emoji, alt: 'emoji' }).run()
+  } else {
+    editor.chain().focus().insertContent(emoji).run()
+  }
 }
 
 function insertImage(editor: Editor) {

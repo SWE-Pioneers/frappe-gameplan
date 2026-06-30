@@ -21,6 +21,25 @@
           </div>
           <Button @click="setRandom">Random</Button>
         </div>
+        <div v-if="filteredCustomEmojis.length">
+          <div
+            class="sticky top-0 z-10 px-2.5 bg-surface-elevation-2 pb-2 pt-3 text-sm text-ink-gray-6"
+          >
+            Custom
+          </div>
+          <div class="grid grid-cols-12 place-items-center px-2.5">
+            <button
+              v-for="custom in filteredCustomEmojis"
+              :key="custom.name"
+              type="button"
+              class="flex h-8 w-8 items-center justify-center rounded-md p-1 hover:bg-surface-gray-2 focus:outline-none focus:ring-2 focus:ring-outline-gray-3"
+              :title="custom.title"
+              @click="selectEmoji(custom.image, close)"
+            >
+              <img :src="custom.image" :alt="custom.title" class="size-6 object-contain" />
+            </button>
+          </div>
+        </div>
         <div v-for="(emojis, group) in emojiGroups" :key="group">
           <div
             class="sticky top-0 z-10 px-2.5 bg-surface-elevation-2 pb-2 pt-3 text-sm text-ink-gray-6"
@@ -50,6 +69,7 @@ import { computed, onMounted, ref } from 'vue'
 import { Button, FormControl, Popover } from 'frappe-ui'
 import { gemoji } from 'gemoji'
 import { getRandomNumber } from '@/utils'
+import { customEmojis } from '@/data/customEmojis'
 
 const props = withDefaults(
   defineProps<{
@@ -71,6 +91,16 @@ const emit = defineEmits<{
 }>()
 
 const search = ref('')
+
+const filteredCustomEmojis = computed(() => {
+  const list = customEmojis.data || []
+  const query = search.value.toLowerCase().trim()
+  if (!query) return list
+  return list.filter((emoji) => {
+    const haystack = `${emoji.title} ${emoji.keywords || ''}`.toLowerCase()
+    return haystack.includes(query)
+  })
+})
 
 const emojiGroups = computed(() => {
   const groups: Record<string, typeof gemoji> = {}

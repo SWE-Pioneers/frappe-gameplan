@@ -1,38 +1,43 @@
 <template>
   <div class="flex select-none items-stretch space-x-1.5">
-    <Popover placement="bottom-start">
-      <template #target="{ togglePopover, isOpen }">
+    <HoverCard
+      v-model:open="isPickerOpen"
+      side="bottom"
+      align="start"
+      @pointer-down-outside="onPointerDownOutside"
+    >
+      <template #trigger>
         <button
           aria-label="Add a reaction"
           :disabled="isLoading"
-          @click="togglePopover()"
           class="flex h-full items-center justify-center rounded-full bg-surface-gray-2 px-2 py-1 text-ink-gray-6 transition hover:bg-surface-gray-3 print:hidden"
-          :class="{ 'bg-surface-gray-3': isOpen }"
+          :class="{ 'bg-surface-gray-3': isPickerOpen }"
+          @click="isPickerOpen = true"
         >
-          <ReactionFaceIcon />
+          <span class="lucide-smile-plus" aria-label="React with emoji" />
         </button>
       </template>
-      <template #body-main="{ togglePopover }">
-        <div class="mt-1 inline-flex p-1">
-          <div class="grid grid-cols-10 items-center space-x-0.5">
-            <button
-              class="h-6 w-6 rounded hover:bg-surface-sidebar"
-              v-for="emoji in standardEmojis"
-              :key="emoji"
-              @click="
-                () => {
-                  toggleReaction(emoji)
-                  togglePopover()
-                }
-              "
-              :disabled="isLoading"
-            >
-              {{ emoji }}
-            </button>
-          </div>
+      <div class="inline-flex p-1">
+        <div class="grid grid-cols-10 items-center gap-0.5">
+          <Button
+            v-for="emoji in standardEmojis"
+            :key="emoji"
+            variant="ghost"
+            size="xs"
+            class="font-[emoji]"
+            :disabled="isLoading"
+            @click="selectEmoji(emoji)"
+          >
+            <template #icon>
+              <img v-if="isImageEmoji(emoji)" :src="emoji" alt="" class="size-4 object-contain" />
+              <span v-else class="text-lg">
+                {{ emoji }}
+              </span>
+            </template>
+          </Button>
         </div>
-      </template>
-    </Popover>
+      </div>
+    </HoverCard>
     <Tooltip v-for="(reactions, emoji) in reactionsCount" :key="emoji">
       <button
         class="flex items-center justify-center rounded-full px-2 py-1 text-sm transition"
@@ -43,7 +48,9 @@
         ]"
         @click="toggleReaction(emoji)"
       >
-        {{ emoji }} {{ reactions.count }}
+        <img v-if="isImageEmoji(emoji)" :src="emoji" alt="" class="mr-1 size-4 object-contain" />
+        <template v-else>{{ emoji }}&nbsp;</template>
+        {{ reactions.count }}
       </button>
       <template #body>
         <div
@@ -56,8 +63,10 @@
   </div>
 </template>
 <script setup lang="ts">
-import { Popover, Tooltip } from 'frappe-ui'
-import ReactionFaceIcon from './ReactionFaceIcon.vue'
+import { ref } from 'vue'
+import { Button, HoverCard, Tooltip } from 'frappe-ui'
+import { isImageEmoji } from '@/utils/emoji'
+
 const props = defineProps<{
   reactionsCount: Record<string, { count: number; userReacted: boolean }>
   toggleReaction: (emoji: string) => void
@@ -65,4 +74,18 @@ const props = defineProps<{
   standardEmojis: string[]
   isLoading: boolean
 }>()
+
+const isPickerOpen = ref(false)
+
+function selectEmoji(emoji: string) {
+  props.toggleReaction(emoji)
+  isPickerOpen.value = false
+}
+
+// Clicking the trigger counts as a pointer-down "outside" the card, which would
+// otherwise dismiss it (then hover/click reopens it — a visible flash). Keep the
+// card open instead; it still closes on mouse leave or after a selection.
+function onPointerDownOutside(event: Event) {
+  event.preventDefault()
+}
 </script>
