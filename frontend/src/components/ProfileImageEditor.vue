@@ -1,116 +1,104 @@
 <template>
-  <FileUploader
-    @success="(file) => setUserImage(file.file_url)"
-    :validateFile="validateFile"
-    :fileTypes="['image/png', 'image/jpeg']"
-    :uploadArgs="{ optimize: true }"
-  >
-    <template v-slot="{ file, progress, error, uploading, openFileSelector }">
-      <div class="flex flex-col items-center">
-        <button
-          class="group relative rounded-full border-2 disabled:cursor-not-allowed"
-          :disabled="uploading"
-          :aria-busy="uploading"
-          :aria-label="profile.doc.image ? 'Change profile photo' : 'Upload profile photo'"
-          @click="openFileSelector"
-        >
-          <div
-            class="absolute inset-0 grid place-items-center rounded-full bg-gray-400/20 text-base text-ink-gray-5 transition-opacity"
-            :class="[
-              uploading ? 'opacity-100' : 'opacity-0 group-hover:opacity-100',
-              'drop-shadow-sm',
-            ]"
-          >
-            <span class="inline-block rounded-md bg-surface-gray-10/60 px-2 py-1 text-ink-base">
-              {{
-                uploading
-                  ? `Uploading ${progress}%`
-                  : profile.doc.image
-                    ? 'Change Image'
-                    : 'Upload Image'
-              }}
-            </span>
-          </div>
-          <img
-            v-if="profile.doc.image"
-            class="h-64 w-64 rounded-full object-cover"
-            :src="profile.doc.image"
-            alt="Profile Photo"
-            :style="{
-              backgroundColor: profile.doc.image_background_color || null,
-            }"
-          />
-          <div v-else class="h-64 w-64 rounded-full bg-surface-gray-2"></div>
-        </button>
-        <ErrorMessage class="mt-4" :message="profile.removeImageBackground.error || error" />
-        <div class="mt-4 flex items-center gap-4">
-          <Button
-            v-if="profile.doc.image && profile.doc.original_image && isBackgroundRemovalAvailable"
-            @click="profile.revertImageBackground.submit()"
-            :loading="profile.revertImageBackground.loading"
-          >
-            Revert To Original
-          </Button>
-          <Button
-            v-if="profile.doc.image && !profile.doc.original_image && isBackgroundRemovalAvailable"
-            @click="
-              profile.removeImageBackground.submit({
-                default_color: getRandomColor(),
-              })
-            "
-            :loading="profile.removeImageBackground.loading"
-          >
-            Set Colored Background
-          </Button>
-          <ColorPicker
-            v-if="profile.doc.is_image_background_removed && isBackgroundRemovalAvailable"
-            v-model="profile.doc.image_background_color"
-            @update:modelValue="
-              profile.setValue.submit({
-                image_background_color: profile.doc.image_background_color,
-              })
-            "
-          >
-            <template v-slot="{ isOpen }">
-              <Button> Change Background Color </Button>
-            </template>
-          </ColorPicker>
+  <div class="space-y-5">
+    <AvatarCropper ref="cropper" :file="file" />
 
-          <Button v-if="profile.doc.image" @click="setUserImage(null)"> Remove </Button>
-        </div>
+    <ErrorMessage :message="errorMessage" />
+
+    <div class="flex items-center justify-between gap-3">
+      <Button variant="ghost" @click="resetCrop">Reset</Button>
+      <div class="flex items-center gap-2">
+        <Button @click="cancelCrop">Cancel</Button>
+        <Button variant="solid" :loading="saving" @click="saveCroppedImage">Save</Button>
       </div>
-    </template>
-  </FileUploader>
+    </div>
+  </div>
 </template>
-<script>
-import { FileUploader } from 'frappe-ui'
-import ColorPicker, { getRandomColor } from './ColorPicker.vue'
 
-export default {
-  name: 'ProfileImageEditor',
-  props: ['profile'],
-  components: { FileUploader, ColorPicker },
-  data() {
-    return {
-      isBackgroundRemovalAvailable: false,
-    }
-  },
-  mounted() {
-    this.profile.isBackgroundRemovalAvailable.submit().then((result) => {
-      this.isBackgroundRemovalAvailable = result
+<script setup lang="ts">
+import { computed, ref, useTemplateRef } from 'vue'
+import { Button, ErrorMessage, useFileUpload } from 'frappe-ui'
+import AvatarCropper from './AvatarCropper.vue'
+import { useSessionUser } from '@/data/users'
+
+interface ProfileDoc {
+  image?: string | null
+  original_image?: string | null
+  is_image_background_removed?: number
+  image_background_color?: string | null
+}
+
+interface ResourceCall<TParams = void, TResult = unknown> {
+  loading: boolean
+  error?: Error | string | null
+  submit: TParams extends void ? () => Promise<TResult> : (params: TParams) => Promise<TResult>
+}
+
+interface ProfileResource {
+  doc: ProfileDoc
+  setImage: ResourceCall<{ image: string | null }>
+}
+
+const props = defineProps<{
+  profile: ProfileResource
+  file: File
+}>()
+
+const emit = defineEmits<{
+  (event: 'done'): void
+  (event: 'cancel'): void
+}>()
+
+const sessionUser = useSessionUser()
+const upload = useFileUpload()
+const cropper = useTemplateRef<InstanceType<typeof AvatarCropper>>('cropper')
+const validationError = ref('')
+const saving = computed(() => upload.state.uploading || props.profile.setImage.loading)
+const errorMessage = computed(() => {
+  return validationError.value || upload.state.error?.message || upload.state.error || ''
+})
+
+function resetCrop() {
+  cropper.value?.resetCrop()
+}
+
+function cancelCrop() {
+  emit('cancel')
+}
+
+async function saveCroppedImage() {
+  if (saving.value) return
+
+  let blob = await cropper.value?.getCroppedBlob()
+  if (!blob) {
+    validationError.value = 'Could not crop image'
+    return
+  }
+
+  try {
+    let croppedFile = new File([blob], getCroppedFileName(props.file), {
+      type: 'image/jpeg',
     })
-  },
-  methods: {
-    setUserImage(url) {
-      this.profile.setImage.submit({ image: url })
-    },
-    getRandomColor,
-    validateFile(file) {
-      let extn = file.name.split('.').pop().toLowerCase()
-      if (!['png', 'jpg', 'jpeg'].includes(extn)) {
-        return 'Only PNG and JPG images are allowed'
-      }
-    },
-  },
+    let file = await upload.upload(croppedFile, { optimize: true })
+    await setUserImage(file.file_url)
+    emit('done')
+  } catch {
+    if (!upload.state.error) validationError.value = 'Could not save profile photo'
+  }
+}
+
+async function setUserImage(url: string | null) {
+  await props.profile.setImage.submit({ image: url })
+  props.profile.doc.image = url
+  props.profile.doc.is_image_background_removed = 0
+  props.profile.doc.image_background_color = ''
+  props.profile.doc.original_image = ''
+  sessionUser.user_image = url || ''
+  sessionUser.is_image_background_removed = 0
+  sessionUser.image_background_color = ''
+}
+
+function getCroppedFileName(file: File) {
+  let name = file.name.replace(/\.[^.]+$/, '')
+  return `${name || 'avatar'}-cropped.jpg`
 }
 </script>
