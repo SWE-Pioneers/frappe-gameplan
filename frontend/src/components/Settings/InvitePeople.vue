@@ -20,7 +20,7 @@
             label="Role"
             :options="[
               { label: 'Admin', value: 'Gameplan Admin' },
-              { label: 'Member', value: 'Gameplan Member' },
+              { label: 'User', value: 'Gameplan Member' },
             ]"
             v-model="role"
           />
@@ -46,7 +46,7 @@
       <div class="mt-4 flex items-center justify-between border-b py-2 text-base text-ink-gray-5">
         <div class="w-4/5">Pending Invites</div>
       </div>
-      <ul class="divide-y overflow-auto">
+      <ul class="divide-y">
         <li
           class="flex items-center justify-between py-2"
           v-for="invitation in pendingInvitations.data"
@@ -56,7 +56,7 @@
             <span class="text-ink-gray-8">
               {{ invitation.email }}
             </span>
-            <span class="text-ink-gray-5"> ({{ invitation.role.replace('Gameplan ', '') }}) </span>
+            <span class="text-ink-gray-5"> ({{ getRoleLabel(invitation.role) }}) </span>
           </div>
           <div>
             <Tooltip text="Delete Invitation">
@@ -100,11 +100,15 @@ const pendingToDelete = ref<string | null>(null)
 const description = computed((): string => {
   const descriptions: Record<Role, string> = {
     'Gameplan Admin':
-      'Can create communities and spaces, invite admins and members, browse and create discussions.',
+      'Can create communities and spaces, invite admins and users, browse and create discussions.',
     'Gameplan Member': 'Can join communities, create spaces, browse and create discussions.',
   }
   return descriptions[role.value]
 })
+
+function getRoleLabel(role: string) {
+  return role === 'Gameplan Member' ? 'User' : role.replace('Gameplan ', '')
+}
 
 const pendingInvitations = useList<GPInvitation>({
   doctype: 'GP Invitation',

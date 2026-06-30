@@ -23,7 +23,7 @@
         </PageHeader>
         <div class="mx-auto w-full body-container pt-6">
           <div class="flex items-center justify-between">
-            <h2 class="text-3xl-semibold text-ink-gray-7">{{ people.length }} members</h2>
+            <h2 class="text-3xl-semibold text-ink-gray-7">{{ people.length }} users</h2>
             <div class="flex items-center gap-2">
               <TextInput
                 class="hidden sm:block"
@@ -79,7 +79,7 @@
             <div
               class="hidden h-8 items-center px-3 text-sm text-ink-gray-5 sm:grid sm:grid-cols-[minmax(8rem,1fr)_repeat(4,5.5rem)] sm:gap-6"
             >
-              <div>Member</div>
+              <div>User</div>
               <div class="text-right">Posts</div>
               <div class="text-right">Replies</div>
               <div class="flex items-center justify-end gap-1.5">

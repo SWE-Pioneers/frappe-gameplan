@@ -37,7 +37,7 @@
         <div>
           <FormControl
             type="checkbox"
-            label="Keep it private &mdash; Only visible to members"
+            label="Keep it private &mdash; Only visible to users"
             v-model="newSpace.doc.is_private"
           />
         </div>
@@ -106,7 +106,7 @@ const communityOptions = computed((): ComboboxOption[] => {
     value: community.name,
   }))
 
-  // Members can create spaces, but creating a new community is global-admin only.
+  // Users can create spaces, but creating a new community is global-admin only.
   if (!isGameplanAdmin()) return options
 
   const createNewOption = {
