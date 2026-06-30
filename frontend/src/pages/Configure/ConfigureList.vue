@@ -1,6 +1,6 @@
 <template>
-  <div class="mt-3 divide-y">
-    <div :class="headerClass">
+  <div class="divide-y">
+    <div v-if="$slots.header" :class="headerClass">
       <slot name="header" />
     </div>
     <slot />
@@ -9,6 +9,6 @@
 
 <script setup lang="ts">
 defineProps<{
-  headerClass: string
+  headerClass?: string
 }>()
 </script>

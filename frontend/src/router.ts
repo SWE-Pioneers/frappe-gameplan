@@ -8,12 +8,11 @@ import {
 import { until } from '@vueuse/core'
 import { call } from 'frappe-ui'
 import { session } from './data/session'
-import { isGameplanAdmin, users, useSessionUser } from './data/users'
+import { users } from './data/users'
 import { communities, getCommunity } from './data/communities'
 import { spaces, getSpace } from './data/spaces'
 import type { Space } from './data/spaces'
 import { communityState } from './data/communityState'
-import { canManageCommunity, getManageableCommunities } from './utils/permissions'
 import { getScrollContainer, scrollTo } from './utils/scrollContainer'
 
 declare const __FRONTEND_ROUTE__: string
@@ -52,36 +51,15 @@ function optionalRouteParam(value: RouteParamValue | undefined): string | undefi
   return resolvedValue || undefined
 }
 
-async function ensureConfigureAccess(to: RouteLocationNormalized) {
-  await ensureCommunityDataLoaded()
-
-  if (isGameplanAdmin()) {
-    return
-  }
-
-  const communityId = optionalRouteParam(to.params.communityId)
-  if (!communityId) {
-    if (getManageableCommunities(communities.data || [], useSessionUser()).length) {
-      return
-    }
-
-    return getHomeRoute()
-  }
-
-  if (!canManageCommunity(getCommunity(communityId), useSessionUser())) {
-    return getHomeRoute()
-  }
-}
-
 function redirectOldSpacesRoute(to: RouteLocationNormalized): RouteLocationRaw {
   const queryTeamId = to.query.teamId
   const communityId = Array.isArray(queryTeamId) ? queryTeamId[0] : queryTeamId
 
   if (typeof communityId === 'string' && communityId) {
-    return { name: 'CommunitySpaces', params: { communityId }, query: {} }
+    return { name: 'Discussions', params: { communityId }, query: {} }
   }
 
-  return { name: 'Spaces', query: {} }
+  return getHomeRoute()
 }
 
 const routes: RouteRecordRaw[] = [
@@ -275,25 +253,6 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/spaces',
     redirect: redirectOldSpacesRoute,
-  },
-  {
-    path: '/configure',
-    name: 'Spaces',
-    component: () => import('@/pages/Configure/Configure.vue'),
-    // `/configure` is an admin-only global housekeeping page; non-admins never reach it.
-    beforeEnter: ensureConfigureAccess,
-  },
-  {
-    path: '/configure/:communityId',
-    name: 'CommunitySpaces',
-    component: () => import('@/pages/Configure/Configure.vue'),
-    beforeEnter: ensureConfigureAccess,
-  },
-  {
-    path: '/configure/:communityId/members',
-    name: 'CommunityMembers',
-    component: () => import('@/pages/Configure/Configure.vue'),
-    beforeEnter: ensureConfigureAccess,
   },
   {
     name: 'Space',
@@ -846,12 +805,8 @@ function getDesktopHomeRoute(): RouteLocationRaw {
     return { name: 'Onboarding' }
   }
 
-  // The site has communities/spaces but the user has joined none. Admins configure
-  // them on the global manager page; everyone else sees the no-communities state.
-  if (isGameplanAdmin()) {
-    return { name: 'Spaces' }
-  }
-
+  // The site has communities/spaces but the user has joined none. Admins manage
+  // them from the NoCommunities page (which opens the Communities settings tab).
   return { name: 'NoCommunities' }
 }
 

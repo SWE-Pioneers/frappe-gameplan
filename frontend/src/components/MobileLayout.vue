@@ -118,9 +118,6 @@ function isMoreRoute() {
     'MyTasks',
     'Task',
     'Drafts',
-    'Spaces',
-    'CommunitySpaces',
-    'CommunityMembers',
   ].includes(name)
 }
 

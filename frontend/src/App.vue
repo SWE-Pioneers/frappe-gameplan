@@ -7,6 +7,7 @@
       </Layout>
     </ScrollAreaRoot>
     <NewTaskDialog />
+    <SettingsDialog v-if="$session.isLoggedIn && users.isFinished" />
   </FrappeUIProvider>
 </template>
 
@@ -18,6 +19,7 @@ import { users } from '@/data/users'
 import { useScreenSize } from '@/composables/useScreenSize'
 import { useTheme } from '@/utils/useTheme'
 import NewTaskDialog from './components/NewTaskDialog/NewTaskDialog.vue'
+import SettingsDialog from './components/Settings/SettingsDialog.vue'
 
 const screenSize = useScreenSize()
 useTheme()

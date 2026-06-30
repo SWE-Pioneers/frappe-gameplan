@@ -13,7 +13,7 @@
               size="md"
               icon="lucide-user-plus-2"
               label="Invite"
-              @click="showSettingsDialog('Invites')"
+              @click="showSettingsDialog('Users')"
             />
           </template>
         </MobileHeader>
@@ -56,7 +56,7 @@
                 class="hidden sm:inline-flex"
                 variant="solid"
                 icon-left="lucide-user-plus-2"
-                @click="showSettingsDialog('Invites')"
+                @click="showSettingsDialog('Users')"
               >
                 Invite
               </Button>

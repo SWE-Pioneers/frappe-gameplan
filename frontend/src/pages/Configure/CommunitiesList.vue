@@ -1,26 +1,15 @@
 <template>
-  <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-    <TabButtons :options="visibilityButtons" v-model="visibilityFilter">
-      <template #prefix="{ button }">
-        <span
-          v-if="visibilityFilterIcon(button.modelValue)"
-          :class="[visibilityFilterIcon(button.modelValue), 'size-3.5 shrink-0']"
-        />
-      </template>
-      <template #suffix="{ button }">
-        <span class="rounded-full bg-surface-gray-3 px-1.5 text-xs text-ink-gray-6">
-          {{ getVisibilityCount(button.modelValue) }}
-        </span>
-      </template>
-    </TabButtons>
-    <Switch v-if="hasArchivedCommunities" v-model="showArchived" label="Show archived" />
-  </div>
+  <CommunitiesListFilters
+    v-if="showControls"
+    v-model:search="search"
+    v-model:visibility-filter="visibilityFilter"
+  />
 
   <ConfigureEmptyState
     v-if="!manageableCommunities.length"
     icon="lucide-blocks"
     title="No communities yet"
-    description="Create a community to group related spaces, members, and discussions."
+    description="Create a community to group related spaces, users, and discussions."
   >
     <template #actions>
       <Button
@@ -36,12 +25,12 @@
 
   <ConfigureList
     v-else-if="filteredCommunities.length"
-    header-class="hidden grid-cols-[minmax(12rem,6fr)_minmax(6rem,1.2fr)_minmax(6rem,1.2fr)_3rem] gap-12 items-center h-7 text-sm text-ink-gray-6 md:grid"
+    header-class="hidden grid-cols-[minmax(12rem,6fr)_minmax(6rem,1.2fr)_minmax(6rem,1.2fr)_1.5rem] gap-12 items-center h-7 text-sm text-ink-gray-6 md:grid"
   >
-    <template #header>
+    <template v-if="showControls" #header>
       <div>Community</div>
       <div class="px-1.5">Spaces</div>
-      <div class="px-1.5">Members</div>
+      <div class="px-1.5">Users</div>
       <div />
     </template>
     <CommunityRow
@@ -49,6 +38,9 @@
       :key="community.name"
       :community="community"
       :spaces-count="getActiveCommunitySpacesCount(community.name)"
+      @view-spaces="emit('view-spaces', community.name)"
+      @view-members="emit('view-members', community.name)"
+      @merged="emit('community-merged', $event)"
     />
   </ConfigureList>
 
@@ -66,71 +58,71 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
-import { Button, Switch, TabButtons } from 'frappe-ui'
+import { computed, watch } from 'vue'
+import { Button } from 'frappe-ui'
 import { communities, type Community } from '@/data/communities'
 import { spaces } from '@/data/spaces'
 import { useSessionUser } from '@/data/users'
 import { getManageableCommunities, isGlobalAdmin } from '@/utils/permissions'
-import { visibilityFilterIcon } from '@/utils/visibility'
 import ConfigureEmptyState from './ConfigureEmptyState.vue'
 import ConfigureList from './ConfigureList.vue'
 import CommunityRow from './CommunityRow.vue'
+import CommunitiesListFilters from './CommunitiesListFilters.vue'
 
-type VisibilityFilter = 'All' | 'Public' | 'Private'
+type VisibilityFilter = 'All' | 'Public' | 'Private' | 'Archived'
 
-const visibilityFilter = ref<VisibilityFilter>('All')
-const showArchived = ref(false)
+// Filters are models so a parent (e.g. the Settings dialog) can hoist the
+// controls into a fixed header while this component still renders the list.
+const search = defineModel<string>('search', { default: '' })
+const visibilityFilter = defineModel<VisibilityFilter>('visibilityFilter', { default: 'All' })
 const sessionUser = useSessionUser()
+withDefaults(
+  defineProps<{
+    // When false, the parent owns the filter controls; we only render the list.
+    showControls?: boolean
+  }>(),
+  {
+    showControls: true,
+  },
+)
 const emit = defineEmits<{
   (event: 'create-community'): void
+  (event: 'view-spaces', communityId: string): void
+  (event: 'view-members', communityId: string): void
+  (event: 'community-merged', communityId: string): void
 }>()
 
-const visibilityButtons = [
-  { label: 'All', value: 'All' },
-  { label: 'Public', value: 'Public' },
-  { label: 'Private', value: 'Private' },
-]
-
 const filteredCommunities = computed(() => {
-  return visibleCommunities.value.filter((community) =>
-    matchesVisibilityFilter(community, visibilityFilter.value),
+  const term = search.value.trim().toLowerCase()
+  return manageableCommunities.value.filter(
+    (community) =>
+      matchesScope(community, visibilityFilter.value) &&
+      (!term || community.title.toLowerCase().includes(term)),
   )
 })
 
 const manageableCommunities = computed(() =>
   getManageableCommunities(communities.data || [], sessionUser),
 )
-const visibleCommunities = computed(() =>
-  manageableCommunities.value.filter((community) => showArchived.value || !community.archived_at),
-)
 const hasArchivedCommunities = computed(() =>
   manageableCommunities.value.some((community) => community.archived_at),
 )
 const showCreateCommunity = computed(() => isGlobalAdmin(sessionUser))
-const publicCommunityCount = computed(
-  () => visibleCommunities.value.filter((community) => !community.is_private).length,
-)
-const privateCommunityCount = computed(
-  () => visibleCommunities.value.filter((community) => community.is_private).length,
-)
 
+// If the archived scope empties out, fall back to the default scope.
 watch(hasArchivedCommunities, (value) => {
-  if (!value) {
-    showArchived.value = false
+  if (!value && visibilityFilter.value === 'Archived') {
+    visibilityFilter.value = 'All'
   }
 })
 
-function matchesVisibilityFilter(community: Community, filter: VisibilityFilter) {
+// 'All'/'Public'/'Private' only cover active communities; 'Archived' is its own scope.
+function matchesScope(community: Community, filter: VisibilityFilter) {
+  if (filter === 'Archived') return Boolean(community.archived_at)
+  if (community.archived_at) return false
   if (filter === 'Public') return !community.is_private
   if (filter === 'Private') return Boolean(community.is_private)
   return true
-}
-
-function getVisibilityCount(value: unknown) {
-  if (value === 'Public') return publicCommunityCount.value
-  if (value === 'Private') return privateCommunityCount.value
-  return visibleCommunities.value.length
 }
 
 function getActiveCommunitySpacesCount(communityId: string) {
@@ -141,6 +133,6 @@ function getActiveCommunitySpacesCount(communityId: string) {
 
 function clearFilters() {
   visibilityFilter.value = 'All'
-  showArchived.value = true
+  search.value = ''
 }
 </script>

@@ -20,7 +20,6 @@
       </div>
     </div>
     <CommandPalette />
-    <SettingsDialog />
   </div>
 </template>
 <script setup lang="ts">
@@ -31,7 +30,6 @@ import AppRail from './AppRail'
 import AppSidebar from './AppSidebar.vue'
 import CommandPalette from './CommandPalette/CommandPalette.vue'
 import ReadOnlyBanner from './ReadOnlyBanner.vue'
-import SettingsDialog from './Settings/SettingsDialog.vue'
 import { readOnlyMode } from '@/data/readOnlyMode'
 import { users } from '@/data/users'
 

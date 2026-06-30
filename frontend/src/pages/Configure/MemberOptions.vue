@@ -3,7 +3,7 @@
     v-if="visibleOptions.length"
     :button="{ icon: 'lucide-more-horizontal', size: 'xs', variant: 'ghost' }"
     align="end"
-    :label="`${user.full_name} Member Options`"
+    :label="`${user.full_name} User Options`"
     :options="visibleOptions"
   />
 </template>
@@ -58,7 +58,7 @@ function removeMember() {
   if (!props.canManage) return
 
   dialog.confirm({
-    title: 'Remove member',
+    title: 'Remove user',
     message: `${user.value.full_name} will lose access to private spaces and discussions in this community.`,
     confirmLabel: 'Remove',
     onConfirm: async () => {
@@ -80,7 +80,7 @@ function setCommunityAdmin(isAdmin: boolean) {
   dialog.confirm({
     title: isAdmin ? 'Make community admin' : 'Remove community admin',
     message: isAdmin
-      ? `${user.value.full_name} will be able to manage members and settings for this community.`
+      ? `${user.value.full_name} will be able to manage users and settings for this community.`
       : `${user.value.full_name} will no longer be able to manage this community.`,
     confirmLabel: isAdmin ? 'Make Admin' : 'Remove Admin',
     onConfirm: async () => {
