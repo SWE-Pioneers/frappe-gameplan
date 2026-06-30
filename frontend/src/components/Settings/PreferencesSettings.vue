@@ -1,108 +1,104 @@
 <template>
-  <SettingsPanel>
-    <SettingsHeader>
-      <h2 class="text-lg-semibold text-ink-gray-8">Preferences</h2>
-    </SettingsHeader>
+  <SettingsHeader>
+    <h2 class="text-lg-semibold text-ink-gray-8">Preferences</h2>
+  </SettingsHeader>
 
-    <SettingsBody>
-      <div class="space-y-11 pt-6">
-        <section>
-          <SettingsRow
-            title="Appearance"
-            description="Choose a light, dark, or system-matched interface"
-          >
-            <Select :options="themeOptions" v-model="selectedTheme">
-              <template #item-prefix="{ item }">
-                <div
-                  class="size-3 rounded-full border border-outline-gray-2 flex overflow-hidden"
-                  v-if="item.value === 'system'"
-                >
-                  <div class="w-1/2 bg-white"></div>
-                  <div class="w-1/2 bg-gray-950"></div>
-                </div>
-                <div
-                  v-else
-                  class="size-3 rounded-full border"
-                  :class="item.value == 'light' ? 'bg-white border-outline-gray-2' : 'bg-gray-950'"
-                ></div>
-              </template>
-            </Select>
-          </SettingsRow>
-        </section>
-
-        <section>
-          <h2 class="text-lg-semibold text-ink-gray-8">Sidebar</h2>
-
-          <div class="mt-2 divide-y divide-outline-gray-1">
-            <SettingsRow
-              title="Unread badge"
-              description="Show unread activity as a dot or a count"
-            >
-              <Select
-                :options="badgeStyleOptions"
-                :model-value="currentSidebarBadgeStyle"
-                :disabled="savingBadgeStyle"
-                @update:model-value="saveBadgeStyle"
-              />
-            </SettingsRow>
-
-            <SettingsRow
-              title="Communities"
-              description="Show, hide, and reorder communities in the left rail"
-            >
-              <Button @click="showCustomizeSidebar = true">Customize</Button>
-            </SettingsRow>
-
-            <SettingsRow
-              title="Space sorting"
-              description="Choose how spaces are ordered in the current community sidebar"
-            >
-              <Select :options="spaceSortOptions" v-model="selectedSpaceSort" />
-            </SettingsRow>
-
-            <SettingsRow
-              title="Inactive spaces"
-              description="Hide spaces with no activity for the last 2 months"
-            >
-              <Switch v-model="hideInactiveSpaces" />
-            </SettingsRow>
-          </div>
-        </section>
-
-        <section>
-          <h2 class="text-lg-semibold text-ink-gray-8">Reactions</h2>
-
-          <div class="mt-2 divide-y divide-outline-gray-1">
-            <SettingsRow
-              title="Quick reactions"
-              description="Choose the emoji shown in the reaction picker. Drag to reorder"
-            >
-              <Button
-                variant="subtle"
-                icon-left="lucide-rotate-ccw"
-                @click="resetQuickReactionEmojis"
+  <SettingsBody>
+    <div class="space-y-11 pt-6">
+      <section>
+        <SettingsRow
+          title="Appearance"
+          description="Choose a light, dark, or system-matched interface"
+        >
+          <Select :options="themeOptions" v-model="selectedTheme">
+            <template #item-prefix="{ item }">
+              <div
+                class="size-3 rounded-full border border-outline-gray-2 flex overflow-hidden"
+                v-if="item.value === 'system'"
               >
-                Reset
-              </Button>
-            </SettingsRow>
-          </div>
+                <div class="w-1/2 bg-white"></div>
+                <div class="w-1/2 bg-gray-950"></div>
+              </div>
+              <div
+                v-else
+                class="size-3 rounded-full border"
+                :class="item.value == 'light' ? 'bg-white border-outline-gray-2' : 'bg-gray-950'"
+              ></div>
+            </template>
+          </Select>
+        </SettingsRow>
+      </section>
 
-          <QuickReactionsEditor class="mt-2" />
-        </section>
-      </div>
-    </SettingsBody>
+      <section>
+        <h2 class="text-lg-semibold text-ink-gray-8">Sidebar</h2>
 
-    <CustomizeSidebarDialog v-model="showCustomizeSidebar" />
-  </SettingsPanel>
+        <div class="mt-2 divide-y divide-outline-gray-1">
+          <SettingsRow title="Unread badge" description="Show unread activity as a dot or a count">
+            <Select
+              :options="badgeStyleOptions"
+              v-model="selectedBadgeStyle"
+              :disabled="savingBadgeStyle"
+            />
+          </SettingsRow>
+
+          <SettingsRow
+            title="Communities"
+            description="Show, hide, and reorder communities in the left rail"
+          >
+            <Button @click="showCustomizeSidebar = true">Customize</Button>
+          </SettingsRow>
+
+          <SettingsRow
+            title="Space sorting"
+            description="Choose how spaces are ordered in the current community sidebar"
+          >
+            <Select :options="spaceSortOptions" v-model="selectedSpaceSort" />
+          </SettingsRow>
+
+          <SettingsRow
+            title="Inactive spaces"
+            description="Hide spaces with no activity for the last 2 months"
+          >
+            <Switch v-model="hideInactiveSpaces" />
+          </SettingsRow>
+        </div>
+      </section>
+
+      <section>
+        <h2 class="text-lg-semibold text-ink-gray-8">Reactions</h2>
+
+        <div class="mt-2 divide-y divide-outline-gray-1">
+          <SettingsRow
+            title="Quick reactions"
+            description="Choose the emoji shown in the reaction picker. Drag to reorder"
+          >
+            <Button
+              variant="subtle"
+              icon-left="lucide-rotate-ccw"
+              @click="resetQuickReactionEmojis"
+            >
+              Reset
+            </Button>
+          </SettingsRow>
+        </div>
+
+        <QuickReactionsEditor class="mt-2" />
+      </section>
+    </div>
+  </SettingsBody>
+
+  <CustomizeSidebarDialog v-model="showCustomizeSidebar" />
 </template>
 
 <script setup lang="ts">
+// Declared so the parent's @close-dialog isn't treated as a failed attribute
+// fallthrough (this component renders a fragment); it simply isn't emitted here.
+defineEmits<{ (e: 'close-dialog'): void }>()
 import { computed, ref } from 'vue'
 import {
   Button,
   SettingsBody,
   SettingsHeader,
-  SettingsPanel,
   SettingsRow,
   Select,
   Switch,
@@ -162,6 +158,11 @@ const selectedSpaceSort = computed({
 const hideInactiveSpaces = computed({
   get: () => currentHideInactiveSpaces.value,
   set: (value: boolean) => setHideInactiveSpaces(value),
+})
+
+const selectedBadgeStyle = computed({
+  get: () => currentSidebarBadgeStyle.value,
+  set: saveBadgeStyle,
 })
 
 async function saveBadgeStyle(style: SidebarBadgeStyle) {

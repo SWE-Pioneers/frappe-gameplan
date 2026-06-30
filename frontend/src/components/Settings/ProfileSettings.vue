@@ -1,117 +1,111 @@
 <template>
-  <SettingsPanel>
-    <SettingsHeader>
-      <h2 class="text-lg-semibold text-ink-gray-8">Profile</h2>
-    </SettingsHeader>
+  <SettingsHeader>
+    <h2 class="text-lg-semibold text-ink-gray-8">Profile</h2>
+  </SettingsHeader>
 
-    <SettingsBody>
-      <div v-if="profile && user" class="space-y-11 pt-6">
-        <section class="space-y-6">
-          <div class="flex items-center gap-4">
-            <div>
-              <input
-                ref="avatarFileInput"
-                type="file"
-                class="hidden"
-                accept="image/png,image/jpeg"
-                @change="selectAvatarFile"
-              />
-              <Dropdown v-if="hasAvatar" :options="avatarOptions" align="start">
-                <button
-                  type="button"
-                  class="rounded-full flex focus:outline-none focus:ring-2 focus:ring-outline-gray-3"
-                  aria-label="Profile picture options"
-                >
-                  <UserAvatar
-                    :user="sessionUser.name"
-                    size="3xl"
-                    class="!h-16 !w-16 rounded-full"
-                  />
-                </button>
-              </Dropdown>
+  <SettingsBody>
+    <div v-if="profile && user" class="space-y-11 pt-6">
+      <section class="space-y-6">
+        <div class="flex items-center gap-4">
+          <div>
+            <input
+              ref="avatarFileInput"
+              type="file"
+              class="hidden"
+              accept="image/png,image/jpeg"
+              @change="selectAvatarFile"
+            />
+            <Dropdown v-if="hasAvatar" :options="avatarOptions" align="start">
               <button
-                v-else
                 type="button"
-                class="rounded-full focus:outline-none focus:ring-2 focus:ring-outline-gray-3"
-                aria-label="Upload profile picture"
-                @click="openAvatarFileSelector"
+                class="rounded-full flex focus:outline-none focus:ring-2 focus:ring-outline-gray-3"
+                aria-label="Profile picture options"
               >
                 <UserAvatar :user="sessionUser.name" size="3xl" class="!h-16 !w-16 rounded-full" />
               </button>
-            </div>
-            <div>
-              <div class="text-base-medium text-ink-gray-8">Profile picture</div>
-              <p class="text-p-sm text-ink-gray-5">Helps people recognise you</p>
-            </div>
+            </Dropdown>
+            <button
+              v-else
+              type="button"
+              class="rounded-full focus:outline-none focus:ring-2 focus:ring-outline-gray-3"
+              aria-label="Upload profile picture"
+              @click="openAvatarFileSelector"
+            >
+              <UserAvatar :user="sessionUser.name" size="3xl" class="!h-16 !w-16 rounded-full" />
+            </button>
           </div>
-
-          <div class="grid gap-6 sm:grid-cols-2">
-            <div>
-              <TextInput
-                label="First name"
-                class="w-full"
-                v-model="firstName"
-                :disabled="savingName"
-                @blur="saveName"
-              />
-            </div>
-            <div>
-              <TextInput
-                label="Last name"
-                class="w-full"
-                v-model="lastName"
-                :disabled="savingName"
-                @blur="saveName"
-              />
-            </div>
-          </div>
-
           <div>
-            <Textarea
-              label="Bio"
+            <div class="text-base-medium text-ink-gray-8">Profile picture</div>
+            <p class="text-p-sm text-ink-gray-5">Helps people recognise you</p>
+          </div>
+        </div>
+
+        <div class="grid gap-6 sm:grid-cols-2">
+          <div>
+            <TextInput
+              label="First name"
               class="w-full"
-              maxlength="280"
-              v-model="bio"
-              :disabled="savingBio"
-              @blur="saveBio"
+              v-model="firstName"
+              :disabled="savingName"
+              @blur="saveName"
             />
           </div>
-        </section>
-
-        <section>
-          <h2 class="text-lg-semibold text-ink-gray-8">Account</h2>
-
-          <div class="mt-2 divide-y divide-outline-gray-1">
-            <SettingsRow
-              title="Public profile"
-              description="View your public page or customize its card layout"
-            >
-              <div class="flex gap-2">
-                <Button icon-left="lucide-user" @click="goToMyProfile">View</Button>
-                <Button icon-left="lucide-layout-dashboard" @click="goToProfileCustomize">
-                  Customize
-                </Button>
-              </div>
-            </SettingsRow>
-
-            <SettingsRow title="Password" description="Manage password and account access">
-              <Button link="/update-password">Update Password</Button>
-            </SettingsRow>
+          <div>
+            <TextInput
+              label="Last name"
+              class="w-full"
+              v-model="lastName"
+              :disabled="savingName"
+              @blur="saveName"
+            />
           </div>
-        </section>
-      </div>
-    </SettingsBody>
+        </div>
 
-    <Dialog v-model:open="showAvatarEditor" title="Edit avatar" @after-leave="clearAvatarFile">
-      <ProfileImageEditor
-        v-if="profile && selectedAvatarFile"
-        :profile="profileChildResource"
-        :file="selectedAvatarFile"
-        @done="closeAvatarEditor"
-        @cancel="closeAvatarEditor"
-      />
-    </Dialog>
-  </SettingsPanel>
+        <div>
+          <Textarea
+            label="Bio"
+            class="w-full"
+            maxlength="280"
+            v-model="bio"
+            :disabled="savingBio"
+            @blur="saveBio"
+          />
+        </div>
+      </section>
+
+      <section>
+        <h2 class="text-lg-semibold text-ink-gray-8">Account</h2>
+
+        <div class="mt-2 divide-y divide-outline-gray-1">
+          <SettingsRow
+            title="Public profile"
+            description="View your public page or customize its card layout"
+          >
+            <div class="flex gap-2">
+              <Button icon-left="lucide-user" @click="goToMyProfile">View</Button>
+              <Button icon-left="lucide-layout-dashboard" @click="goToProfileCustomize">
+                Customize
+              </Button>
+            </div>
+          </SettingsRow>
+
+          <SettingsRow title="Password" description="Manage password and account access">
+            <Button link="/update-password">Update Password</Button>
+          </SettingsRow>
+        </div>
+      </section>
+    </div>
+  </SettingsBody>
+
+  <Dialog v-model:open="showAvatarEditor" title="Edit avatar" @after-leave="clearAvatarFile">
+    <ProfileImageEditor
+      v-if="profile && selectedAvatarFile"
+      :profile="profileChildResource"
+      :file="selectedAvatarFile"
+      @done="closeAvatarEditor"
+      @cancel="closeAvatarEditor"
+    />
+  </Dialog>
 </template>
 
 <script setup lang="ts">
@@ -123,7 +117,6 @@ import {
   Dropdown,
   SettingsBody,
   SettingsHeader,
-  SettingsPanel,
   SettingsRow,
   Textarea,
   TextInput,
@@ -159,7 +152,10 @@ const profileName = computed(() => sessionUser.user_profile || '')
 
 const profileResource = useDoc<GPUserProfile, ProfileMethods>({
   doctype: 'GP User Profile',
-  name: profileName,
+  // Pass a getter, not the ComputedRef: useDoc's `name` is MaybeRefOrGetter and a
+  // plain getter matches structurally even when frontend/frappe-ui resolve
+  // different @vue/reactivity copies (a ComputedRef would not).
+  name: () => profileName.value,
   immediate: false,
   methods: {
     setImage: 'set_image',
@@ -168,7 +164,7 @@ const profileResource = useDoc<GPUserProfile, ProfileMethods>({
 
 const userResource = useDoc<UserDoc>({
   doctype: 'User',
-  name: computed(() => sessionUser.name),
+  name: () => sessionUser.name,
   immediate: false,
 })
 

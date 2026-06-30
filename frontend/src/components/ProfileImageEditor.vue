@@ -34,7 +34,8 @@ interface ResourceCall<TParams = void, TResult = unknown> {
 }
 
 interface ProfileResource {
-  doc: ProfileDoc
+  // Mirrors useDoc's resource shape, where `doc` is null until the document loads.
+  doc: ProfileDoc | null
   setImage: ResourceCall<{ image: string | null }>
 }
 
@@ -88,10 +89,12 @@ async function saveCroppedImage() {
 
 async function setUserImage(url: string | null) {
   await props.profile.setImage.submit({ image: url })
-  props.profile.doc.image = url
-  props.profile.doc.is_image_background_removed = 0
-  props.profile.doc.image_background_color = ''
-  props.profile.doc.original_image = ''
+  if (props.profile.doc) {
+    props.profile.doc.image = url
+    props.profile.doc.is_image_background_removed = 0
+    props.profile.doc.image_background_color = ''
+    props.profile.doc.original_image = ''
+  }
   sessionUser.user_image = url || ''
   sessionUser.is_image_background_removed = 0
   sessionUser.image_background_color = ''

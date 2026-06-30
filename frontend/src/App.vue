@@ -14,8 +14,8 @@
 </template>
 
 <script setup>
-import { computed, defineAsyncComponent, nextTick, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { computed, defineAsyncComponent, nextTick, shallowRef, watch } from 'vue'
+import { loadRouteLocation, useRoute, useRouter } from 'vue-router'
 import { FrappeUIProvider } from 'frappe-ui'
 import { ScrollAreaRoot } from 'reka-ui'
 import { users } from '@/data/users'
@@ -45,10 +45,29 @@ users.fetch()
 
 // On a /settings/* URL, render the page the dialog was opened over (or Home on a
 // cold load) behind the overlay; otherwise render the current route normally.
-const displayedRoute = computed(() => {
-  if (!route.matched.some((r) => r.meta?.settingsOverlay)) return route
-  return router.resolve(settingsBackgroundPath.value || getHomeRoute())
-})
+//
+// A resolved-but-never-navigated route still holds its lazy `() => import()`
+// components unresolved, which <router-view :route> renders as "[object Promise]"
+// (hit on a cold load / reload of a settings URL). loadRouteLocation() forces
+// those imports to resolve before we hand the route to the view.
+//
+// shallowRef (not ref): a route object holds its matched components, and deep
+// reactivity would wrap those component definitions in a Proxy ("received a
+// Component that was made into a reactive object" warning).
+const displayedRoute = shallowRef(route)
+watch(
+  [() => route.fullPath, settingsBackgroundPath],
+  async () => {
+    if (!route.matched.some((r) => r.meta?.settingsOverlay)) {
+      displayedRoute.value = route
+      return
+    }
+    const target = router.resolve(settingsBackgroundPath.value || getHomeRoute())
+    await loadRouteLocation(target)
+    displayedRoute.value = target
+  },
+  { immediate: true },
+)
 
 // Back-compat: ?settings=notifications deep links now redirect to the canonical
 // settings URL.

@@ -1,51 +1,55 @@
 <template>
-  <SettingsPanel>
-    <SettingsHeader>
-      <div class="flex flex-col gap-4">
-        <h2 class="text-lg-semibold text-ink-gray-8">Users</h2>
-        <div class="flex items-center justify-between gap-3">
-          <TextInput
-            class="w-72"
-            placeholder="Search by name or email"
-            @input="search = $event.target.value"
-            :debounce="300"
-          >
-            <template #prefix>
-              <span class="lucide-search h-4 w-4 text-ink-gray-4" />
-            </template>
-          </TextInput>
-          <Button icon-left="lucide-plus" @click="showInviteDialog = true">Invite</Button>
-        </div>
+  <SettingsHeader>
+    <div class="flex flex-col gap-4">
+      <h2 class="text-lg-semibold text-ink-gray-8">Users</h2>
+      <div class="flex items-center justify-between gap-3">
+        <TextInput
+          class="w-72"
+          placeholder="Search by name or email"
+          @input="search = $event.target.value"
+          :debounce="300"
+        >
+          <template #prefix>
+            <span class="lucide-search h-4 w-4 text-ink-gray-4" />
+          </template>
+        </TextInput>
+        <Button icon-left="lucide-plus" @click="showInviteDialog = true">Invite</Button>
       </div>
+    </div>
 
-      <button
-        v-if="pendingInvites.data?.length"
-        class="mt-2 flex w-full items-center justify-between gap-3 rounded bg-surface-gray-2 px-3 py-2 text-left transition-colors hover:bg-surface-gray-3"
-        @click="showInviteDialog = true"
-      >
-        <span class="flex items-center gap-2 text-base text-ink-gray-7">
-          <span class="lucide-mail h-4 w-4 text-ink-gray-5" />
-          {{ pendingInvitesLabel }}
-        </span>
-        <span class="text-base text-ink-gray-6">View</span>
-      </button>
+    <button
+      v-if="pendingInvites.data?.length"
+      class="mt-2 flex w-full items-center justify-between gap-3 rounded bg-surface-gray-2 px-3 py-2 text-left transition-colors hover:bg-surface-gray-3"
+      @click="showInviteDialog = true"
+    >
+      <span class="flex items-center gap-2 text-base text-ink-gray-7">
+        <span class="lucide-mail h-4 w-4 text-ink-gray-5" />
+        {{ pendingInvitesLabel }}
+      </span>
+      <span class="text-base text-ink-gray-6">View</span>
+    </button>
 
-      <div
-        class="mt-3 grid grid-cols-[minmax(0,1fr)_12.5rem_7.5rem_2rem] items-center gap-2 border-b h-8 text-sm text-ink-gray-5"
-      >
-        <SortHeader field="name" label="User" />
-        <SortHeader field="role" label="Role" />
-        <SortHeader field="creation" label="User since" />
-        <div />
-      </div>
-    </SettingsHeader>
+    <div
+      class="mt-3 grid grid-cols-[minmax(0,1fr)_12.5rem_7.5rem_2rem] items-center gap-2 border-b h-8 text-sm text-ink-gray-5"
+    >
+      <SortHeader field="name" label="User" />
+      <SortHeader field="role" label="Role" />
+      <SortHeader field="creation" label="User since" />
+      <div />
+    </div>
+  </SettingsHeader>
 
-    <SettingsBody>
+  <!-- Virtualized: only the rows in/near the viewport mount, so a large team
+       never instantiates hundreds of role Selects at once. useVirtualList drives
+       off SettingsBody's exposed scroll viewport, keeping the styled scrollbar. -->
+  <SettingsBody ref="body">
+    <div v-bind="wrapperProps">
       <div class="divide-y">
         <div
-          class="grid grid-cols-[minmax(0,1fr)_12.5rem_7.5rem_2rem] items-center gap-2 py-2"
-          v-for="user in filteredUsers"
+          class="grid grid-cols-[minmax(0,1fr)_12.5rem_7.5rem_2rem] items-center gap-2"
+          v-for="{ data: user } in list"
           :key="user.name"
+          :style="{ height: ROW_HEIGHT + 'px' }"
         >
           <div class="flex min-w-0 items-center">
             <UserAvatar :user="user.name" size="xl" />
@@ -79,21 +83,24 @@
           </div>
         </div>
       </div>
-    </SettingsBody>
+    </div>
+  </SettingsBody>
 
-    <Dialog v-model:open="showInviteDialog">
-      <InvitePeople />
-    </Dialog>
-  </SettingsPanel>
+  <Dialog v-model:open="showInviteDialog">
+    <InvitePeople />
+  </Dialog>
 </template>
 <script setup lang="ts">
-import { computed, h, ref, watch } from 'vue'
+// Declared so the parent's @close-dialog isn't treated as a failed attribute
+// fallthrough (this component renders a fragment); it simply isn't emitted here.
+defineEmits<{ (e: 'close-dialog'): void }>()
+import { computed, h, ref, useTemplateRef, watch, watchEffect, type Ref } from 'vue'
+import { useEventListener, useVirtualList } from '@vueuse/core'
 import {
   Button,
   Dialog,
   SettingsBody,
   SettingsHeader,
-  SettingsPanel,
   Select,
   Tooltip,
   dialog,
@@ -175,14 +182,14 @@ watch(showInviteDialog, (open, wasOpen) => {
 
 // `users` is a useCall resource (no setData); refetch after mutations so the
 // list — role labels and membership — reflects the server-side change.
-const changeUserRoleCall = useCall({
+const changeUserRoleCall = useCall<unknown, { user: string; role: string }>({
   url: 'gameplan.api.change_user_role',
   immediate: false,
   onSuccess: () => users.reload(),
 })
 // Backend endpoint is named remove_user, but it disables the account
 // (sets enabled = 0) rather than deleting it.
-const disableUserCall = useCall({
+const disableUserCall = useCall<unknown, { user: string }>({
   url: 'gameplan.api.remove_user',
   immediate: false,
   onSuccess: () => users.reload(),
@@ -199,6 +206,32 @@ const filteredUsers = computed(() => {
   }
   return [...list].sort(compareUsers)
 })
+
+// Virtualize the list: only the rows in (and just outside) the viewport mount, so a
+// large team never instantiates hundreds of role Selects at once. Rows are a fixed
+// height, which keeps the windowing exact — the row's inline height must match
+// ROW_HEIGHT or the scroll position drifts.
+const ROW_HEIGHT = 64
+const body = useTemplateRef<{ viewportElement: HTMLElement | null }>('body')
+// useVirtualList types its source as a writable `MaybeRef<T[]>`, but it only ever
+// reads the list — so passing our readonly computed is safe; assert it to Ref.
+const { list, containerProps, wrapperProps } = useVirtualList(filteredUsers as Ref<UserRow[]>, {
+  itemHeight: ROW_HEIGHT,
+  overscan: 6,
+})
+
+// useVirtualList wants to own its scroll container, but we want SettingsBody's
+// styled scrollbar. So instead of binding containerProps to our own element, point
+// the virtualizer's container ref at SettingsBody's exposed reka scroll viewport
+// and forward that element's scroll events to it.
+watchEffect(() => {
+  containerProps.ref.value = body.value?.viewportElement ?? null
+})
+useEventListener(
+  () => containerProps.ref.value,
+  'scroll',
+  () => containerProps.onScroll(),
+)
 
 function toggleSort(field: SortField) {
   if (sortField.value === field) {
@@ -247,7 +280,9 @@ function changeUserRole(user: UserRow, role: string) {
   })
 }
 
-function onRoleChange(user: UserRow, role: string) {
+function onRoleChange(user: UserRow, role: unknown) {
+  // Select emits SelectOptionValue | undefined; narrow to the string role id.
+  if (typeof role !== 'string') return
   const isValidRole = roleOptions.some((option) => option.value === role)
   if (!isValidRole || role === user.role) return
   changeUserRole(user, role)

@@ -1,13 +1,14 @@
 <template>
-  <SettingsDialog v-model="show" size="5xl" :shortcut="false">
+  <SettingsDialog
+    v-model="show"
+    v-model:tab="activeTabValue"
+    size="5xl"
+    :shortcut="false"
+    :unmount-on-hide="false"
+  >
     <SettingsSidebar>
       <SettingsNavGroup v-for="group in tabGroups" :key="group.label" :label="group.label">
-        <SettingsNavItem
-          v-for="tab in group.tabs"
-          :key="tab.label"
-          :active="activeTab?.label == tab.label"
-          @click="selectTab(tab)"
-        >
+        <SettingsNavItem v-for="tab in group.tabs" :key="tab.label" :value="tab.slug">
           <template #prefix>
             <UserAvatar
               v-if="tab.prefix === 'session-avatar'"
@@ -22,13 +23,24 @@
       </SettingsNavGroup>
     </SettingsSidebar>
     <SettingsContent>
-      <component v-if="activeTab" :is="activeTab.component" @close-dialog="show = false" />
+      <!-- One reka-ui tabpanel per tab. unmount-on-hide=false keeps a visited
+           panel mounted (just hidden) so switching back is instant and inactive
+           tabs keep reacting to shared state (e.g. communitiesTarget); the v-if
+           defers first mount until a tab is opened, so the heavy Users and
+           Communities trees stay lazy. -->
+      <SettingsPanel v-for="tab in tabs" :key="tab.slug" :value="tab.slug">
+        <component
+          v-if="visitedTabs.has(tab.slug)"
+          :is="tab.component"
+          @close-dialog="show = false"
+        />
+      </SettingsPanel>
     </SettingsContent>
   </SettingsDialog>
 </template>
 
 <script setup lang="ts">
-import { computed, markRaw, watch } from 'vue'
+import { computed, markRaw, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useEventListener } from '@vueuse/core'
 import {
@@ -37,17 +49,18 @@ import {
   SettingsNavGroup,
   SettingsNavItem,
   SettingsContent,
+  SettingsPanel,
 } from 'frappe-ui'
 import { show, activeTab, registerTabs, settingsBackgroundPath, type Tab } from './index'
 import { getHomeRoute } from '@/router'
 import UserAvatar from '@/components/UserAvatar.vue'
 import { isGameplanAdmin, useSessionUser } from '@/data/users'
 import { useCanManageCommunities } from '@/composables/useCanManageCommunities'
-import Members from './Members.vue'
+import MembersSettings from './MembersSettings.vue'
 import CommunitiesSettings from './CommunitiesSettings.vue'
 import NotificationsSettings from './NotificationsSettings.vue'
 import ProfileSettings from './ProfileSettings.vue'
-import EmojiSettings from './EmojiSettings.vue'
+import CustomEmojiSettings from './CustomEmojiSettings.vue'
 import PreferencesSettings from './PreferencesSettings.vue'
 
 interface SettingsTab extends Tab {
@@ -105,7 +118,7 @@ const allTabs: SettingsTab[] = [
     slug: 'emojis',
     group: 'App settings',
     icon: 'lucide-smile-plus',
-    component: markRaw(EmojiSettings),
+    component: markRaw(CustomEmojiSettings),
     adminOnly: true,
   },
   {
@@ -113,7 +126,7 @@ const allTabs: SettingsTab[] = [
     slug: 'users',
     group: 'Administration',
     icon: 'lucide-users',
-    component: markRaw(Members),
+    component: markRaw(MembersSettings),
     adminOnly: true,
   },
 ]
@@ -181,9 +194,27 @@ watch(show, (open) => {
   }
 })
 
-function selectTab(tab: SettingsTab) {
-  router.push({ name: 'SettingsTab', params: { tab: tab.slug } })
-}
+// Drives reka-ui Tabs (v-model:tab): the value mirrors the active slug, and
+// selecting a tab (click or keyboard) pushes the canonical settings URL, which
+// the route watcher above resolves back into activeTab.
+const activeTabValue = computed<string>({
+  get: () => activeTab.value?.slug ?? '',
+  set: (slug) => {
+    if (slug) router.push({ name: 'SettingsTab', params: { tab: slug } })
+  },
+})
+
+// Track which tabs have been opened so their panels mount lazily (the heavy
+// Users/Communities trees only build on first visit). Combined with the kit's
+// :unmount-on-hide="false", a visited panel then stays mounted and cached.
+const visitedTabs = ref(new Set<string>())
+watch(
+  () => activeTab.value?.slug,
+  (slug) => {
+    if (slug) visitedTabs.value.add(slug)
+  },
+  { immediate: true },
+)
 
 // Route-aware Cmd/Ctrl+Shift+. toggle. The kit's built-in shortcut is disabled
 // (:shortcut="false") because the dialog's open state is driven by the URL here.

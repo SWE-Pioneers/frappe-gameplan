@@ -1,62 +1,51 @@
 <template>
-  <SettingsPanel>
-    <SettingsHeader>
-      <h2 class="text-lg-semibold text-ink-gray-8">Notifications</h2>
-    </SettingsHeader>
+  <SettingsHeader>
+    <h2 class="text-lg-semibold text-ink-gray-8">Notifications</h2>
+  </SettingsHeader>
 
-    <SettingsBody>
-      <div class="space-y-11 pt-6">
-        <section>
-          <div class="divide-y divide-outline-gray-1">
-            <SettingsRow
-              title="Enable email digests"
-              description="Send a summary of missed activity"
-            >
-              <Switch v-model="emailDigestEnabled" />
-            </SettingsRow>
+  <SettingsBody>
+    <div class="space-y-11 pt-6">
+      <section>
+        <div class="divide-y divide-outline-gray-1">
+          <SettingsRow title="Enable email digests" description="Send a summary of missed activity">
+            <Switch v-model="emailDigestEnabled" />
+          </SettingsRow>
 
-            <SettingsRow
-              v-if="emailDigestEnabled"
-              title="Digest frequency"
-              description="Choose how often you receive your digest"
-            >
-              <Select
-                :options="emailDigestFrequencyOptions"
-                :model-value="emailDigestFrequency"
-                @update:model-value="saveDigestFrequency"
-              />
-            </SettingsRow>
+          <SettingsRow
+            v-if="emailDigestEnabled"
+            title="Digest frequency"
+            description="Choose how often you receive your digest"
+          >
+            <Select :options="emailDigestFrequencyOptions" v-model="selectedDigestFrequency" />
+          </SettingsRow>
 
-            <SettingsRow
-              v-if="emailDigestEnabled"
-              title="Send on"
-              description="Choose the weekday for your digest"
-            >
-              <Select
-                :options="emailDigestDayOptions"
-                :model-value="emailDigestDayOfWeek"
-                @update:model-value="saveDigestDayOfWeek"
-              />
-            </SettingsRow>
+          <SettingsRow
+            v-if="emailDigestEnabled"
+            title="Send on"
+            description="Choose the weekday for your digest"
+          >
+            <Select :options="emailDigestDayOptions" v-model="selectedDigestDayOfWeek" />
+          </SettingsRow>
 
-            <SettingsRow title="Last sent" description="The most recent digest email sent to you">
-              <div class="text-base text-ink-gray-6">{{ emailDigestLastSentOn }}</div>
-            </SettingsRow>
-          </div>
-        </section>
-      </div>
-    </SettingsBody>
-  </SettingsPanel>
+          <SettingsRow title="Last sent" description="The most recent digest email sent to you">
+            <div class="text-base text-ink-gray-6">{{ emailDigestLastSentOn }}</div>
+          </SettingsRow>
+        </div>
+      </section>
+    </div>
+  </SettingsBody>
 </template>
 
 <script setup lang="ts">
+// Declared so the parent's @close-dialog isn't treated as a failed attribute
+// fallthrough (this component renders a fragment); it simply isn't emitted here.
+defineEmits<{ (e: 'close-dialog'): void }>()
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import {
   dayjsLocal,
   Select,
   SettingsBody,
   SettingsHeader,
-  SettingsPanel,
   SettingsRow,
   Switch,
   toast,
@@ -108,6 +97,16 @@ const emailDigestEnabled = computed({
   set(enabled: boolean) {
     saveDigestFrequency(enabled ? DEFAULT_ENABLED_FREQUENCY : 'Off')
   },
+})
+// Writable computeds keep the Select's wide `SelectOptionValue | undefined` emit
+// from leaking into our narrow handlers — v-model narrows it to the typed union.
+const selectedDigestFrequency = computed({
+  get: () => emailDigestFrequency.value,
+  set: saveDigestFrequency,
+})
+const selectedDigestDayOfWeek = computed({
+  get: () => emailDigestDayOfWeek.value,
+  set: saveDigestDayOfWeek,
 })
 const emailDigestLastSentOn = computed(() => {
   if (!sessionUser.email_digest_last_sent_on) return 'Not sent yet'
@@ -191,13 +190,14 @@ async function saveDigestPreference() {
   isSavingDigestPreference.value = true
 
   try {
-    let profile = await userProfiles.setValue.submit({
+    // setValue.submit resolves to void; the values we sent are exactly what got
+    // persisted, so treat the submitted snapshot as the saved state.
+    await userProfiles.setValue.submit({
       name: sessionUser.user_profile,
       ...preferences,
     })
-    let savedPreferences = toDigestPreferences(profile)
-    savedDigestPreferences.value = savedPreferences
-    updateSessionDigestPreferences(savedPreferences)
+    savedDigestPreferences.value = preferences
+    updateSessionDigestPreferences(preferences)
     if (hasSameDigestPreferences(preferences, getLocalDigestPreferences())) {
       toast.success('Email digest preference saved', { id: digestPreferenceToastId })
     }
@@ -262,12 +262,5 @@ function hasSameDigestPreferences(left: EmailDigestPreferences, right: EmailDige
     left.email_digest_frequency === right.email_digest_frequency &&
     left.email_digest_day_of_week === right.email_digest_day_of_week
   )
-}
-
-function toDigestPreferences(profile: GPUserProfile): EmailDigestPreferences {
-  return {
-    email_digest_frequency: profile.email_digest_frequency || 'Off',
-    email_digest_day_of_week: profile.email_digest_day_of_week || 'Monday',
-  }
 }
 </script>
