@@ -11,11 +11,14 @@ export type ProfileBentoCardLoadResult =
   | {
       cards: ProfileBentoCard[]
       isDefault?: boolean
+      starterCards?: ProfileBentoCard[]
     }
 
 export function useProfileBentoCustomization(source: ProfileBentoCardSource) {
   const cards = ref<ProfileBentoCard[]>([])
+  const starterCards = ref<ProfileBentoCard[]>([])
   const selectedCardId = ref('')
+  const isNewProfilePage = ref(false)
   const isSaving = ref(false)
   const savedSnapshot = ref('')
 
@@ -33,10 +36,11 @@ export function useProfileBentoCustomization(source: ProfileBentoCardSource) {
 
   async function loadDraft() {
     let loadResult = await source.load()
-    let loadedCards = getLoadedCards(loadResult)
-    cards.value = cloneCards(loadedCards)
+    isNewProfilePage.value = isDefaultLoadResult(loadResult)
+    starterCards.value = cloneCards(getStarterCards(loadResult))
+    cards.value = isNewProfilePage.value ? [] : cloneCards(getLoadedCards(loadResult))
     selectedCardId.value = ''
-    savedSnapshot.value = isDefaultLoadResult(loadResult) ? '' : serializeCards(cards.value)
+    savedSnapshot.value = serializeCards(cards.value)
   }
 
   async function saveDraft() {
@@ -44,9 +48,16 @@ export function useProfileBentoCustomization(source: ProfileBentoCardSource) {
     try {
       await source.save(cloneCards(cards.value))
       savedSnapshot.value = serializeCards(cards.value)
+      isNewProfilePage.value = false
     } finally {
       isSaving.value = false
     }
+  }
+
+  function startWithStarterCards() {
+    if (!isNewProfilePage.value) return
+    cards.value = cloneCards(starterCards.value)
+    selectedCardId.value = cards.value[0]?.id || ''
   }
 
   function addCard(type: ProfileCardType) {
@@ -101,20 +112,23 @@ export function useProfileBentoCustomization(source: ProfileBentoCardSource) {
 
   function setCardImage(cardId: string, imageUrl: string) {
     let card = cards.value.find((card) => card.id === cardId)
-    if (!card || card.type !== 'Image') return
+    if (!card || !isImageCapableCard(card)) return
     card.image = imageUrl
     selectedCardId.value = cardId
   }
 
   return {
     cards,
+    starterCards,
     selectedCardId,
     selectedCard,
     selectedTextCharactersLeft,
+    isNewProfilePage,
     isDirty,
     isSaving,
     loadDraft,
     saveDraft,
+    startWithStarterCards,
     addCard,
     reorderCards,
     removeCard,
@@ -128,16 +142,6 @@ export function useProfileBentoCustomization(source: ProfileBentoCardSource) {
 
 function createCard(type: ProfileCardType): ProfileBentoCard {
   let id = `${type}-${Date.now()}`
-  if (type === 'Image') {
-    return {
-      id,
-      type,
-      size: '1x1',
-      title: 'Image',
-      imageRendering: 'Cover',
-      imagePosition: 50,
-    }
-  }
   if (type === 'Blank') {
     return {
       id,
@@ -148,11 +152,17 @@ function createCard(type: ProfileCardType): ProfileBentoCard {
   }
   return {
     id,
-    type,
+    type: 'Card',
     size: '2x1',
-    title: 'New note',
-    text: 'A short thought for this card.',
+    title: 'New card',
+    text: 'Share a short introduction, link, or image.',
+    imageRendering: 'Cover',
+    imagePosition: 50,
   }
+}
+
+function isImageCapableCard(card: ProfileBentoCard) {
+  return card.type === 'Card' || card.type === 'Image' || card.type === 'Text'
 }
 
 function cloneCards(cards: ProfileBentoCard[]) {
@@ -165,6 +175,10 @@ function getLoadedCards(loadResult: ProfileBentoCardLoadResult) {
 
 function isDefaultLoadResult(loadResult: ProfileBentoCardLoadResult) {
   return !Array.isArray(loadResult) && Boolean(loadResult.isDefault)
+}
+
+function getStarterCards(loadResult: ProfileBentoCardLoadResult) {
+  return Array.isArray(loadResult) ? [] : loadResult.starterCards || []
 }
 
 function serializeCards(cards: ProfileBentoCard[]) {

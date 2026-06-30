@@ -18,7 +18,7 @@
         variant="outline"
         size="xs"
         icon="lucide-x"
-        :label="`Remove ${card.type} card`"
+        :label="`Remove ${cardTypeLabel} card`"
         @click.stop="$emit('remove')"
         @pointerdown.stop
       />
@@ -26,23 +26,15 @@
 
     <div v-if="card.type === 'Blank'" class="h-full" />
 
-    <div v-else-if="card.type === 'Text'" class="flex h-full flex-col justify-between p-3 sm:p-4">
+    <div v-else-if="showTextLayout" class="flex h-full flex-col justify-between p-3 sm:p-4">
       <div class="flex items-center gap-1.5 pb-2 text-xs font-medium text-ink-gray-5 sm:text-sm">
         {{ card.title }}
         <span v-if="card.url" class="lucide-arrow-up-right size-3.5" aria-hidden="true" />
       </div>
       <p :class="textClass">{{ textCardBody }}</p>
-      <a
-        v-if="!interactive && card.url"
-        class="absolute inset-0"
-        :href="card.url"
-        target="_blank"
-        rel="noreferrer"
-        :aria-label="card.title"
-      />
     </div>
 
-    <div v-else-if="card.type === 'Image'" class="h-full">
+    <div v-else class="h-full">
       <div ref="imageFrame" :class="imageFrameClass">
         <img
           v-if="imageUrl"
@@ -115,7 +107,15 @@
             :class="imageTitleClass"
           >
             {{ card.title }}
+            <span v-if="card.url" class="lucide-arrow-up-right size-3.5" aria-hidden="true" />
           </div>
+        </div>
+        <div
+          v-if="imageCardBody"
+          class="absolute inset-x-0 bottom-0 p-3 sm:p-4"
+          :class="imageBodyClass"
+        >
+          <p :class="imageBodyTextClass">{{ imageCardBody }}</p>
         </div>
         <div
           v-if="repositioning && imageUrl"
@@ -141,6 +141,15 @@
         </div>
       </div>
     </div>
+
+    <a
+      v-if="!interactive && card.url && card.type !== 'Blank'"
+      class="absolute inset-0"
+      :href="card.url"
+      target="_blank"
+      rel="noreferrer"
+      :aria-label="card.title"
+    />
 
     <div v-if="showSize">
       <Badge>{{ card.size }}</Badge>
@@ -200,7 +209,7 @@ const cardChromeClass = computed(() => {
       ? 'border border-outline-gray-4 ring-2 ring-outline-gray-2'
       : 'border border-transparent hover:bg-surface-gray-2'
   }
-  if (props.card.type === 'Image') {
+  if (showImageLayout.value) {
     if (!imageUrl.value && !props.selected) return 'border border-outline-gray-2'
     return props.selected
       ? 'border border-outline-gray-4 ring-2 ring-outline-gray-2'
@@ -213,7 +222,7 @@ const cardChromeClass = computed(() => {
 
 const cardShellClass = computed(() => {
   if (props.card.type === 'Blank') return ''
-  if (props.card.type === 'Image') return ''
+  if (showImageLayout.value) return ''
   return 'bg-surface-base'
 })
 
@@ -225,6 +234,18 @@ const dragClass = computed(() => {
 
 const textClass = computed(() => {
   return 'text-base font-medium leading-snug text-ink-gray-9 sm:text-xl'
+})
+
+const cardTypeLabel = computed(() => {
+  return props.card.type === 'Blank' ? 'blank' : 'profile'
+})
+
+const showImageLayout = computed(() => {
+  return props.card.type === 'Image' || Boolean(imageUrl.value)
+})
+
+const showTextLayout = computed(() => {
+  return !showImageLayout.value
 })
 
 const imageFrameClass = computed(() => {
@@ -257,7 +278,7 @@ const currentImagePosition = computed(() => {
 const imageCaptionClass = computed(() => {
   if (!imageUrl.value) return ''
   if (imageRendering.value !== 'Cover') return ''
-  return `bg-gradient-to-b from-surface-gray-9/70 to-transparent ${
+  return `bg-gradient-to-b from-surface-gray-7/50 to-transparent dark:from-surface-white/70 ${
     imageGradientClassBySize[props.card.size]
   }`
 })
@@ -266,6 +287,16 @@ const imageTitleClass = computed(() => {
   if (!imageUrl.value) return 'text-ink-gray-6'
   if (imageRendering.value !== 'Cover') return 'text-ink-gray-6'
   return 'text-ink-gray-1'
+})
+
+const imageBodyClass = computed(() => {
+  if (imageRendering.value !== 'Cover') return 'bg-surface-base/90'
+  return 'bg-gradient-to-t from-surface-gray-7/75 to-transparent dark:from-surface-white/75'
+})
+
+const imageBodyTextClass = computed(() => {
+  if (imageRendering.value !== 'Cover') return 'text-sm font-medium leading-snug text-ink-gray-9'
+  return 'text-sm font-medium leading-snug text-ink-white'
 })
 
 const showImageEmptyCopy = computed(() => {
@@ -282,6 +313,10 @@ const imageUrl = computed(() => {
 
 const textCardBody = computed(() => {
   return props.card.text
+})
+
+const imageCardBody = computed(() => {
+  return props.card.text?.trim()
 })
 
 function selectCard() {
