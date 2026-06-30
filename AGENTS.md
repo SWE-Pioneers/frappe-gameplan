@@ -28,13 +28,17 @@ Local dev site is `gameplan-demo.test` (CI uses `gameplan.test`).
 - E2E: `cd frontend && yarn test` (Cypress, specs in `frontend/cypress/e2e/`). **Always run Cypress against the demo site `gameplan-demo.test`, never another local site** — specs call `gameplan.test_api.clear_data`, which deletes ALL Gameplan data on whichever site the request resolves to. Requires `enable_ui_tests: 1` in that site's `site_config.json`. Before running, confirm the local `frappe serve` actually resolves `gameplan-demo.test:8000` to the demo site (host aliasing can route it to the default/dev site and wipe real data).
 - frappe-ui units: `cd frappe-ui && yarn test` (Vitest)
 - Lint: `pre-commit run --all-files` (ruff for Python — tabs, double quotes, line 110; Prettier for frontend)
+- Login to site by fetching sid: bench --site gameplan-demo.test browse --user <user> --sid
 
 ## Frontend conventions
 
 - `<script setup lang="ts">` + Composition API. Small component → single file; large → folder with `index.ts`.
 - Prefer `useTemplateRef` over `ref`/`querySelector` for DOM access.
 - **Data fetching**: only frappe-ui's `useList` / `useDoc` / `useCall` — never `useFetch`. Examples in `frontend/src/data/`.
-- **Styling / design / Tailwind**: follow `./frappe-ui/skills/frappe-ui/SKILL.md` (components + semantic design tokens). Gameplan rule: **gray shades only — never color shades, even for primary states.**
+- Always prefer `/api/v2` endpoints over v1
+- **Styling / design / Tailwind**
+  - Follow `./frappe-ui/skills/frappe-ui/SKILL.md` (components + semantic design tokens)
+  - Gameplan rule: **gray shades only — never color shades, even for primary states.**
 - @vueuse/core is available — prefer it over custom implementations.
 
 ## Backend conventions
@@ -43,6 +47,10 @@ Local dev site is `gameplan-demo.test` (CI uses `gameplan.test`).
 - Prefer `frappe.qb` for writing database patches as well.
 - Permissions: `has_permission` hooks in `hooks.py` (e.g. `GP Page`); community/space membership gates access.
 - Debugging: add `def execute():` to a file like `gameplan/debug.py`, run via `bench --site gameplan-demo.test execute gameplan.debug.execute`.
+
+## Feature Verification
+
+When building a feature with UI, always verify it in browser. Use in-app browser if available, otherwise use Chrome Devtools MCP. Create a test user (or users) for yourself on the local site you are testing.
 
 ## Code comments
 
