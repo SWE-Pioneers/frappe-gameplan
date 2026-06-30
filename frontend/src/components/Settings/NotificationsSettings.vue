@@ -51,10 +51,19 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
-import { dayjsLocal, Select, Switch, toast, useDoctype } from 'frappe-ui'
+import {
+  dayjsLocal,
+  Select,
+  SettingsBody,
+  SettingsHeader,
+  SettingsPanel,
+  SettingsRow,
+  Switch,
+  toast,
+  useDoctype,
+} from 'frappe-ui'
 import { useSessionUser, type EmailDigestDayOfWeek, type EmailDigestFrequency } from '@/data/users'
 import type { GPUserProfile } from '@/types/doctypes'
-import { SettingsBody, SettingsHeader, SettingsPanel, SettingsRow } from './base'
 
 const sessionUser = useSessionUser()
 const userProfiles = useDoctype<GPUserProfile>('GP User Profile')
