@@ -131,26 +131,9 @@ class GPProject(ManageMembersMixin, Archivable, Document):
 		)
 
 	@frappe.whitelist()
-	def follow(self):
-		if not self.is_followed:
-			frappe.get_doc(doctype="GP Followed Project", project=self.name).insert(ignore_permissions=True)
-
-	@frappe.whitelist()
-	def unfollow(self):
-		follow_id = frappe.db.get_value(
-			"GP Followed Project", {"project": self.name, "user": frappe.session.user}
-		)
-		frappe.delete_doc("GP Followed Project", follow_id)
-
-	@frappe.whitelist()
 	def add_member(self, user):
 		require_can_manage_space_members(self)
 		self.add_member_row(user)
-
-	@frappe.whitelist()
-	def invite_members(self, emails):
-		require_can_manage_space_members(self)
-		return super().invite_members(emails)
 
 	@frappe.whitelist()
 	def remove_member(self, user):

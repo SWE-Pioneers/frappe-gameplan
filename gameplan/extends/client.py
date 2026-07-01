@@ -49,28 +49,3 @@ def apply_custom_filters(doctype, query):
 			query = return_value
 
 	return query
-
-
-@frappe.whitelist()
-def batch(requests):
-	from frappe.app import handle_exception
-	from frappe.handler import execute_cmd
-
-	requests = frappe.parse_json(requests)
-	responses = []
-
-	for i, request_params in enumerate(requests):
-		savepoint = f"batch_request_{i}"
-		try:
-			frappe.db.savepoint(savepoint)
-			cmd = request_params.pop("cmd")
-			frappe.form_dict.update(request_params)
-			response = execute_cmd(cmd)
-			frappe.db.release_savepoint(savepoint)
-		except Exception as e:
-			frappe.db.rollback(save_point=savepoint)
-			response = handle_exception(e)
-
-		responses.append(response)
-
-	return responses

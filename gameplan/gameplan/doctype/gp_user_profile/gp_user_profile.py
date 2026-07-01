@@ -2,7 +2,6 @@
 # For license information, please see license.txt
 
 import re
-from time import sleep
 from urllib.parse import urlparse
 
 import frappe
@@ -10,7 +9,6 @@ from frappe.model.document import Document
 from frappe.model.naming import append_number_if_name_exists
 from frappe.query_builder.functions import Count
 from frappe.website.utils import cleanup_page_name
-from rq.job import JobStatus
 
 import gameplan
 from gameplan.api import get_user_info, require_admin
@@ -47,50 +45,6 @@ class GPUserProfile(HasAttachments, Document):
 		self.original_image = None
 		self.save()
 		gameplan.refetch_resource("Users")
-
-	@frappe.whitelist()
-	def remove_image_background(self, default_color=None):
-		from gameplan.gameplan.doctype.gp_user_profile.profile_photo import is_rembg_available
-
-		if not is_rembg_available():
-			frappe.throw("Background removal feature is not available. Please install the rembg package.")
-
-		if not self.image:
-			frappe.throw("Profile image not found")
-
-		job_id = f"remove-img-bg-{self.name}"
-		job = frappe.enqueue(
-			remove_imgbg_in_background,
-			profile_name=self.name,
-			default_color=default_color,
-			at_front=True,
-			job_id=job_id,
-		)
-		while True:
-			status = job.get_status()
-			if status in (JobStatus.QUEUED, JobStatus.STARTED, JobStatus.SCHEDULED):
-				print("Waiting for job to complete:", job_id, status)
-				sleep(1)
-			elif status in (JobStatus.FINISHED, JobStatus.FAILED, JobStatus.CANCELED):
-				print("Job status:", job_id, status)
-				self.reload()
-				break
-
-	@frappe.whitelist()
-	def revert_image_background(self):
-		if self.original_image:
-			self.image = self.original_image
-			self.original_image = None
-			self.is_image_background_removed = False
-			self.image_background_color = None
-			self.save()
-			gameplan.refetch_resource("Users")
-
-	@frappe.whitelist()
-	def is_background_removal_available(self):
-		from gameplan.gameplan.doctype.gp_user_profile.profile_photo import is_rembg_available
-
-		return is_rembg_available()
 
 	@frappe.whitelist()
 	def change_user_role(self, role):
@@ -242,30 +196,6 @@ def get_list(
 		user.reactions_received = reactions_received_by_user.get(user.user, 0)
 
 	return data
-
-
-def remove_imgbg_in_background(profile_name, default_color=None):
-	from gameplan.gameplan.doctype.gp_user_profile.profile_photo import remove_background
-
-	profile = frappe.get_doc("GP User Profile", profile_name)
-	file = frappe.get_doc("File", {"file_url": profile.image})
-	profile.original_image = file.file_url
-	image_content = remove_background(file)
-	filename, extn = file.get_extension()
-	output_filename = f"{filename}_no_bg.png"
-	new_file = frappe.get_doc(
-		doctype="File",
-		file_name=output_filename,
-		content=image_content,
-		is_private=0,
-		attached_to_doctype=profile.doctype,
-		attached_to_name=profile.name,
-	).insert()
-	profile.image = new_file.file_url
-	profile.is_image_background_removed = True
-	profile.image_background_color = default_color
-	profile.save()
-	gameplan.refetch_resource("Users", user=profile.user)
 
 
 @frappe.whitelist(methods=["GET", "POST"])
