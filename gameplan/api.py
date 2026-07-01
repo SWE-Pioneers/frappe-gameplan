@@ -115,35 +115,7 @@ def get_user_info(user=None):
 	return users
 
 
-@frappe.whitelist()
-@validate_type
-def change_user_role(user: str, role: str):
-	require_admin()
-
-	if role not in ["Gameplan Guest", "Gameplan Member", "Gameplan Admin"]:
-		return get_user_info(user)[0]
-
-	user_doc = frappe.get_doc("User", user)
-	for _role in user_doc.roles:
-		if _role.role in ["Gameplan Guest", "Gameplan Member", "Gameplan Admin"]:
-			user_doc.remove(_role)
-	user_doc.append_roles(role)
-	user_doc.save(ignore_permissions=True)
-
-	return get_user_info(user)[0]
-
-
-@frappe.whitelist()
-@validate_type
-def remove_user(user: str):
-	require_admin()
-	user_doc = frappe.get_doc("User", user)
-	user_doc.enabled = 0
-	user_doc.save(ignore_permissions=True)
-	return user
-
-
-@frappe.whitelist()
+@frappe.whitelist(methods=["POST"])
 @validate_type
 def invite_by_email(emails: str, role: str, projects: list = None):
 	require_admin()
@@ -307,7 +279,7 @@ def get_unread_items_by_project(projects):
 	return out
 
 
-@frappe.whitelist()
+@frappe.whitelist(methods=["POST"])
 def mark_all_notifications_as_read():
 	Notification = frappe.qb.DocType("GP Notification")
 	(
@@ -394,7 +366,7 @@ def active_projects():
 	return projects
 
 
-@frappe.whitelist()
+@frappe.whitelist(methods=["POST"])
 def onboarding(community, space, icon, emails, is_private=0):
 	emails = frappe.parse_json(emails)
 

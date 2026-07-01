@@ -13,6 +13,7 @@ from frappe.website.utils import cleanup_page_name
 from rq.job import JobStatus
 
 import gameplan
+from gameplan.api import get_user_info, require_admin
 from gameplan.extends.client import check_permissions
 from gameplan.mixins.attachments import HasAttachments
 
@@ -90,6 +91,32 @@ class GPUserProfile(HasAttachments, Document):
 		from gameplan.gameplan.doctype.gp_user_profile.profile_photo import is_rembg_available
 
 		return is_rembg_available()
+
+	@frappe.whitelist()
+	def change_user_role(self, role):
+		require_admin()
+
+		if role not in ["Gameplan Guest", "Gameplan Member", "Gameplan Admin"]:
+			return get_user_info(self.user)[0]
+
+		user_doc = frappe.get_doc("User", self.user)
+		for _role in user_doc.roles:
+			if _role.role in ["Gameplan Guest", "Gameplan Member", "Gameplan Admin"]:
+				user_doc.remove(_role)
+		user_doc.append_roles(role)
+		user_doc.save(ignore_permissions=True)
+
+		return get_user_info(self.user)[0]
+
+	@frappe.whitelist()
+	def disable_user(self):
+		require_admin()
+
+		user_doc = frappe.get_doc("User", self.user)
+		user_doc.enabled = 0
+		user_doc.save(ignore_permissions=True)
+
+		return self.user
 
 
 def has_permission(doc, ptype="read", user=None):

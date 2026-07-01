@@ -36,6 +36,7 @@ Local dev site is `gameplan-demo.test` (CI uses `gameplan.test`).
 - Prefer `useTemplateRef` over `ref`/`querySelector` for DOM access.
 - **Data fetching**: only frappe-ui's `useList` / `useDoc` / `useCall` — never `useFetch`. Examples in `frontend/src/data/`.
 - Always prefer `/api/v2` endpoints over v1
+- `useCall` defaults to `method: 'GET'` — always pass `method: 'POST'` explicitly for calls that mutate data (see Backend conventions below for why a GET mutation silently no-ops)
 - **Styling / design / Tailwind**
   - Follow `./frappe-ui/skills/frappe-ui/SKILL.md` (components + semantic design tokens)
   - Gameplan rule: **gray shades only — never color shades, even for primary states.**
@@ -47,6 +48,8 @@ Local dev site is `gameplan-demo.test` (CI uses `gameplan.test`).
 - Prefer `frappe.qb` for writing database patches as well.
 - Permissions: `has_permission` hooks in `hooks.py` (e.g. `GP Page`); community/space membership gates access.
 - Debugging: add `def execute():` to a file like `gameplan/debug.py`, run via `bench --site gameplan-demo.test execute gameplan.debug.execute`.
+- Mutating `@frappe.whitelist()` endpoints must set `methods=["POST"]` (or another unsafe method) explicitly. Frappe rolls back the DB transaction at the end of any GET request (`frappe/app.py::sync_database`) regardless of what the function did — a mutation left reachable via GET runs, calls `save()` with no error, then gets silently discarded.
+- Prefer a doctype-scoped instance method (e.g. `GPUserProfile.set_image`, called via `useDoc({ methods })` → `POST /api/v2/document/<doctype>/<name>/method/<method>`) over a generic function in `api.py` when the action targets one specific document. Keep any admin/business-logic gate (e.g. `require_admin()`) inside the method itself — the doctype's own `has_permission` alone may be more permissive (e.g. letting a user write their own doc) than the action should allow.
 
 ## Feature Verification
 
@@ -61,3 +64,4 @@ Explain *why*, not *what*. JSDoc/TSDoc for complex functions/composables. No com
 - When editing code, always find opportunities to refactor code and leave it better than it was before
 - Prefer generic components and utilities if code is repeated in multiple areas
 - Prefer simpler code over complex
+- When working on a specific component in Gameplan, if some generic part could be extracted out which can benefit other Frappe apps via frappe-ui, suggest it.

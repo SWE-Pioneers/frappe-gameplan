@@ -1,14 +1,15 @@
 // Member-management coverage: the admin happy paths for inviting a member
 // (gameplan.api.invite_by_email), changing a member's role (change_user_role)
-// and disabling a member (remove_user), plus the authorization boundary.
+// and disabling a member (disable_user), plus the authorization boundary.
 //
 // Boundary note: the global user-management surfaces are admin-only in the UI.
 // SettingsDialog registers the "Users" tab (which holds the invite flow) only for
 // global admins, and the People page hides its Invite buttons for non-admins. So the non-admin
 // test below asserts those controls are ABSENT, not merely rejected. Server-side
-// `require_admin()` in gameplan/api.py is still the real enforcement (unit tested
-// in gameplan/tests/test_api_security.py) — hiding the UI just stops non-admins
-// from reaching controls that are guaranteed to 403.
+// `require_admin()` (called from GP User Profile's change_user_role/disable_user, and from
+// gameplan/api.py's invite_by_email) is still the real enforcement (unit tested in
+// gameplan/tests/test_api_security.py) — hiding the UI just stops non-admins from reaching
+// controls that are guaranteed to 403.
 describe('Member management', () => {
   const community = 'engineering'
 
@@ -29,9 +30,19 @@ describe('Member management', () => {
       fieldname: 'enabled',
       value: 1,
     })
-    cy.request('POST', '/api/v2/method/gameplan.api.change_user_role', {
-      user: 'john@example.com',
-      role: 'Gameplan Member',
+    // change_user_role is a GP User Profile doc method, so it's addressed by
+    // profile name, not user email — look that up first.
+    cy.request('POST', '/api/method/frappe.client.get_value', {
+      doctype: 'GP User Profile',
+      filters: JSON.stringify({ user: 'john@example.com' }),
+      fieldname: 'name',
+    }).then((response) => {
+      const johnProfile = response.body.message.name
+      cy.request(
+        'POST',
+        `/api/v2/document/GP User Profile/${johnProfile}/method/change_user_role`,
+        { role: 'Gameplan Member' },
+      )
     })
 
     // A joined public community + space gives the desktop shell a valid landing
@@ -79,7 +90,7 @@ describe('Member management', () => {
   // Note: the admin role-change and disable happy-paths are driven through a
   // reka-ui Select / danger-confirm nested inside the Settings modal, which does
   // not register reliably in Cypress. Those mutations (change_user_role,
-  // remove_user) and their authorization are covered by the backend suites
+  // disable_user) and their authorization are covered by the backend suites
   // gameplan/tests/test_api_security.py and test_permissions_backend.py.
 
   it('hides global member-management controls from non-admins', () => {

@@ -282,7 +282,7 @@ def update_project_team_reference(doctype: str, project: str, team: str | None):
 	(frappe.qb.update(DocType).set(DocType.team, team).where(DocType.project == str(project))).run()
 
 
-@frappe.whitelist()
+@frappe.whitelist(methods=["POST"])
 def join_spaces(spaces: list[str] = None):
 	if not spaces:
 		return
@@ -290,7 +290,7 @@ def join_spaces(spaces: list[str] = None):
 		frappe.get_doc("GP Project", space).join()
 
 
-@frappe.whitelist()
+@frappe.whitelist(methods=["POST"])
 def leave_spaces(spaces: list[str] = None):
 	if not spaces:
 		return
@@ -298,7 +298,7 @@ def leave_spaces(spaces: list[str] = None):
 		frappe.get_doc("GP Project", space).leave()
 
 
-@frappe.whitelist()
+@frappe.whitelist(methods=["POST"])
 def mark_all_as_read(spaces: list[str] = None):
 	"""Mark all unread discussions as read for multiple spaces at once."""
 	if not spaces:
