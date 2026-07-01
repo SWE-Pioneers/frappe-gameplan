@@ -68,66 +68,86 @@ this migration).
 
 ---
 
-## Phase 2 — Rail family
+## Phase 2 — Rail family ✅ (done, pending PRs)
 
 Source: `frontend/src/components/AppRail/` (AppRail.vue 332 lines, RailIcon,
-UnreadBadge). The frame is generic (fixed ~50px column, scrollable middle with
-top/bottom scroll gradients, tooltip provider); the filling is Gameplan-specific
-(communities, unread aggregation, shortcuts, logo, admin items).
+UnreadBadge). Only two things extracted — the styled column frame + shared
+tooltip context (`Rail`), and the item cell (`RailItem`). **Layout and scrolling
+are the consumer's job (plain CSS)** — settled during the phase (see below); the
+library ships no layout slots and no scroll/gradient logic.
 
-### Target API
+### Final API
 
 ```vue
 <Rail>
-  <template #top>
-    <RailItem label="Home" :to="homeRoute"><GameplanLogo /></RailItem>
-  </template>
-
-  <!-- default slot scrolls, with automatic overflow gradients -->
-  <RailItem
-    v-for="c in activeCommunities"
-    :key="c.name"
-    :label="c.title"
-    :to="communityRoute(c)"
-    :active="c.name === communityState.id"
-    :badge="unreadByCommunity[c.name]"
-  >
-    <CommunityImage :community="c" />
+  <RailItem label="Home" variant="ghost" :active="isHome" @click="goHome">
+    <GameplanLogo />
   </RailItem>
 
-  <template #bottom>
-    <RailItem label="Search" :to="{ name: 'Search' }" icon="lucide-search" />
-    <RailItem label="Notifications" :to="{ name: 'Notifications' }" icon="lucide-bell" :badge="unreadCount" />
-    <UserDropdown />
-  </template>
+  <!-- The app owns the scroll region + gradients; flex-1 pushes the rest down. -->
+  <div class="relative flex min-h-0 w-full flex-1 flex-col">
+    <RailItem
+      v-for="c in activeCommunities"
+      :key="c.name"
+      :label="c.title"
+      :active="c.name === communityState.id"
+      :badge="unreadByCommunity[c.name]"
+      :badge-style="badgeStyle"
+      @click="goToCommunity(c)"
+    >
+      <CommunityImage :community="c" />
+    </RailItem>
+  </div>
+
+  <RailItem label="Search" variant="ghost" icon="lucide-search" @click="..." />
+  <UserDropdown />
 </Rail>
 ```
 
-- `Rail` — the frame. Slots: `#top`, default (scrollable), `#bottom`. Owns
-  scroll-gradient logic and tooltip provider. Props: none to start.
+- `Rail` — a bare frame: fixed 50px `bg-surface-sidebar` column + one
+  `TooltipProvider` (`hover-delay=0`) + a single default slot. No layout slots,
+  no scroll logic. Consumers arrange children with flex utilities.
 - `RailItem` — props `label` (tooltip + aria), `icon?` (CSS class) or default
   slot for custom content (images, avatars), `to?: RouteLocationRaw`,
-  `active?: boolean`, `badge?: number`, `badgeStyle?: 'count' | 'dot'`.
-  Renders the active indicator bar from `active` (`data-state`), emits `click`
-  when no `to`.
-- Badge rendering (count formatting, `aria-label`) is internal — fold in
-  Gameplan's `UnreadBadge` + `formatUnreadCount`/`unreadAriaLabel` utils.
+  `active?: boolean`, `badge?: number`, `badgeStyle?: 'count' | 'dot'`,
+  `variant?: 'tile' | 'ghost'`. `tile` (default) = filled cell + left indicator
+  bar when active (communities); `ghost` = transparent/raised-when-active
+  (icon shortcuts). Renders as RouterLink (`to`) or button; emits `click` in
+  both cases. `data-slot`/`data-state`/`data-variant` styling hooks.
+- Badge rendering (count formatting, teleport-to-`body` pill, `dot`, aria-label)
+  is internal (`RailItemBadge`) — folded in Gameplan's `UnreadBadge` +
+  `formatUnreadCount`/`unreadAriaLabel`. Library takes neutral `'count' | 'dot'`.
+
+**Two API decisions, resolved:**
+1. *Active treatment* — kept **both** via `RailItem` `variant` (`tile` bar+fill
+   for communities, `ghost` raised-highlight for shortcuts), rather than forcing
+   one canonical style.
+2. *Scroll frame* — **not** extracted. Tried `Rail` owning `#top`/default/
+   `#bottom` slots + gradients, then a placeable `RailScrollArea`; settled on the
+   minimal cut — `Rail` + `RailItem` only, scroll+gradient stays in Gameplan's
+   `AppRail.vue` (app-specific polish belongs in the app). The gradient JS
+   (`scrollTop`/`scrollHeight` measurement) has no clean cross-browser CSS-at-rest
+   equivalent, so it lives at the call site.
 
 ### Stays in Gameplan
 
-Community list + unread aggregation (`unreadByCommunity`), sidebar badge-style
-preference, admin gating (`useCanManageCommunities`), CustomizeSidebarDialog,
-`showBorder`/`showCommunityActiveState` route policy (becomes plain props/classes
-at the call site), UserDropdown, GameplanLogo.
+The scroll container + top/bottom gradient logic, community list + unread
+aggregation (`unreadByCommunity`), sidebar badge-style preference, admin gating
+(`useCanManageCommunities`), CustomizeSidebarDialog, `showBorder`/
+`showCommunityActiveState` route policy (plain props/classes at the call site),
+UserDropdown, GameplanLogo, CommunityImage.
 
-### Steps
+### Steps (done)
 
-1. frappe-ui: add `Rail` family (Rail, RailItem) with docs/stories/cy tests.
-2. Gameplan: rewrite `AppRail.vue` as a thin composition over `Rail`/`RailItem`
-   (it stays a Gameplan component — it holds all the data wiring). Delete
-   `RailIcon.vue`, `UnreadBadge.vue`.
-3. Verify: rail scroll gradients with many communities, unread badges (count +
-   dot styles), tooltips, active states, admin-only items, mobile unaffected.
+1. frappe-ui: `Rail` family (`Rail`, `RailItem`, internal `RailItemBadge`) with
+   `types.ts`, docs, single-component story, `.cy.ts` (6 passing).
+2. Gameplan: rewrote `AppRail.vue` over `Rail`/`RailItem`, keeping the scroll
+   region + gradients inline. Deleted `RailIcon.vue`, `UnreadBadge.vue`.
+3. Verified on `gameplan-demo.test:8081` (dev:frappe-ui): active indicator +
+   dot badge on current community, tile/ghost variants, aria label folds count,
+   tooltips, admin item, console clean, `yarn build` green.
+
+Remaining: frappe-ui PR → beta release → Gameplan PR (bump `frappe-ui` dep).
 
 ---
 
@@ -263,6 +283,26 @@ CommandPalette mounting, tab definitions and `isMoreRoute` list, the
 3. Verify: full app walkthrough desktop + mobile viewport, layout swap on live
    resize, scroll-to-top from headers and active tab, standalone (PWA)
    safe-area padding, settings overlay behavior unchanged.
+
+---
+
+## Track B — List family (`frappe-ui/list`)
+
+**Spec: [LIST_FAMILY_SPEC.md](./LIST_FAMILY_SPEC.md)** — independent of
+Phases 2–4, can ship in parallel.
+
+Composition-based list primitives under a new subpath export
+(`frappe-ui/list` → `src/molecules/list`, same pattern as `frappe-ui/editor`).
+The old `ListView` in the main entry stays untouched, so `List`/`ListRow`/
+`ListHeader` names are free to reuse. One anatomy, two render modes: feed rows
+(Discussions, Drafts, Notifications) and column grids (Members/Communities
+settings, People — which collapses to feed on mobile). Includes the
+DiscussionRow divider system (auto-inset to text edge, CSS-only between-ness,
+hover-hide on both edges), container-owned selection and sort, and optional
+virtualization via `ListRows virtual`.
+
+Rollout: frappe-ui PR → beta → Gameplan PR 1 (feed mode) → Gameplan PR 2
+(column mode). Details, component specs, and open questions in the spec file.
 
 ---
 
