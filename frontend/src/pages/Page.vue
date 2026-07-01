@@ -104,6 +104,7 @@ import { readOnlyMode } from '@/data/readOnlyMode'
 import { relativeTimestamp } from '@/utils'
 import { useSessionUser } from '@/data/users'
 import { canDeleteContent } from '@/utils/permissions'
+import { useCommandPaletteCommands } from '@/components/CommandPalette/registry'
 const props = defineProps<{
   communityId?: string
   pageId: string
@@ -214,6 +215,34 @@ function deletePage() {
     },
   })
 }
+
+useCommandPaletteCommands(
+  computed(() => {
+    if (!page.doc || !canEditPage.value) return []
+
+    return [
+      {
+        title: 'Save page',
+        name: 'page-save',
+        group: 'Page',
+        icon: 'lucide-save',
+        aliases: ['save document', 'save changes'],
+        onClick: save,
+        defaultScore: isDirty.value ? 3 : 1,
+      },
+      {
+        title: 'Delete page',
+        name: 'page-delete',
+        group: 'Page',
+        icon: 'lucide-trash-2',
+        aliases: ['remove page', 'delete document'],
+        onClick: deletePage,
+        condition: () => canDeleteContent(page.doc, space.value, useSessionUser()),
+        defaultScore: 1,
+      },
+    ]
+  }),
+)
 
 const handleKeyboardShortcuts = (e: KeyboardEvent) => {
   if (canEditPage.value && e.key === 's' && (e.metaKey || e.ctrlKey)) {

@@ -126,7 +126,7 @@
                 <input
                   v-if="editingPost"
                   type="text"
-                  class="w-full rounded border-0 text-ink-gray-8 px-0 py-0.5 text-4xl-semibold focus:ring-0"
+                  class="w-full bg-transparent border-0 text-ink-gray-8 px-0 py-0.5 text-4xl-semibold focus:ring-0"
                   ref="title"
                   v-model="postDraftData.title"
                   placeholder="Title"
@@ -329,6 +329,7 @@ import QuoteBacklinksPopover from '@/components/RichQuoteExtension/QuoteBacklink
 import { refreshUnreadCountForProjects } from '@/data/unreadCount'
 import { useSessionUser } from '@/data/users'
 import { canDeleteContent } from '@/utils/permissions'
+import { useCommandPaletteCommands } from './CommandPalette/registry'
 
 const props = defineProps<{
   postId: string
@@ -799,6 +800,49 @@ const actions = computed(() => [
     },
   },
 ])
+
+useCommandPaletteCommands(
+  computed(() => {
+    if (props.readOnlyMode || !discussion.doc) return []
+
+    return actions.value.map((action) => {
+      const title = cleanCommandTitle(action.label)
+      return {
+        title,
+        name: `discussion-${title.toLowerCase().replace(/\s+/g, '-')}`,
+        group: 'Discussion',
+        icon: action.icon,
+        aliases: discussionCommandAliases(title),
+        onClick: action.onClick,
+        condition: action.condition,
+        defaultScore: title === 'Copy link' ? 3 : 2,
+      }
+    })
+  }),
+)
+
+function cleanCommandTitle(title: string) {
+  return title.replace(/\.\.\.$/, '')
+}
+
+function discussionCommandAliases(title: string) {
+  const aliases: Record<string, string[]> = {
+    Edit: ['edit post', 'edit discussion'],
+    Revisions: ['history', 'version history', 'edits'],
+    'Copy link': ['copy url', 'share link'],
+    'Mark as unread': ['unread', 'remind me'],
+    Bookmark: ['save', 'save for later'],
+    'Remove Bookmark': ['unsave', 'remove saved'],
+    'Pin discussion': ['pin', 'keep on top'],
+    'Unpin discussion': ['unpin', 'remove pin'],
+    'Close discussion': ['lock discussion', 'disable comments'],
+    'Re-open discussion': ['reopen', 'unlock discussion'],
+    'Move to': ['move discussion', 'change space'],
+    Delete: ['delete discussion', 'remove discussion'],
+  }
+
+  return aliases[title] || []
+}
 
 // Page Meta
 usePageMeta(() => {

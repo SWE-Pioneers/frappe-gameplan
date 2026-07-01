@@ -168,6 +168,9 @@ import { useTask } from '@/data/tasks'
 import { GPTask } from '@/types/doctypes'
 import { useSessionUser } from '@/data/users'
 import { canDeleteContent } from '@/utils/permissions'
+import { readOnlyMode } from '@/data/readOnlyMode'
+import { spaces } from '@/data/spaces'
+import { useCommandPaletteCommands } from './CommandPalette/registry'
 
 const props = defineProps<{
   taskId: string
@@ -178,6 +181,7 @@ const route = useRoute()
 
 const task = useTask(() => props.taskId)
 const space = computed(() => getSpace(task.doc?.project))
+const canEditTask = computed(() => !readOnlyMode && !space.value?.archived_at)
 
 function deleteTask() {
   dialog.danger({
@@ -231,6 +235,63 @@ const priorityOptions = computed(() =>
 )
 
 const spaceOptions = useGroupedSpaceOptions({ filterFn: (space) => !space.archived_at })
+
+useCommandPaletteCommands(
+  computed(() => {
+    if (!task.doc || !canEditTask.value) return []
+
+    return [
+      ...statusOptions.value.map((status) => ({
+        title: `Set status to ${status.label}`,
+        name: `task-status-${status.value}`,
+        group: 'Task',
+        icon: status.icon,
+        aliases: ['status', status.label],
+        onClick: status.onClick,
+        defaultScore: task.doc?.status === status.value ? 0 : 2,
+      })),
+      ...priorityOptions.value.map((priority) => ({
+        title: `Set priority to ${priority.label}`,
+        name: `task-priority-${priority.value}`,
+        group: 'Task',
+        icon: priority.icon,
+        aliases: ['priority', priority.label],
+        onClick: priority.onClick,
+        defaultScore: task.doc?.priority === priority.value ? 0 : 2,
+      })),
+      ...assignableUsers.value.map((user) => ({
+        title: user.value === '<no_assignee>' ? 'Clear assignee' : `Assign to ${user.label}`,
+        name: `task-assignee-${user.value}`,
+        group: 'Task',
+        icon: 'lucide-user-round',
+        aliases: ['assignee', 'assign', user.label],
+        onClick: () => changeAssignee(user.value),
+        defaultScore: task.doc?.assigned_to === user.value ? 0 : 1,
+      })),
+      ...spaces.data
+        .filter((space) => !space.archived_at && space.name !== task.doc?.project)
+        .map((space) => ({
+          title: `Move task to ${space.title}`,
+          name: `task-space-${space.name}`,
+          group: 'Task',
+          icon: 'lucide-log-out',
+          aliases: ['move task', 'change space', space.title, space.team_title],
+          onClick: () => changeSpace(space.name),
+          defaultScore: 1,
+        })),
+      {
+        title: 'Delete task',
+        name: 'task-delete',
+        group: 'Task',
+        icon: 'lucide-trash-2',
+        aliases: ['remove task'],
+        onClick: deleteTask,
+        condition: () => canDeleteContent(task.doc, space.value, useSessionUser()),
+        defaultScore: 1,
+      },
+    ]
+  }),
+)
 
 function changeAssignee(option: string) {
   if (option === '<no_assignee>') {

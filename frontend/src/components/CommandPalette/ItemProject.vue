@@ -1,26 +1,32 @@
 <template>
-  <div class="flex w-full items-center rounded px-2 py-2 text-base" v-if="space">
-    <SpaceIcon :icon="space.icon" class="mr-3 size-4 text-ink-gray-6" />
-    <span v-if="community" class="font-medium inline-flex items-end text-ink-gray-5">
-      {{ community?.title }}
-      <div class="h-4 grid place-content-center mx-1">
+  <div class="flex w-full min-w-0 items-center rounded px-2 py-2 text-base" v-if="space">
+    <SpaceIcon :icon="space.icon" class="mr-3 size-4 shrink-0 text-ink-gray-6" />
+    <span
+      v-if="community && !item.hideCommunity"
+      class="inline-flex min-w-0 shrink font-medium text-ink-gray-5"
+    >
+      <span class="truncate">
+        {{ community?.title }}
+      </span>
+      <span class="mx-1 grid h-4 shrink-0 place-content-center">
         <span class="lucide-chevron-right size-3 text-ink-gray-5" />
-      </div>
+      </span>
     </span>
-    <span class="font-medium text-ink-gray-7"> {{ item.title }}&nbsp; </span>
-    <span class="lucide-lock size-3 text-ink-gray-6 ml-0.5" v-if="space.is_private" />
+    <span class="min-w-0 flex-1 truncate font-medium text-ink-gray-7">
+      {{ item.title }}&nbsp;
+    </span>
+    <span class="lucide-lock ml-0.5 size-3 shrink-0 text-ink-gray-6" v-if="space.is_private" />
   </div>
 </template>
 <script setup lang="ts">
 import { useSpace } from '@/data/spaces'
 import { useCommunity } from '@/data/communities'
 import SpaceIcon from '@/components/SpaceIcon.vue'
-const props = defineProps({
-  item: {
-    type: Object,
-    required: true,
-  },
-})
+import type { CommandPaletteItem } from './registry'
+
+const props = defineProps<{
+  item: CommandPaletteItem
+}>()
 
 const space = useSpace(() => props.item.name)
 const community = useCommunity(() => space.value?.team)

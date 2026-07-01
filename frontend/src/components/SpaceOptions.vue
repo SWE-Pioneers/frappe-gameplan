@@ -19,6 +19,7 @@ import ChangeSpaceCategoryDialog from './ChangeSpaceCategoryDialog.vue'
 import SpaceAccessDialog from './SpaceAccessDialog.vue'
 import { useSpacePermissions, archiveSpace } from '@/data/spaces'
 import { GPProject } from '@/types/doctypes'
+import { useCommandPaletteCommands } from './CommandPalette/registry'
 
 defineOptions({
   inheritAttrs: false,
@@ -81,4 +82,31 @@ const options = computed(() => [
     condition: () => canEditSpace.value,
   },
 ])
+
+useCommandPaletteCommands(
+  computed(() =>
+    options.value.map((option) => ({
+      title: `${option.label} space`,
+      name: `space-${option.label.toLowerCase().replace(/\W+/g, '-')}`,
+      group: 'Space',
+      icon: option.icon,
+      aliases: spaceActionAliases(option.label),
+      onClick: option.onClick,
+      condition: option.condition,
+      defaultScore: option.label === 'Delete' ? 1 : 2,
+    })),
+  ),
+)
+
+function spaceActionAliases(label: string) {
+  const aliases: Record<string, string[]> = {
+    'Manage access': ['space access', 'guests', 'members'],
+    'Change Community': ['move space', 'change category'],
+    Merge: ['merge space'],
+    Archive: ['archive space', 'read only'],
+    Delete: ['delete space', 'remove space'],
+  }
+
+  return aliases[label] || []
+}
 </script>
