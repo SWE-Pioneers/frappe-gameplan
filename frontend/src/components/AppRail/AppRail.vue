@@ -1,47 +1,73 @@
 <template>
   <Rail :class="showBorder ? 'border-r' : ''">
-    <RailItem label="Home" variant="ghost" :active="isRoute('Home')" @click="goHome">
-      <GameplanLogo class="size-7 rounded-[7px]" />
-    </RailItem>
+    <!-- Home is a bespoke button, not a RailItem: the logo fills the whole cell,
+         it has no tooltip, and its active/hover treatment (surface-base fill /
+         opacity dim) differs from the icon shortcuts. -->
+    <div class="mb-3 flex shrink-0 items-center justify-center">
+      <button
+        type="button"
+        class="flex size-7 items-center justify-center rounded-[7px] transition focus-visible:ring-0 focus-visible:focus-ring"
+        :class="isRoute('Home') ? 'bg-surface-base shadow-sm' : 'hover:opacity-90'"
+        aria-label="Home"
+        @click="goHome"
+      >
+        <GameplanLogo class="size-7 rounded-[7px]" />
+      </button>
+    </div>
 
     <!-- Community list: a self-scrolling middle region that fades content under
          whichever edge has more to scroll. `flex-1` pushes the shortcuts below
-         it to the bottom of the rail. -->
-    <div class="relative flex min-h-0 w-full flex-1 flex-col border-t pt-3">
-      <div
-        v-show="showTopGradient"
-        class="pointer-events-none absolute left-0 top-0 z-10 h-4 w-full bg-gradient-to-b from-surface-sidebar to-transparent"
-      />
-      <div
-        v-show="showBottomGradient"
-        class="pointer-events-none absolute bottom-0 left-0 z-10 h-4 w-full bg-gradient-to-t from-surface-sidebar to-transparent"
-      />
-      <div
-        ref="communityScrollEl"
-        class="flex min-h-0 w-full flex-1 flex-col items-center gap-3 overflow-y-auto overflow-x-hidden py-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-      >
+         it to the bottom of the rail. The 50px columns bleed the list and its
+         gradients edge-to-edge into the rail's gutters. -->
+    <div
+      v-if="activeCommunities.length"
+      class="flex min-h-0 w-full flex-1 flex-col items-center border-t pt-3"
+    >
+      <div class="flex min-h-0 w-[50px] flex-1 flex-col items-center">
+        <div class="relative min-h-0 w-[50px] flex-1">
+          <div
+            v-show="showTopGradient"
+            class="pointer-events-none absolute left-0 top-0 z-10 h-4 w-[50px] bg-gradient-to-b from-surface-sidebar to-transparent"
+          />
+          <div
+            v-show="showBottomGradient"
+            class="pointer-events-none absolute bottom-0 left-0 z-10 h-4 w-[50px] bg-gradient-to-t from-surface-sidebar to-transparent"
+          />
+          <div
+            ref="communityScrollEl"
+            class="h-full w-[50px] overflow-y-auto overflow-x-hidden pb-3 pt-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          >
+            <div class="flex w-[50px] flex-col items-center gap-3">
+              <RailItem
+                v-for="community in activeCommunities"
+                :key="community.name"
+                :label="community.title"
+                :active="isActiveCommunity(community.name)"
+                :badge="getCommunityUnreadCount(community.name)"
+                :badge-style="badgeStyle"
+                @click="goToCommunity(community)"
+              >
+                <CommunityImage :community="community" class="size-7 transition" />
+              </RailItem>
+            </div>
+          </div>
+        </div>
+
         <RailItem
-          v-for="community in activeCommunities"
-          :key="community.name"
-          :label="community.title"
-          :active="isActiveCommunity(community.name)"
-          :badge="getCommunityUnreadCount(community.name)"
-          :badge-style="badgeStyle"
-          @click="goToCommunity(community)"
-        >
-          <CommunityImage :community="community" class="size-7 transition" />
-        </RailItem>
+          label="Customize sidebar"
+          variant="ghost"
+          icon="lucide-settings-2"
+          class="mt-3"
+          @click="showCustomizeSidebar = true"
+        />
       </div>
     </div>
 
-    <div class="flex w-full flex-col items-center gap-0.5">
-      <RailItem
-        v-if="activeCommunities.length"
-        label="Customize sidebar"
-        variant="ghost"
-        icon="lucide-settings-2"
-        @click="showCustomizeSidebar = true"
-      />
+    <!-- With no communities the scroll region collapses; this spacer keeps the
+         shortcuts pinned to the bottom of the rail. -->
+    <div v-else class="flex-1" />
+
+    <div class="mt-0.5 flex w-full flex-col items-center gap-0.5">
       <RailItem
         v-for="item in mainShortcuts"
         :key="item.label"
@@ -53,7 +79,7 @@
       />
     </div>
 
-    <div class="mt-3 flex w-full flex-col items-center gap-0.5 border-t pt-3">
+    <div class="mb-3 mt-3 flex w-full flex-col items-center gap-0.5 border-t py-3">
       <RailItem
         v-for="item in personalShortcuts"
         :key="item.label"
@@ -67,7 +93,7 @@
       />
     </div>
 
-    <UserDropdown class="mt-3">
+    <UserDropdown>
       <template #trigger="{ open }">
         <button
           type="button"
