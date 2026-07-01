@@ -71,16 +71,20 @@ describe('Comment', () => {
         cy.get(`div[data-id=${comment.name}] button[aria-label="Add a reaction"]`).click()
         cy.get('button:contains("👍"):visible').click()
         cy.wait('@reactRequest')
-        cy.get('button:contains("👍 1")').should('exist')
+        // The reaction pill separates emoji and count with a non-breaking space,
+        // so match with a regex (\s covers U+00A0) instead of a literal space.
+        cy.contains('button', /👍\s*1/).should('exist')
         cy.get(`div[data-id=${comment.name}]`).contains('Edited').should('not.exist')
 
         // remove a reaction
         cy.get(`div[data-id=${comment.name}] button[aria-label="Add a reaction"]`).click()
         cy.get('button:contains("💖"):visible').click()
         cy.wait('@reactRequest')
-        cy.get('button:contains("💖 1")').should('exist').click()
+        cy.contains('button', /💖\s*1/)
+          .should('exist')
+          .click()
         cy.wait('@reactRequest')
-        cy.get('button:contains("💖 1")').should('not.exist')
+        cy.contains('button', /💖\s*1/).should('not.exist')
 
         // edit comment
         cy.selectDropdownOption('Comment Options', 'Edit')

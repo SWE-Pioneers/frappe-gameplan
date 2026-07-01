@@ -8,12 +8,12 @@ import {
 import { until } from '@vueuse/core'
 import { call } from 'frappe-ui'
 import { session } from './data/session'
-import { isGameplanAdmin, users, useSessionUser } from './data/users'
+import { users } from './data/users'
 import { communities, getCommunity } from './data/communities'
 import { spaces, getSpace } from './data/spaces'
 import type { Space } from './data/spaces'
 import { communityState } from './data/communityState'
-import { canManageCommunity, getManageableCommunities } from './utils/permissions'
+import { settingsBackgroundPath } from './components/Settings'
 import { getScrollContainer, scrollTo } from './utils/scrollContainer'
 
 declare const __FRONTEND_ROUTE__: string
@@ -52,36 +52,15 @@ function optionalRouteParam(value: RouteParamValue | undefined): string | undefi
   return resolvedValue || undefined
 }
 
-async function ensureConfigureAccess(to: RouteLocationNormalized) {
-  await ensureCommunityDataLoaded()
-
-  if (isGameplanAdmin()) {
-    return
-  }
-
-  const communityId = optionalRouteParam(to.params.communityId)
-  if (!communityId) {
-    if (getManageableCommunities(communities.data || [], useSessionUser()).length) {
-      return
-    }
-
-    return getHomeRoute()
-  }
-
-  if (!canManageCommunity(getCommunity(communityId), useSessionUser())) {
-    return getHomeRoute()
-  }
-}
-
 function redirectOldSpacesRoute(to: RouteLocationNormalized): RouteLocationRaw {
   const queryTeamId = to.query.teamId
   const communityId = Array.isArray(queryTeamId) ? queryTeamId[0] : queryTeamId
 
   if (typeof communityId === 'string' && communityId) {
-    return { name: 'CommunitySpaces', params: { communityId }, query: {} }
+    return { name: 'Discussions', params: { communityId }, query: {} }
   }
 
-  return { name: 'Spaces', query: {} }
+  return getHomeRoute()
 }
 
 const routes: RouteRecordRaw[] = [
@@ -277,25 +256,6 @@ const routes: RouteRecordRaw[] = [
     redirect: redirectOldSpacesRoute,
   },
   {
-    path: '/configure',
-    name: 'Spaces',
-    component: () => import('@/pages/Configure/Configure.vue'),
-    // `/configure` is an admin-only global housekeeping page; non-admins never reach it.
-    beforeEnter: ensureConfigureAccess,
-  },
-  {
-    path: '/configure/:communityId',
-    name: 'CommunitySpaces',
-    component: () => import('@/pages/Configure/Configure.vue'),
-    beforeEnter: ensureConfigureAccess,
-  },
-  {
-    path: '/configure/:communityId/members',
-    name: 'CommunityMembers',
-    component: () => import('@/pages/Configure/Configure.vue'),
-    beforeEnter: ensureConfigureAccess,
-  },
-  {
     name: 'Space',
     path: '/community/:communityId/space/:spaceId',
     component: () => import('@/pages/Space.vue'),
@@ -412,6 +372,23 @@ const routes: RouteRecordRaw[] = [
     path: '/notifications',
     name: 'Notifications',
     component: () => import('@/pages/Notifications.vue'),
+  },
+  {
+    // Settings is an overlay: the URL changes to /settings/:tab but the dialog
+    // renders above whatever page it was opened from (see settingsBackgroundPath
+    // + the beforeEach short-circuit below). RouteGuard renders nothing because
+    // App.vue swaps the router-view to the background page while we're here.
+    path: '/settings',
+    meta: { settingsOverlay: true },
+    redirect: { name: 'SettingsTab', params: { tab: 'profile' } },
+    children: [
+      {
+        path: ':tab',
+        name: 'SettingsTab',
+        component: RouteGuard,
+        meta: { settingsOverlay: true },
+      },
+    ],
   },
   {
     path: '/more',
@@ -765,6 +742,31 @@ router.beforeEach(async (to, from) => {
 
   await ensureCommunityDataLoaded()
 
+  // Settings overlay: don't run the community-scope/canonical logic below, which
+  // would tear down the page the dialog is layered over. Just remember which page
+  // that is so App.vue can keep rendering it behind the dialog.
+  if (to.matched.some((route) => route.meta?.settingsOverlay)) {
+    const comingFromSettings = from.matched.some((route) => route.meta?.settingsOverlay)
+    if (!comingFromSettings) {
+      if (from.matched.length > 0) {
+        // In-app open: layer over the page we came from (already scoped correctly).
+        settingsBackgroundPath.value = from.fullPath
+      } else {
+        // Cold load / refresh on a /settings URL: default to Home and scope its
+        // community so the background page can actually render.
+        const home = getHomeRoute()
+        const homeCommunityId =
+          typeof home === 'object' && 'params' in home
+            ? (home.params?.communityId as string | undefined)
+            : undefined
+        if (homeCommunityId) communityState.scope(homeCommunityId)
+        settingsBackgroundPath.value = router.resolve(home).fullPath
+      }
+    }
+    return
+  }
+  settingsBackgroundPath.value = null
+
   let isCommunityScopedRoute = to.matched.some((route) => route.meta?.communityScope)
   if (!isCommunityScopedRoute) {
     communityState.scope(null)
@@ -825,7 +827,7 @@ async function waitForResource(resource: ResourceLike) {
   await until(() => resource?.isFinished).toBe(true)
 }
 
-function getHomeRoute(): RouteLocationRaw {
+export function getHomeRoute(): RouteLocationRaw {
   if (isMobileViewport() && communityState.id) {
     return { name: 'Home' }
   }
@@ -846,12 +848,8 @@ function getDesktopHomeRoute(): RouteLocationRaw {
     return { name: 'Onboarding' }
   }
 
-  // The site has communities/spaces but the user has joined none. Admins configure
-  // them on the global manager page; everyone else sees the no-communities state.
-  if (isGameplanAdmin()) {
-    return { name: 'Spaces' }
-  }
-
+  // The site has communities/spaces but the user has joined none. Admins manage
+  // them from the NoCommunities page (which opens the Communities settings tab).
   return { name: 'NoCommunities' }
 }
 

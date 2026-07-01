@@ -8,39 +8,42 @@
       >
         <div class="flex items-center justify-between gap-3">
           <div>
-            <h2 class="text-base font-medium text-ink-gray-9">{{ card.type }} card</h2>
+            <h2 class="text-base font-medium text-ink-gray-9">{{ cardTypeLabel }}</h2>
           </div>
         </div>
 
         <div class="mt-4 space-y-3">
-          <FormControl
+          <TextInput
             v-if="card.type !== 'Blank'"
             label="Title"
+            class="w-full"
             :model-value="card.title"
             @update:model-value="updateTitle"
-          />
-          <FormControl
-            v-if="card.type === 'Text'"
+          >
+          </TextInput>
+          <Textarea
+            v-if="isContentCard"
             label="Text"
-            type="textarea"
+            class="w-full"
             :rows="4"
             :model-value="card.text"
             @update:model-value="updateText"
           >
-            <template #suffix>
-              <span class="text-sm text-ink-gray-5">{{ textCharactersLeft }}</span>
-            </template>
-          </FormControl>
-          <FormControl
-            v-if="card.type === 'Text'"
+            <template #description>{{ textCharactersLeft }} characters left</template>
+          </Textarea>
+          <TextInput
+            v-if="isContentCard"
             label="URL"
+            class="w-full"
+            type="url"
             :model-value="card.url"
             placeholder="https://example.com"
             @update:model-value="updateUrl"
-          />
+          >
+          </TextInput>
 
-          <div>
-            <div class="mb-1.5 text-sm text-ink-gray-6">Size</div>
+          <div class="space-y-1.5">
+            <FormLabel label="Size" size="md" />
             <TabButtons
               :buttons="profileCardSizeButtons"
               :model-value="card.size"
@@ -48,26 +51,27 @@
             />
           </div>
 
-          <div v-if="card.type === 'Image'">
-            <div class="mb-3">
-              <div class="mb-1.5 text-sm text-ink-gray-6">Rendering</div>
-              <TabButtons
-                :options="profileImageRenderingOptions"
-                :model-value="card.imageRendering || 'Cover'"
-                @update:model-value="updateImageRendering"
-              />
+          <div v-if="isContentCard">
+            <div v-if="hasImage" class="mb-3 space-y-3">
+              <div class="space-y-1.5">
+                <FormLabel label="Rendering" size="md" />
+                <TabButtons
+                  :options="profileImageRenderingOptions"
+                  :model-value="card.imageRendering || 'Cover'"
+                  @update:model-value="updateImageRendering"
+                />
+              </div>
+              <Button
+                v-if="canRepositionImage"
+                icon-left="lucide-move-vertical"
+                @click="$emit('repositionImage')"
+              >
+                Reposition
+              </Button>
             </div>
-            <Button
-              v-if="canRepositionImage"
-              class="mb-3"
-              icon-left="lucide-move-vertical"
-              @click="$emit('repositionImage')"
-            >
-              Reposition
-            </Button>
             <div class="flex items-center justify-between gap-3">
-              <div>
-                <div class="text-sm font-medium text-ink-gray-6">Image</div>
+              <div class="space-y-1.5">
+                <FormLabel label="Image" size="md" />
                 <FileUploader
                   :fileTypes="['image/png', 'image/jpeg']"
                   :uploadArgs="{ optimize: true }"
@@ -75,13 +79,13 @@
                   @success="updateImage"
                 >
                   <template #default="{ progress, error, uploading, openFileSelector }">
-                    <div class="relative mt-2">
+                    <div class="relative">
                       <Button
                         icon-left="lucide-upload"
                         :loading="uploading"
                         @click="openFileSelector"
                       >
-                        {{ uploading ? `${progress}%` : 'Upload' }}
+                        {{ uploading ? `${progress}%` : imageUploadButtonLabel }}
                       </Button>
                       <ErrorMessage
                         v-if="error"
@@ -99,9 +103,20 @@
 
       <div
         v-else
-        class="flex min-h-32 items-center justify-center rounded-lg border border-dashed border-outline-gray-2 p-5 text-center text-base text-ink-gray-5"
+        class="flex min-h-40 flex-col items-start justify-center gap-4 rounded-lg border border-dashed border-outline-gray-2 p-5 text-left"
       >
-        Select a card to start editing
+        <div class="space-y-1">
+          <div class="text-base font-medium text-ink-gray-7">Build with cards</div>
+          <p class="text-sm leading-5 text-ink-gray-5">
+            Add a card or spacer, or select an item on the canvas to edit it.
+          </p>
+        </div>
+        <div class="flex items-center gap-2">
+          <Button icon-left="lucide-square" @click="$emit('addCard', 'Card')">Card</Button>
+          <Button icon-left="lucide-square-dashed" @click="$emit('addCard', 'Blank')">
+            Spacer
+          </Button>
+        </div>
       </div>
     </div>
   </aside>
@@ -109,12 +124,21 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { Button, ErrorMessage, FileUploader, FormControl, TabButtons } from 'frappe-ui'
+import {
+  Button,
+  ErrorMessage,
+  FileUploader,
+  FormLabel,
+  TabButtons,
+  Textarea,
+  TextInput,
+} from 'frappe-ui'
 import {
   profileCardSizes,
   profileImageRenderingOptions,
   type ProfileBentoCard,
   type ProfileCardSize,
+  type ProfileCardType,
   type ProfileImageRendering,
 } from './types'
 
@@ -128,6 +152,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
+  addCard: [type: ProfileCardType]
   remove: []
   repositionImage: []
   uploadImage: [fileUrl: string]
@@ -138,13 +163,22 @@ const emit = defineEmits<{
   updateUrl: [value: string]
 }>()
 
+const editorLabelClass = 'text-base text-ink-gray-5'
 const profileCardSizeButtons = profileCardSizes.map((size) => ({ label: size }))
+const isContentCard = computed(() => {
+  return Boolean(props.card) && props.card?.type !== 'Blank'
+})
+const cardTypeLabel = computed(() => {
+  return props.card?.type === 'Blank' ? 'Blank card' : 'Profile card'
+})
+const hasImage = computed(() => {
+  return isContentCard.value && Boolean(props.card?.image)
+})
 const canRepositionImage = computed(() => {
-  return (
-    props.card?.type === 'Image' &&
-    Boolean(props.card.image) &&
-    (props.card.imageRendering || 'Cover') === 'Cover'
-  )
+  return hasImage.value && (props.card?.imageRendering || 'Cover') === 'Cover'
+})
+const imageUploadButtonLabel = computed(() => {
+  return hasImage.value ? 'Change image' : 'Upload'
 })
 
 function updateImage(file: UploadedFile) {

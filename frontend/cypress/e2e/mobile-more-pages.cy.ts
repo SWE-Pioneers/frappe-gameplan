@@ -32,13 +32,15 @@ describe('Mobile More-menu pages', () => {
   // PageHeader uses Breadcrumbs). The :visible filter also skips the hidden
   // mobile header that teleports alongside the desktop one at wide widths.
   it('opens each workspace page with a mobile header and backs out to More', () => {
+    // "Manage" is intentionally omitted: it now opens the Communities Settings
+    // dialog (an overlay) rather than a mobile page with a Back-to-More header.
+    // That flow is covered separately below.
     const pages = [
       { label: 'Bookmarks', path: '/bookmarks', title: 'Bookmarks' },
       { label: 'Pages', path: '/pages', title: 'Pages' },
       { label: 'Tasks', path: '/tasks', title: 'Tasks' },
       { label: 'People', path: '/people', title: 'People' },
       { label: 'Drafts', path: '/drafts', title: 'Drafts' },
-      { label: 'Manage', path: '/configure', title: 'Communities' },
     ]
 
     pages.forEach(({ label, path, title }) => {
@@ -69,19 +71,12 @@ describe('Mobile More-menu pages', () => {
     cy.get('header').filter(':visible').contains('Date Updated').should('be.visible')
   })
 
-  it('walks the Configure hierarchy with a level-aware back button', () => {
-    cy.visit(`/g/configure/${community}/members`)
-    cy.contains('h1:visible', 'Members')
-
-    // Members → community spaces.
-    cy.iconButton('Back').click()
-    cy.url().should('include', `/configure/${community}`).and('not.include', '/members')
-    cy.contains('h1:visible', 'Design')
-
-    // Community spaces → communities list.
-    cy.iconButton('Back').click()
-    cy.url().should('match', /\/configure$/)
-    cy.contains('h1:visible', 'Communities')
+  it('does not offer community management from the mobile More menu', () => {
+    // Community settings is desktop-only; the mobile More menu must not expose a
+    // "Manage" entry, even for an admin who can manage communities.
+    openMore()
+    cy.button('People').should('be.visible')
+    cy.contains('button', 'Manage').should('not.exist')
   })
 
   it('keeps the desktop header and hides the mobile back button at wide widths', () => {

@@ -47,11 +47,11 @@ const props = defineProps<{
 
 const rowClass = [
   'grid grid-cols-[1.25rem_minmax(0,1fr)] items-center gap-2 h-10 transition-colors',
-  'md:grid-cols-[1.25rem_minmax(12rem,1fr)_minmax(12rem,1fr)_8rem_3rem]',
+  'md:grid-cols-[1.25rem_minmax(12rem,1fr)_minmax(12rem,1fr)_8rem_1.5rem]',
 ]
 
 const user = computed(() => useUser(props.member.user))
-const roleLabel = computed(() => (props.member.is_admin ? 'Community Admin' : 'Member'))
+const roleLabel = computed(() => (props.member.is_admin ? 'Community Admin' : 'User'))
 const profileRoute = computed(() => {
   return user.value.user_profile
     ? { name: 'PersonProfileProfile', params: { personId: user.value.user_profile } }

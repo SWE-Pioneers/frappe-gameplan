@@ -137,6 +137,7 @@ import {
   markCommunityAsRead,
 } from '@/data/unreadCount'
 import { canManageCommunity } from '@/utils/permissions'
+import { showCommunitiesSettings } from '@/components/Settings'
 
 type FeedType = 'recent' | 'unread' | 'participating'
 
@@ -215,13 +216,13 @@ const actionOptions = computed<DropdownOptions>(() => [
   {
     label: 'Manage spaces',
     icon: 'lucide-layout-grid',
-    route: { name: 'CommunitySpaces', params: { communityId: props.communityId } },
+    onClick: () => showCommunitiesSettings(props.communityId, 'spaces'),
     condition: () => canManageCurrentCommunity.value,
   },
   {
-    label: 'Manage members',
+    label: 'Manage users',
     icon: 'lucide-users-2',
-    route: { name: 'CommunityMembers', params: { communityId: props.communityId } },
+    onClick: () => showCommunitiesSettings(props.communityId, 'members'),
     condition: () => canManageCurrentCommunity.value,
   },
   {

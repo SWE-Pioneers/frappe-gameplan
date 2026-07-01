@@ -1,30 +1,12 @@
 <template>
-  <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-    <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
-      <TabButtons :options="visibilityButtons" v-model="visibilityFilter">
-        <template #prefix="{ button }">
-          <span
-            v-if="visibilityFilterIcon(button.modelValue)"
-            :class="[visibilityFilterIcon(button.modelValue), 'size-3.5 shrink-0']"
-          />
-        </template>
-        <template #suffix="{ button }">
-          <span class="rounded-full bg-surface-gray-3 px-1.5 text-xs text-ink-gray-6">
-            {{ getVisibilityCount(button.modelValue) }}
-          </span>
-        </template>
-      </TabButtons>
-    </div>
-    <Switch v-if="hasArchivedSpaces" v-model="showArchived" label="Show archived" />
-  </div>
+  <CommunitySpacesListControls
+    v-if="showControls"
+    :community-id="communityId"
+    v-model:search="search"
+    v-model:visibility-filter="visibilityFilter"
+  />
 
-  <ConfigureList v-if="filteredSpaces.length" :header-class="spacesHeaderClass">
-    <template #header>
-      <div>Space</div>
-      <div>Content</div>
-      <div v-if="hasGuests">Guests</div>
-      <div />
-    </template>
+  <ConfigureList v-if="filteredSpaces.length">
     <SpaceRow
       v-for="space in filteredSpaces"
       :key="space.name"
@@ -54,17 +36,6 @@
   </ConfigureEmptyState>
 
   <ConfigureEmptyState
-    v-else-if="!visibleSpaces.length"
-    icon="lucide-archive"
-    title="No active spaces"
-    description="Archived spaces are hidden from this view."
-  >
-    <template #actions>
-      <Button @click="showArchived = true">Show archived</Button>
-    </template>
-  </ConfigureEmptyState>
-
-  <ConfigureEmptyState
     v-else
     icon="lucide-search-x"
     title="No spaces match these filters"
@@ -77,129 +48,61 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
-import { Button, Switch, TabButtons, useList } from 'frappe-ui'
-import { spaces, type Space } from '@/data/spaces'
-import type { GPGuestAccess, GPPage } from '@/types/doctypes'
-import { visibilityFilterIcon } from '@/utils/visibility'
+import { Button } from 'frappe-ui'
+import type { Space } from '@/data/spaces'
 import ConfigureEmptyState from './ConfigureEmptyState.vue'
 import ConfigureList from './ConfigureList.vue'
 import SpaceRow from './SpaceRow.vue'
+import CommunitySpacesListControls from './CommunitySpacesListControls.vue'
+import { useCommunitySpaceData } from './useCommunitySpaceData'
+import { computed } from 'vue'
 
-type VisibilityFilter = 'All' | 'Public' | 'Private'
-type PageRecord = Pick<GPPage, 'project'>
-type GuestAccessRecord = Pick<GPGuestAccess, 'project'>
+type VisibilityFilter = 'All' | 'Public' | 'Private' | 'Archived'
 
-const props = defineProps<{
-  communityId: string
-  canCreateSpace: boolean
-}>()
+const props = withDefaults(
+  defineProps<{
+    communityId: string
+    canCreateSpace: boolean
+    // When false, the parent owns the filter controls; we only render the list.
+    showControls?: boolean
+  }>(),
+  {
+    showControls: true,
+  },
+)
 const emit = defineEmits<{
   (event: 'create-space'): void
 }>()
 
-const visibilityFilter = ref<VisibilityFilter>('All')
-const showArchived = ref(false)
+// Filters are models so the Settings dialog can hoist the controls into its
+// fixed header while this component still renders the list.
+const search = defineModel<string>('search', { default: '' })
+const visibilityFilter = defineModel<VisibilityFilter>('visibilityFilter', { default: 'All' })
 
-const visibilityButtons = [
-  { label: 'All', value: 'All' },
-  { label: 'Public', value: 'Public' },
-  { label: 'Private', value: 'Private' },
-]
-
-const pages = useList<PageRecord>({
-  doctype: 'GP Page',
-  fields: ['project'],
-  initialData: [],
-  limit: 99999,
-  cacheKey: 'space-page-counts',
-})
-
-const guestAccess = useList<GuestAccessRecord>({
-  doctype: 'GP Guest Access',
-  fields: ['project'],
-  initialData: [],
-  limit: 99999,
-  cacheKey: 'space-guest-counts',
-})
-
-const communitySpaces = computed(() => {
-  return (spaces.data || []).filter((space) => space.team === props.communityId)
-})
+const { communitySpaces, getPagesCount, getGuestsCount, hasGuests } = useCommunitySpaceData(
+  () => props.communityId,
+)
 
 const filteredSpaces = computed(() => {
-  return visibleSpaces.value.filter((space) =>
-    matchesVisibilityFilter(space, visibilityFilter.value),
+  const term = search.value.trim().toLowerCase()
+  return communitySpaces.value.filter(
+    (space) =>
+      matchesScope(space, visibilityFilter.value) &&
+      (!term || space.title.toLowerCase().includes(term)),
   )
 })
 
-const pagesCountBySpace = computed(() => {
-  const counts: Record<string, number> = {}
-  for (const page of pages.data || []) {
-    if (!page.project) continue
-    counts[page.project] = (counts[page.project] || 0) + 1
-  }
-  return counts
-})
-
-const guestsCountBySpace = computed(() => {
-  const counts: Record<string, number> = {}
-  for (const access of guestAccess.data || []) {
-    if (!access.project) continue
-    counts[access.project] = (counts[access.project] || 0) + 1
-  }
-  return counts
-})
-
-const hasGuests = computed(() =>
-  communitySpaces.value.some((space) => getGuestsCount(space.name) > 0),
-)
-const spacesHeaderClass = computed(() => {
-  const columns = hasGuests.value
-    ? 'grid-cols-[minmax(8rem,1fr)_15.25rem_5rem_3rem]'
-    : 'grid-cols-[minmax(8rem,1fr)_15.25rem_3rem]'
-  return `hidden ${columns} gap-12 items-center h-7 text-sm text-ink-gray-6 md:grid`
-})
-
-const visibleSpaces = computed(() =>
-  communitySpaces.value.filter((space) => showArchived.value || !space.archived_at),
-)
-const hasArchivedSpaces = computed(() => communitySpaces.value.some((space) => space.archived_at))
-const publicSpaceCount = computed(
-  () => visibleSpaces.value.filter((space) => !space.is_private).length,
-)
-const privateSpaceCount = computed(
-  () => visibleSpaces.value.filter((space) => space.is_private).length,
-)
-
-watch(hasArchivedSpaces, (value) => {
-  if (!value) {
-    showArchived.value = false
-  }
-})
-
-function matchesVisibilityFilter(space: Space, filter: VisibilityFilter) {
+// 'All'/'Public'/'Private' only cover active spaces; 'Archived' is its own scope.
+function matchesScope(space: Space, filter: VisibilityFilter) {
+  if (filter === 'Archived') return Boolean(space.archived_at)
+  if (space.archived_at) return false
   if (filter === 'Public') return !space.is_private
   if (filter === 'Private') return Boolean(space.is_private)
   return true
 }
 
-function getPagesCount(spaceId: string) {
-  return pagesCountBySpace.value[spaceId] || 0
-}
-
-function getGuestsCount(spaceId: string) {
-  return guestsCountBySpace.value[spaceId] || 0
-}
-
-function getVisibilityCount(value: unknown) {
-  if (value === 'Public') return publicSpaceCount.value
-  if (value === 'Private') return privateSpaceCount.value
-  return visibleSpaces.value.length
-}
-
 function clearFilters() {
   visibilityFilter.value = 'All'
-  showArchived.value = true
+  search.value = ''
 }
 </script>

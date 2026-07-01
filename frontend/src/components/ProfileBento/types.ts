@@ -1,4 +1,4 @@
-export type ProfileCardType = 'Text' | 'Image' | 'Blank'
+export type ProfileCardType = 'Card' | 'Blank' | 'Text' | 'Image'
 export type ProfileCardSize = '1x1' | '1x2' | '2x1' | '2x2' | '4x1' | '4x2'
 export type ProfileImageRendering = 'Cover' | 'Natural' | 'Fit'
 
@@ -27,7 +27,6 @@ export const profileTextLimit = 140
 
 export const profileCardTypeOptions: Array<{ type: ProfileCardType; label: string; icon: string }> =
   [
-    { type: 'Text', label: 'Text', icon: 'lucide-text' },
-    { type: 'Image', label: 'Image', icon: 'lucide-image' },
-    { type: 'Blank', label: 'Blank', icon: 'lucide-square-dashed' },
+    { type: 'Card', label: 'Card', icon: 'lucide-square' },
+    { type: 'Blank', label: 'Spacer', icon: 'lucide-square-dashed' },
   ]

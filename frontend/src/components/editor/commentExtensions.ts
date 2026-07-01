@@ -10,6 +10,7 @@ import {
   Highlight,
 } from 'frappe-ui/editor'
 import { gameplanHeadingLevels, suggestionConfig, richQuoteExtensions } from './config'
+import { CustomEmojiExtension } from './customEmojiExtension'
 import type { RichQuoteController } from '@/components/RichQuoteExtension/useRichQuotes'
 
 /**
@@ -51,6 +52,7 @@ export function commentExtensions(
     TextStyle,
     Color,
     Highlight,
+    CustomEmojiExtension,
     SlashCommands.configure({}),
     ...richQuoteExtensions(opts.controller, opts.sourceId),
   ]

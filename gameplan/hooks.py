@@ -29,6 +29,8 @@ add_to_apps_screen = [
 # web_include_css = "/assets/gameplan/css/gameplan.css"
 # web_include_js = "/assets/gameplan/js/gameplan.js"
 
+email_css = ["/assets/gameplan/css/email_digest.css"]
+
 # include custom scss in every website theme (without file extension ".scss")
 # website_theme_scss = "gameplan/public/scss/website"
 
@@ -165,7 +167,7 @@ on_login = "gameplan.www.g.on_login"
 
 scheduler_events = {
 	"hourly": ["gameplan.gameplan.doctype.gp_invitation.gp_invitation.expire_invitations"],
-	"daily": ["gameplan.demo.demo.generate_data_daily"],
+	"daily": ["gameplan.demo.demo.generate_data_daily", "gameplan.email_digest.send_due_email_digests"],
 }
 
 # scheduler_events = {

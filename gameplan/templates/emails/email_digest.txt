@@ -1,0 +1,26 @@
+Your {{ frequency | lower }} digest
+
+{% if notifications -%}
+Unread notifications
+{% for item in notifications -%}
+- {{ item.title }}: {{ item.description }}{% if item.metadata %} ({{ item.metadata }}){% endif %}{% if item.url %}
+  {{ item.url }}{% endif %}
+{% endfor %}
+{% endif -%}
+{% if discussion_groups -%}
+Unread discussions
+{% for group in discussion_groups -%}
+{{ group.title }}
+{% for item in group.discussions -%}
+- {{ item.title }}{% if item.unread_label %} ({{ item.unread_label }}){% endif %}{% if item.metadata %}: {{ item.metadata }}{% endif %}{% if item.url %}
+  {{ item.url }}{% endif %}
+{% endfor %}
+{% endfor %}
+{% endif %}
+
+Open Gameplan: {{ open_gameplan_url }}
+{% if preferences_url -%}
+Manage preferences: {{ preferences_url }}
+{% endif %}
+
+You are receiving this because email digests are enabled in Gameplan.

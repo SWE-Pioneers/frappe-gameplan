@@ -9,6 +9,7 @@ interface ProfileBentoResponse {
   profile: string
   cards: ProfileBentoCard[]
   is_default: boolean
+  starter_cards?: ProfileBentoCard[]
 }
 
 const getBentoCardsMethod =
@@ -34,7 +35,7 @@ export function createServerProfileBentoSource(): ProfileBentoCardSource {
 
 export async function getProfileBentoCards(profile: string) {
   let response = await call<ProfileBentoResponse>(getProfileBentoCardsMethod, { profile })
-  return getLoadResultFromResponse(response).cards
+  return getLoadResultFromResponse(response)
 }
 
 function getLoadResultFromResponse(
@@ -43,5 +44,6 @@ function getLoadResultFromResponse(
   return {
     cards: response.cards || [],
     isDefault: response.is_default,
+    starterCards: response.starter_cards || [],
   }
 }

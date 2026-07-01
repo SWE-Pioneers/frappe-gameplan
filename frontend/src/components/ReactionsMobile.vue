@@ -26,7 +26,9 @@
           :whileHover="{ scale: 1.03 }"
           :whilePress="{ scale: 1.1 }"
         >
-          {{ emoji }} {{ reactions.count }}
+          <img v-if="isImageEmoji(emoji)" :src="emoji" alt="" class="mr-1 size-4 object-contain" />
+          <template v-else>{{ emoji }}&nbsp;</template>
+          {{ reactions.count }}
         </Motion>
       </div>
     </div>
@@ -49,7 +51,13 @@
             :whileHover="{ scale: 1.05 }"
             :whilePress="{ scale: 1.05 }"
           >
-            <span class="font-[emoji] text-4xl">
+            <img
+              v-if="isImageEmoji(emoji)"
+              :src="emoji"
+              alt=""
+              class="mx-auto size-6 object-contain"
+            />
+            <span v-else class="font-[emoji] text-4xl">
               {{ emoji }}
             </span>
           </Motion>
@@ -66,8 +74,9 @@
             :exit="{ opacity: 0, y: 0 }"
             :transition="{ type: 'spring', stiffness: 320, damping: 26 }"
           >
-            <div class="mr-2 w-14 text-center">
-              <span class="text-4xl font-[emoji]"> {{ emoji }}</span>
+            <div class="mr-2 flex w-14 items-center justify-center gap-1 text-center">
+              <img v-if="isImageEmoji(emoji)" :src="emoji" alt="" class="size-6 object-contain" />
+              <span v-else class="text-4xl font-[emoji]"> {{ emoji }}</span>
               <span class="text-p-xl text-ink-gray-4"> ({{ reactions.count }}) </span>
             </div>
             <span class="text-p-xl flex-1 text-ink-gray-6">
@@ -84,6 +93,7 @@ import { ref } from 'vue'
 import { AnimatePresence, Motion } from 'motion-v'
 import ReactionFaceIcon from './ReactionFaceIcon.vue'
 import BottomSheet from './BottomSheet.vue'
+import { isImageEmoji } from '@/utils/emoji'
 const props = defineProps<{
   reactionsCount: Record<string, { count: number; userReacted: boolean }>
   toggleReaction: (emoji: string) => void

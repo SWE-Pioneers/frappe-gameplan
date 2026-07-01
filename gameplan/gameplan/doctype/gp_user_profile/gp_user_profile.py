@@ -16,7 +16,7 @@ import gameplan
 from gameplan.extends.client import check_permissions
 from gameplan.mixins.attachments import HasAttachments
 
-PROFILE_BENTO_CARD_TYPES = {"Text", "Image", "Blank"}
+PROFILE_BENTO_CARD_TYPES = {"Card", "Blank"}
 PROFILE_BENTO_CARD_SIZES = {"1x1", "1x2", "2x1", "2x2", "4x1", "4x2"}
 PROFILE_BENTO_IMAGE_RENDERING = {"Cover", "Natural", "Fit"}
 PROFILE_BENTO_CARD_ID_PATTERN = re.compile(r"^[A-Za-z0-9_-]{1,80}$")
@@ -245,7 +245,7 @@ def remove_imgbg_in_background(profile_name, default_color=None):
 def get_my_bento_cards():
 	profile = get_session_user_profile()
 	profile.check_permission("read")
-	return get_profile_bento_response(profile)
+	return get_profile_bento_response(profile, include_starter_cards=True)
 
 
 @frappe.whitelist(methods=["POST"])
@@ -275,16 +275,18 @@ def get_session_user_profile():
 
 
 def get_profile_bento_cards(profile):
-	cards = [profile_bento_row_to_card(row) for row in profile.get("bento_cards")]
-	return cards or get_default_profile_bento_cards(profile)
+	return [profile_bento_row_to_card(row) for row in profile.get("bento_cards")]
 
 
-def get_profile_bento_response(profile):
-	return {
+def get_profile_bento_response(profile, include_starter_cards=False):
+	response = {
 		"profile": profile.name,
 		"cards": get_profile_bento_cards(profile),
 		"is_default": not has_saved_bento_cards(profile),
 	}
+	if include_starter_cards and response["is_default"]:
+		response["starter_cards"] = get_profile_bento_starter_cards(profile)
+	return response
 
 
 def has_saved_bento_cards(profile):
@@ -331,14 +333,19 @@ def normalize_bento_card(card, seen_card_ids):
 		PROFILE_BENTO_IMAGE_RENDERING,
 		"Image rendering",
 	)
+	text = normalize_bento_card_text(card.get("text"), card_type)
+	image = normalize_bento_card_image(card.get("image"), card_type)
+	if card_type == "Card" and not text and not image:
+		frappe.throw("Cards must have text or an image")
+
 	return {
 		"card_id": card_id,
 		"type": card_type,
 		"size": size,
 		"title": truncate(card.get("title"), 140),
-		"text": normalize_bento_card_text(card.get("text"), card_type),
+		"text": text,
 		"url": normalize_bento_card_url(card.get("url")),
-		"image": normalize_bento_card_image(card.get("image"), card_type),
+		"image": image,
 		"image_rendering": image_rendering,
 		"image_position": optional_int_range(
 			pick_card_value(card, "imagePosition", "image_position"),
@@ -369,21 +376,21 @@ def profile_bento_row_to_card(row):
 	return card
 
 
-def get_default_profile_bento_cards(profile):
+def get_profile_bento_starter_cards(profile):
 	display_name = profile.full_name or frappe.db.get_value("User", profile.user, "full_name") or profile.user
 	cards = get_default_profile_image_cards(profile)
 	cards.extend(
 		[
 			{
 				"id": "full-name",
-				"type": "Text",
+				"type": "Card",
 				"size": "1x1",
 				"title": "Full name",
 				"text": display_name,
 			},
 			{
 				"id": "bio",
-				"type": "Text",
+				"type": "Card",
 				"size": "2x1",
 				"title": "Bio",
 				"text": profile.bio or "No bio yet.",
@@ -399,7 +406,7 @@ def get_default_profile_image_cards(profile):
 		cards.append(
 			{
 				"id": "cover",
-				"type": "Image",
+				"type": "Card",
 				"size": "4x1",
 				"title": "Cover image",
 				"image": profile.cover_image,
@@ -413,7 +420,7 @@ def get_default_profile_image_cards(profile):
 		cards.append(
 			{
 				"id": "avatar",
-				"type": "Image",
+				"type": "Card",
 				"size": "1x1",
 				"title": "Avatar",
 				"image": profile.image,
@@ -448,23 +455,19 @@ def optional_allowed_value(value, allowed_values, label):
 
 
 def normalize_bento_card_text(value, card_type):
-	if card_type != "Text":
-		return truncate(value, 140)
+	if card_type != "Card":
+		return None
 
 	text = str(value or "").strip()
-	if not text:
-		frappe.throw("Text cards must have text")
-	return text[:140]
+	return text[:140] if text else None
 
 
 def normalize_bento_card_image(value, card_type):
-	if card_type != "Image":
-		return truncate(value, 500)
+	if card_type != "Card":
+		return None
 
 	image = str(value or "").strip()
-	if not image:
-		frappe.throw("Image cards must have an image")
-	return image[:500]
+	return image[:500] if image else None
 
 
 def normalize_bento_card_url(value):

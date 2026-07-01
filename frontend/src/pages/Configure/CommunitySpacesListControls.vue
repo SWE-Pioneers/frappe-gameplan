@@ -1,0 +1,65 @@
+<template>
+  <div>
+    <div class="flex items-center justify-between gap-3">
+      <div class="flex items-center gap-2">
+        <TextInput v-model="search" placeholder="Search spaces">
+          <template #prefix>
+            <span class="lucide-search h-4 w-4 text-ink-gray-4" />
+          </template>
+        </TextInput>
+        <Select :options="visibilityOptions" v-model="visibilityFilter" />
+      </div>
+      <slot name="action" />
+    </div>
+
+    <!-- Column header, aligned with SpaceRow's grid (guest column is conditional). -->
+    <div v-if="communitySpaces.length" :class="headerClass">
+      <div>Space</div>
+      <div>Content</div>
+      <div v-if="hasGuests">Guests</div>
+      <div />
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { computed } from 'vue'
+import { Select, TextInput } from 'frappe-ui'
+import { useCommunitySpaceData } from './useCommunitySpaceData'
+
+type VisibilityFilter = 'All' | 'Public' | 'Private' | 'Archived'
+
+const props = defineProps<{ communityId: string }>()
+const search = defineModel<string>('search', { default: '' })
+const visibilityFilter = defineModel<VisibilityFilter>('visibilityFilter', { default: 'All' })
+
+const { communitySpaces, hasGuests } = useCommunitySpaceData(() => props.communityId)
+
+const activeSpaces = computed(() => communitySpaces.value.filter((space) => !space.archived_at))
+const archivedCount = computed(() => communitySpaces.value.length - activeSpaces.value.length)
+
+const visibilityOptions = computed(() => {
+  const options = [
+    { label: `All (${activeSpaces.value.length})`, value: 'All' },
+    {
+      label: `Public (${activeSpaces.value.filter((s) => !s.is_private).length})`,
+      value: 'Public',
+    },
+    {
+      label: `Private (${activeSpaces.value.filter((s) => s.is_private).length})`,
+      value: 'Private',
+    },
+  ]
+  if (archivedCount.value) {
+    options.push({ label: `Archived (${archivedCount.value})`, value: 'Archived' })
+  }
+  return options
+})
+
+const headerClass = computed(() => {
+  const columns = hasGuests.value
+    ? 'grid-cols-[minmax(8rem,1fr)_15.25rem_5rem_1.5rem]'
+    : 'grid-cols-[minmax(8rem,1fr)_15.25rem_1.5rem]'
+  return `mt-3 hidden ${columns} gap-12 items-center border-b h-8 text-sm text-ink-gray-5 md:grid`
+})
+</script>

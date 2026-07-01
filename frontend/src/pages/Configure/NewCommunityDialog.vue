@@ -2,7 +2,7 @@
   <Dialog title="New Community" v-model:open="show">
     <div class="space-y-4">
       <p class="text-p-base text-ink-gray-6">
-        Communities group spaces, members, and visibility settings for a team or group.
+        Communities group spaces, users, and visibility settings for a team or group.
       </p>
       <TextInput
         v-model="title"
@@ -14,7 +14,7 @@
       <FormControl
         v-model="isPrivate"
         type="checkbox"
-        label="Keep it private &mdash; Only visible to members"
+        label="Keep it private &mdash; Only visible to users"
       />
       <ErrorMessage :message="communities.insert.error" />
     </div>
@@ -37,13 +37,14 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
 import { Button, Dialog, ErrorMessage, FormControl, TextInput } from 'frappe-ui'
 import { communities } from '@/data/communities'
 import type { GPTeam } from '@/types/doctypes'
 
 const show = defineModel<boolean>()
-const router = useRouter()
+const emit = defineEmits<{
+  (event: 'created', communityId: string): void
+}>()
 const title = ref('')
 const isPrivate = ref(false)
 
@@ -68,7 +69,7 @@ async function submit() {
   show.value = false
 
   if (community?.name) {
-    router.push({ name: 'CommunitySpaces', params: { communityId: community.name } })
+    emit('created', community.name)
   }
 }
 </script>

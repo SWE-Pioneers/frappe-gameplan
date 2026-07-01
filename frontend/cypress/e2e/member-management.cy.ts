@@ -2,9 +2,9 @@
 // (gameplan.api.invite_by_email), changing a member's role (change_user_role)
 // and disabling a member (remove_user), plus the authorization boundary.
 //
-// Boundary note: the global Members/Invites surfaces are admin-only in the UI.
-// SettingsDialog registers the Members and Invites tabs only for global admins,
-// and the People page hides its Invite buttons for non-admins. So the non-admin
+// Boundary note: the global user-management surfaces are admin-only in the UI.
+// SettingsDialog registers the "Users" tab (which holds the invite flow) only for
+// global admins, and the People page hides its Invite buttons for non-admins. So the non-admin
 // test below asserts those controls are ABSENT, not merely rejected. Server-side
 // `require_admin()` in gameplan/api.py is still the real enforcement (unit tested
 // in gameplan/tests/test_api_security.py) — hiding the UI just stops non-admins
@@ -48,27 +48,32 @@ describe('Member management', () => {
   })
 
   // Opens the global Settings dialog via the sidebar app dropdown. For admins it
-  // opens on the first tab (Members).
+  // opens on the first tab (Profile).
   function openSettings() {
     cy.visit(`/g/community/${community}/discussions`)
     cy.contains('button', 'Gameplan').click()
     cy.contains('[role="menuitem"]', 'Settings').click()
-    cy.scope('dialog').contains('h1', 'Settings').should('be.visible')
+    // The dialog title is a visually-hidden (sr-only) accessible label, so assert
+    // presence rather than visibility.
+    cy.scope('dialog').contains('h1', 'Settings').should('exist')
   }
 
   it('admin can invite a member by email', () => {
     cy.intercept('POST', '**/gameplan.api.invite_by_email').as('invite')
     openSettings()
-    cy.scope('dialog').contains('button', 'Invites').click()
+    // Invites now live on the admin-only "Users" tab, behind an "Invite" button
+    // that opens the InvitePeople dialog.
+    cy.scope('dialog').contains('button', 'Users').click()
+    cy.scope('dialog').contains('button', 'Invite').click()
 
-    // Typing an email reveals the role Select (defaults to Member) + submit button.
     cy.scope('dialog').find('textarea').type('newteammate@example.com')
     cy.button('Send invitation').click()
     cy.wait('@invite').its('response.statusCode').should('eq', 200)
 
-    // On success the form resets and the new invite shows in "Pending Invites".
+    // On success the new invite shows in "Pending Invites". The Member role is
+    // labelled "User" in the UI.
     cy.scope('dialog').contains('newteammate@example.com').should('be.visible')
-    cy.scope('dialog').contains('(Member)').should('be.visible')
+    cy.scope('dialog').contains('(User)').should('be.visible')
   })
 
   // Note: the admin role-change and disable happy-paths are driven through a
@@ -91,11 +96,11 @@ describe('Member management', () => {
     })
     cy.clearLocalStorage()
 
-    // Settings opens, but the admin-only tabs are not registered for members —
-    // only the universal "Update Password" surface remains.
+    // Settings opens, but the admin-only tabs (Users, Emojis) are not registered
+    // for members — only universal surfaces like "Update Password" remain.
     openSettings()
-    cy.scope('dialog').contains('button', 'Members').should('not.exist')
-    cy.scope('dialog').contains('button', 'Invites').should('not.exist')
+    cy.scope('dialog').contains('button', 'Users').should('not.exist')
+    cy.scope('dialog').contains('button', 'Emojis').should('not.exist')
     cy.scope('dialog').contains('Update Password').should('be.visible')
 
     // The People page also hides its Invite affordance for non-admins.

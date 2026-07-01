@@ -1,6 +1,7 @@
 import { computed, reactive, unref, toValue } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 import { useCall } from 'frappe-ui'
+import { currentQuickReactionEmojis } from './reactionPreferences'
 import { session } from './session'
 import { useUser } from './users'
 
@@ -33,29 +34,6 @@ interface UseReactionsOptions {
   readOnlyMode?: MaybeRefOrGetter<boolean>
   onUpdate: (reactions: Reaction[]) => void
 }
-
-const standardEmojis = [
-  '👍',
-  '👎',
-  '💖',
-  '🔥',
-  '👏🏻',
-  '🤔',
-  '😱',
-  '🤯',
-  '😡',
-  '⚡️',
-  '🥳',
-  '🎉',
-  '💩',
-  '🤩',
-  '😢',
-  '😂',
-  '🍿',
-  '🙈',
-  '🌚',
-  '🚀',
-]
 
 export function useReactions(options: UseReactionsOptions) {
   const pendingReactions = reactive<Record<string, PendingReaction>>({})
@@ -214,7 +192,7 @@ export function useReactions(options: UseReactionsOptions) {
     reactionsCount,
     toggleReaction,
     toolTipText,
-    standardEmojis,
+    standardEmojis: currentQuickReactionEmojis,
     batchRequestErrors,
     isLoading: react.loading,
   }

@@ -15,7 +15,6 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
 import { dialog, Dropdown, useDoctype } from 'frappe-ui'
 import { communities } from '@/data/communities'
 import type { Community } from '@/data/communities'
@@ -25,22 +24,25 @@ import MergeCommunityDialog from './MergeCommunityDialog.vue'
 const props = defineProps<{
   community: Community
 }>()
+const emit = defineEmits<{
+  (event: 'view-spaces', communityId: string): void
+  (event: 'view-members', communityId: string): void
+  (event: 'merged', communityId: string): void
+}>()
 
 const teams = useDoctype<GPTeam>('GP Team')
-const route = useRoute()
-const router = useRouter()
 const showMergeDialog = ref(false)
 
 const options = computed(() => [
   {
     label: 'View spaces',
     icon: 'lucide-layout-grid',
-    route: { name: 'CommunitySpaces', params: { communityId: props.community.name } },
+    onClick: () => emit('view-spaces', props.community.name),
   },
   {
-    label: 'View members',
+    label: 'View users',
     icon: 'lucide-users-2',
-    route: { name: 'CommunityMembers', params: { communityId: props.community.name } },
+    onClick: () => emit('view-members', props.community.name),
   },
   {
     label: 'Merge into...',
@@ -81,15 +83,6 @@ async function updateArchiveState(method: 'archive' | 'unarchive') {
 }
 
 function redirectAfterMerge(communityId: string) {
-  if (route.params.communityId !== props.community.name) return
-
-  router.replace({
-    name: route.name ?? 'CommunitySpaces',
-    params: {
-      ...route.params,
-      communityId,
-    },
-    query: route.query,
-  })
+  emit('merged', communityId)
 }
 </script>

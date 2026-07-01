@@ -1,21 +1,24 @@
 <template>
   <div v-if="profile" class="min-h-full bg-surface-base">
     <PageHeader>
-      <Breadcrumbs class="h-7" :items="profileBreadcrumbs" />
-      <div v-if="isOwnProfile" class="flex shrink-0 items-center gap-2">
-        <Button
-          v-if="activeTab === 'Profile'"
-          icon-left="lucide-layout-dashboard"
-          :route="{ name: 'ProfileCustomize' }"
-        >
-          Customize
-        </Button>
-        <Button icon-left="lucide-edit" @click="editDialog.show = true"> Edit Profile </Button>
-      </div>
+      <Breadcrumbs class="h-7" :items="profileBreadcrumbs">
+        <template #suffix="{ item }">
+          <Button
+            v-if="isOwnProfile && item.isPageTitle"
+            variant="ghost"
+            size="sm"
+            icon="lucide-edit"
+            label="Edit profile"
+            tooltip="Edit profile"
+            class="ml-1 shrink-0"
+            @click="showSettingsDialog('Profile')"
+          />
+        </template>
+      </Breadcrumbs>
     </PageHeader>
 
     <div class="mx-auto w-full max-w-[860px] px-3 py-4 sm:px-5 sm:py-6">
-      <div class="mb-4">
+      <div class="mb-4 flex items-center justify-between gap-3">
         <TabButtons
           :buttons="[
             { label: 'Profile' },
@@ -25,56 +28,32 @@
           ]"
           v-model="activeTab"
         />
+        <Button
+          v-if="isOwnProfile && activeTab === 'Profile' && hasProfilePage"
+          class="shrink-0"
+          icon-left="lucide-layout-dashboard"
+          :route="{ name: 'ProfileCustomize' }"
+        >
+          Customize
+        </Button>
       </div>
 
-      <router-view :profile="profileChildResource" :bento-cards="profileBentoCards" />
+      <router-view
+        :profile="profileChildResource"
+        :bento-cards="profileBentoCards"
+        :bento-cards-loaded="profileBentoLoaded"
+        :has-profile-page="hasProfilePage"
+        :is-own-profile="isOwnProfile"
+      />
     </div>
-    <Dialog
-      v-if="isOwnProfile"
-      title="Edit Profile"
-      v-model:open="editDialog.show"
-      @after-leave="discard"
-    >
-      <div class="space-y-4">
-        <ProfileImageEditor :profile="profileChildResource" v-if="editDialog.editingProfilePhoto" />
-        <template v-else-if="user">
-          <div class="flex items-center gap-4">
-            <UserAvatar size="lg" :user="profile.user" />
-            <Button @click="editDialog.editingProfilePhoto = true"> Edit Profile Photo </Button>
-          </div>
-          <FormControl label="First Name" v-model="user.first_name" />
-          <FormControl label="Last Name" v-model="user.last_name" />
-          <FormControl label="Bio" v-model="profile.bio" type="textarea" maxlength="280" />
-        </template>
-      </div>
-      <template #actions>
-        <Button
-          variant="solid"
-          class="w-full"
-          @click="save"
-          :loading="userResource.setValue.loading || profileResource.setValue.loading"
-        >
-          Save
-        </Button>
-      </template>
-    </Dialog>
   </div>
 </template>
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import {
-  Breadcrumbs,
-  Button,
-  Dialog,
-  FormControl,
-  TabButtons,
-  useDoc,
-  usePageMeta,
-} from 'frappe-ui'
+import { Breadcrumbs, Button, TabButtons, useDoc, usePageMeta } from 'frappe-ui'
 import PageHeader from '@/components/PageHeader.vue'
-import ProfileImageEditor from '@/components/ProfileImageEditor.vue'
-import UserAvatar from '@/components/UserAvatar.vue'
+import { showSettingsDialog } from '@/components/Settings'
 import { getProfileBentoCards } from '@/components/ProfileBento/profileBentoSource'
 import type { ProfileBentoCard } from '@/components/ProfileBento/types'
 import { useSessionUser } from '@/data/users'
@@ -88,20 +67,6 @@ const props = defineProps<{
   personId: string
 }>()
 
-interface ProfileMethods {
-  setImage: (data: { image: string | null }) => void
-  removeImageBackground: (data: { default_color?: string | null }) => void
-  revertImageBackground: () => void
-  isBackgroundRemovalAvailable: () => boolean
-}
-
-interface UserDoc {
-  name: string
-  first_name?: string
-  last_name?: string
-  full_name?: string
-}
-
 const route = useRoute()
 const router = useRouter()
 const sessionUser = useSessionUser()
@@ -109,17 +74,9 @@ const personId = computed(() => {
   return props.personId || route.params.personId?.toString() || 'missing-profile'
 })
 
-const editDialog = reactive({ show: false, editingProfilePhoto: false })
-
-const profileResource = useDoc<GPUserProfile, ProfileMethods>({
+const profileResource = useDoc<GPUserProfile>({
   doctype: 'GP User Profile',
   name: personId,
-  methods: {
-    setImage: 'set_image',
-    removeImageBackground: 'remove_image_background',
-    revertImageBackground: 'revert_image_background',
-    isBackgroundRemovalAvailable: 'is_background_removal_available',
-  },
 })
 
 const profile = computed(() => profileResource.doc)
@@ -129,14 +86,9 @@ const profileChildResource = computed(() => ({
 }))
 const isOwnProfile = computed(() => profile.value?.user === sessionUser.name)
 
-const userResource = useDoc<UserDoc>({
-  doctype: 'User',
-  name: sessionUser.name,
-  immediate: false,
-})
-
-const user = computed(() => (isOwnProfile.value ? userResource.doc : null))
 const profileBentoCards = ref<ProfileBentoCard[]>([])
+const profileBentoLoaded = ref(false)
+const hasProfilePage = ref(false)
 let profileBentoLoadId = 0
 let loadedProfileBentoName = ''
 
@@ -174,58 +126,33 @@ const activeTab = computed({
 })
 
 watch(
-  isOwnProfile,
-  (ownProfile) => {
-    if (ownProfile) {
-      userResource.reload()
-    }
-  },
-  { immediate: true },
-)
-
-watch(
   () => profile.value?.name,
   () => loadProfileBentoCards(profile.value?.name),
   { immediate: true },
 )
-
-async function save() {
-  if (!profile.value || !user.value) return
-
-  await userResource.setValue.submit({
-    first_name: user.value.first_name,
-    last_name: user.value.last_name,
-  })
-  await profileResource.setValue.submit({
-    bio: profile.value.bio,
-  })
-  editDialog.show = false
-  await loadProfileBentoCards(profile.value.name)
-}
-
-function discard() {
-  userResource.reload()
-  profileResource.reload()
-  editDialog.show = false
-  editDialog.editingProfilePhoto = false
-}
 
 async function loadProfileBentoCards(profileName?: string) {
   let loadId = ++profileBentoLoadId
   if (!profileName) {
     loadedProfileBentoName = ''
     profileBentoCards.value = []
+    profileBentoLoaded.value = false
+    hasProfilePage.value = false
     return
   }
 
   if (profileName !== loadedProfileBentoName) {
     profileBentoCards.value = []
+    profileBentoLoaded.value = false
+    hasProfilePage.value = false
   }
 
-  let cards = await getProfileBentoCards(profileName)
+  let loadResult = await getProfileBentoCards(profileName)
   if (loadId === profileBentoLoadId) {
     loadedProfileBentoName = profileName
-    profileBentoCards.value = cards
+    profileBentoCards.value = loadResult.cards
+    profileBentoLoaded.value = true
+    hasProfilePage.value = !loadResult.isDefault
   }
 }
 

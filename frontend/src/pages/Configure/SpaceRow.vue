@@ -29,7 +29,6 @@
             @keydown.enter.prevent="saveTitle"
           />
           <span v-if="space.is_private" class="lucide-lock size-3.5 shrink-0 text-ink-gray-5" />
-          <Badge v-if="space.archived_at" class="shrink-0">Archived</Badge>
         </div>
         <div class="mt-1 flex flex-wrap gap-x-2 gap-y-1 text-sm text-ink-gray-5 md:hidden">
           <span class="inline-flex items-center gap-1">
@@ -66,7 +65,7 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { Badge, Button, useDoctype } from 'frappe-ui'
+import { Button, useDoctype } from 'frappe-ui'
 import IconPicker from '@/components/IconPicker.vue'
 import SpaceIcon from '@/components/SpaceIcon.vue'
 import SpaceOptions from '@/components/SpaceOptions.vue'
@@ -85,8 +84,8 @@ const props = defineProps<{
 const rowClass = computed(() => [
   'grid grid-cols-[minmax(0,1fr)_auto] items-center gap-1 h-10',
   props.showGuests
-    ? 'md:grid-cols-[minmax(8rem,1fr)_15.25rem_5rem_3rem] md:gap-12'
-    : 'md:grid-cols-[minmax(8rem,1fr)_15.25rem_3rem] md:gap-12',
+    ? 'md:grid-cols-[minmax(8rem,1fr)_15.25rem_5rem_1.5rem] md:gap-12'
+    : 'md:grid-cols-[minmax(8rem,1fr)_15.25rem_1.5rem] md:gap-12',
 ])
 
 const project = useDoctype<GPProject>('GP Project')

@@ -17,7 +17,7 @@
           <div v-if="manageableCommunities.length > 0" class="space-y-4">
             <section class="flex items-center justify-between gap-3">
               <h3 class="text-base font-medium text-ink-gray-8">Badge style</h3>
-              <Select class="w-40" :options="badgeStyleOptions" v-model="selectedBadgeStyle" />
+              <Select :options="badgeStyleOptions" v-model="selectedBadgeStyle" />
             </section>
 
             <section class="space-y-1.5">
@@ -169,7 +169,7 @@ import {
   type SidebarBadgeStyle,
 } from '@/data/sidebarPreferences'
 import { sessionUser } from '@/data/session'
-import { isGameplanAdmin, useSessionUser } from '@/data/users'
+import { useSessionUser } from '@/data/users'
 import {
   usePointerSortableSections,
   type PointerSortableCommit,
@@ -379,11 +379,10 @@ async function saveChanges() {
       communityState.change(nextCommunity?.name ?? null)
 
       if (route.matched.some((record) => record.meta?.communityScope)) {
-        let fallback = isGameplanAdmin() ? { name: 'Spaces' } : { name: 'NoCommunities' }
         router.push(
           nextCommunity
             ? { name: 'Discussions', params: { communityId: nextCommunity.name } }
-            : fallback,
+            : { name: 'NoCommunities' },
         )
       }
     }

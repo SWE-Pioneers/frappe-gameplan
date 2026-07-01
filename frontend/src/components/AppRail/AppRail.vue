@@ -155,7 +155,8 @@ import { unreadNotifications } from '@/data/notifications'
 import { currentSidebarBadgeStyle } from '@/data/sidebarPreferences'
 import { getSpaceUnreadCount, spaces } from '@/data/spaces'
 import { isGameplanAdmin, useSessionUser } from '@/data/users'
-import { useConfigureRoute } from '@/composables/useConfigureRoute'
+import { useCanManageCommunities } from '@/composables/useCanManageCommunities'
+import { showCommunitiesSettings } from '@/components/Settings'
 import { unreadAriaLabel } from '@/utils/formatters'
 import CommunityImage from '../CommunityImage.vue'
 import GameplanLogo from '../GameplanLogo.vue'
@@ -169,7 +170,8 @@ interface RailItem {
   label: string
   icon: string
   isActive: boolean
-  route: RouteLocationRaw
+  route?: RouteLocationRaw
+  onClick?: () => void
   unreadCount?: number
 }
 
@@ -207,20 +209,18 @@ const homeRoute = computed<RouteLocationRaw>(() => {
 })
 
 const adminShortcuts = computed<RailItem[]>(() => {
-  const route = configureRoute.value
-  if (!route) return []
+  if (!canManageCommunities.value) return []
 
   return [
     {
       label: 'Configure communities',
       icon: 'lucide-building-2',
-      isActive: isRoute('Spaces', 'CommunitySpaces', 'CommunityMembers'),
-      route,
+      onClick: () => showCommunitiesSettings(),
     },
   ]
 })
 
-const configureRoute = useConfigureRoute()
+const canManageCommunities = useCanManageCommunities()
 
 const mainShortcuts = computed<RailItem[]>(() => [
   {
@@ -262,7 +262,14 @@ const personalShortcuts = computed<RailItem[]>(() => [
 ])
 
 function goTo(item: RailItem) {
-  router.push(item.route)
+  if (item.onClick) {
+    item.onClick()
+    return
+  }
+
+  if (item.route) {
+    router.push(item.route)
+  }
 }
 
 function goToCommunity(community: Community) {

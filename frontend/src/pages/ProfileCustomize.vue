@@ -2,7 +2,11 @@
   <div class="min-h-full bg-surface-base">
     <PageHeader>
       <Breadcrumbs class="h-7" :items="profileCustomizeBreadcrumbs" />
-      <div class="flex shrink-0 items-center gap-2" data-profile-keep-selection>
+      <div
+        v-if="showProfileBuilder"
+        class="flex shrink-0 items-center gap-2"
+        data-profile-keep-selection
+      >
         <Button
           v-for="option in profileCardTypeOptions"
           :key="option.type"
@@ -23,7 +27,36 @@
       </div>
     </PageHeader>
 
-    <div class="mx-auto flex w-full max-w-[1180px] gap-6 px-4 pb-32 pt-6 sm:px-6 sm:pb-40">
+    <div
+      v-if="isLoadingDraft"
+      class="mx-auto flex w-full max-w-[1180px] px-4 py-12 text-base text-ink-gray-5 sm:px-6"
+    >
+      Loading profile page...
+    </div>
+
+    <div
+      v-else-if="!showProfileBuilder"
+      class="mx-auto flex min-h-[520px] w-full max-w-[720px] items-center px-4 py-12 sm:px-6"
+    >
+      <div class="space-y-5">
+        <div class="space-y-2">
+          <p class="text-sm font-medium text-ink-gray-5">Profile page setup</p>
+          <h1 class="text-3xl font-semibold text-ink-gray-9">Build your profile page</h1>
+          <p class="max-w-[560px] text-base leading-7 text-ink-gray-6">
+            Start from your name, bio, avatar, and cover photo. Nothing appears on your profile page
+            until you save it.
+          </p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <Button variant="solid" icon-left="lucide-sparkles" @click="startProfileBuilder">
+            Start with basics
+          </Button>
+          <Button :route="profileRoute">Back to profile</Button>
+        </div>
+      </div>
+    </div>
+
+    <div v-else class="mx-auto flex w-full max-w-[1180px] gap-6 px-4 pb-32 pt-6 sm:px-6 sm:pb-40">
       <main class="min-w-0 flex-1">
         <ProfileBentoGrid
           :cards="cards"
@@ -43,6 +76,7 @@
       <ProfileBentoEditorPanel
         :card="selectedCard"
         :text-characters-left="selectedTextCharactersLeft"
+        @add-card="addCard"
         @reposition-image="beginImageReposition"
         @upload-image="updateSelectedImage"
         @update-image-rendering="(imageRendering) => updateSelectedCard({ imageRendering })"
@@ -80,16 +114,20 @@ const profileCustomizeBreadcrumbs = computed(() => [
 ])
 
 const profileBentoSource = createServerProfileBentoSource()
+const isLoadingDraft = ref(true)
+const hasStartedProfileBuilder = ref(false)
 const repositioningCardId = ref('')
 const {
   cards,
   selectedCardId,
   selectedCard,
   selectedTextCharactersLeft,
+  isNewProfilePage,
   isDirty,
   isSaving,
   loadDraft,
   saveDraft,
+  startWithStarterCards,
   addCard,
   reorderCards,
   removeCard,
@@ -100,7 +138,14 @@ const {
   updateSelectedText,
 } = useProfileBentoCustomization(profileBentoSource)
 
-onMounted(loadDraft)
+const profileRoute = computed(() =>
+  sessionUser.user_profile
+    ? { name: 'PersonProfileProfile', params: { personId: sessionUser.user_profile } }
+    : { name: 'People' },
+)
+const showProfileBuilder = computed(() => !isNewProfilePage.value || hasStartedProfileBuilder.value)
+
+onMounted(loadProfileBentoDraft)
 useEventListener(window, 'keydown', handleCustomizeKeydown)
 useEventListener(document, 'click', clearSelectionOnOutsideClick)
 
@@ -109,6 +154,19 @@ usePageMeta(() => {
     title: 'Customize Profile | Gameplan',
   }
 })
+
+async function loadProfileBentoDraft() {
+  try {
+    await loadDraft()
+  } finally {
+    isLoadingDraft.value = false
+  }
+}
+
+function startProfileBuilder() {
+  startWithStarterCards()
+  hasStartedProfileBuilder.value = true
+}
 
 function handleCustomizeKeydown(event: KeyboardEvent) {
   // On Mac the "delete" key emits "Backspace"; "Delete" is the forward-delete.
@@ -140,7 +198,7 @@ function clearSelectionOnOutsideClick(event: MouseEvent) {
 }
 
 function beginImageReposition() {
-  if (!selectedCard.value || selectedCard.value.type !== 'Image' || !selectedCard.value.image)
+  if (!selectedCard.value || selectedCard.value.type === 'Blank' || !selectedCard.value.image)
     return
   repositioningCardId.value = selectedCard.value.id
 }

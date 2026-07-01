@@ -19,9 +19,9 @@
 
         <section v-if="space.is_private" class="space-y-3">
           <div>
-            <h3 class="text-base-medium text-ink-gray-7">Members</h3>
+            <h3 class="text-base-medium text-ink-gray-7">Users</h3>
             <p class="mt-1 text-p-sm text-ink-gray-5">
-              Add community members who should be able to open this private space.
+              Add community users who should be able to open this private space.
             </p>
           </div>
 
@@ -62,7 +62,7 @@
             <EmptyStateBox v-if="!space.members.length" class="py-6">
               <span class="lucide-users size-5 text-ink-gray-4" />
               <div class="mt-2 text-p-sm text-ink-gray-5">
-                No members have been added to this private space.
+                No users have been added to this private space.
               </div>
             </EmptyStateBox>
           </div>
@@ -185,9 +185,9 @@ const accessLabel = computed(() => (space.value?.is_private ? 'Private' : 'Publi
 const accessIcon = computed(() => (space.value?.is_private ? 'lucide-lock' : 'lucide-globe-2'))
 const accessDescription = computed(() => {
   if (space.value?.is_private) {
-    return 'Only selected community members and invited guests can view this space.'
+    return 'Only selected community users and invited guests can view this space.'
   }
-  return 'Every community member can view this space. Guests need an explicit invite.'
+  return 'Every community user can view this space. Guests need an explicit invite.'
 })
 
 let addableUsers = computed(() => {

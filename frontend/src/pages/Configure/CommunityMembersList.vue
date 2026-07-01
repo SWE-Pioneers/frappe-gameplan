@@ -1,33 +1,33 @@
 <template>
-  <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+  <div
+    v-if="showControls"
+    class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
+  >
     <div>
-      <h2 class="text-lg-medium text-ink-gray-9">Members</h2>
+      <h2 class="text-lg-medium text-ink-gray-9">Users</h2>
       <p class="mt-1 text-base text-ink-gray-5">
-        Members can access public spaces in this community.
+        Users can access public spaces in this community.
       </p>
     </div>
     <Button
       v-if="canManage"
       icon-left="lucide-user-plus"
       :disabled="Boolean(community.archived_at)"
-      @click="showAddMembersDialog = true"
+      @click="showAddDialog = true"
     >
-      Add members
+      Add users
     </Button>
   </div>
 
-  <ConfigureList
-    v-if="communityMembers.length"
-    header-class="hidden grid-cols-[1.25rem_minmax(12rem,1fr)_minmax(12rem,1fr)_8rem_3rem] gap-2 items-center h-7 text-sm text-ink-gray-6 md:grid"
-  >
-    <template #header>
-      <div class="col-span-2">Member</div>
-      <div>Email</div>
-      <div>Role</div>
-      <div />
-    </template>
+  <CommunityMembersListControls
+    v-if="showControls"
+    :has-members="communityMembers.length > 0"
+    v-model:search="search"
+  />
+
+  <ConfigureList v-if="filteredMembers.length">
     <MemberRow
-      v-for="member in communityMembers"
+      v-for="member in filteredMembers"
       :key="member.user"
       :community="community"
       :member="member"
@@ -36,25 +36,36 @@
   </ConfigureList>
 
   <ConfigureEmptyState
-    v-else
+    v-else-if="!communityMembers.length"
     icon="lucide-users"
-    title="No members yet"
-    description="Add community members so they can access public spaces here."
+    title="No users yet"
+    description="Add users so they can access public spaces here."
   >
     <template v-if="canManage" #actions>
       <Button
         icon-left="lucide-user-plus"
         :disabled="Boolean(community.archived_at)"
-        @click="showAddMembersDialog = true"
+        @click="showAddDialog = true"
       >
-        Add members
+        Add users
       </Button>
+    </template>
+  </ConfigureEmptyState>
+
+  <ConfigureEmptyState
+    v-else
+    icon="lucide-search-x"
+    title="No users match your search"
+    description="Try a different name or email."
+  >
+    <template #actions>
+      <Button @click="search = ''">Clear search</Button>
     </template>
   </ConfigureEmptyState>
 
   <CommunityGuestsList class="mt-10" :community="community" :can-manage="canManage" />
 
-  <Dialog v-if="canManage" title="Add members" v-model:open="showAddMembersDialog">
+  <Dialog v-if="canManage" title="Add users" v-model:open="showAddDialog">
     <div class="space-y-4">
       <ul v-if="membersToAdd.length" class="flex flex-wrap gap-2">
         <li
@@ -110,15 +121,27 @@ import type { GPTeam } from '@/types/doctypes'
 import ConfigureEmptyState from './ConfigureEmptyState.vue'
 import ConfigureList from './ConfigureList.vue'
 import CommunityGuestsList from './CommunityGuestsList.vue'
+import CommunityMembersListControls from './CommunityMembersListControls.vue'
 import MemberRow from './MemberRow.vue'
 
-const props = defineProps<{
-  community: Community
-  canManage: boolean
-}>()
+const props = withDefaults(
+  defineProps<{
+    community: Community
+    canManage: boolean
+    // When false, the parent owns the title + controls; we only render the list.
+    showControls?: boolean
+  }>(),
+  {
+    showControls: true,
+  },
+)
+
+// Models so the Settings dialog can hoist the search + Add users into its fixed
+// header while this component still renders the list and owns the add dialog.
+const search = defineModel<string>('search', { default: '' })
+const showAddDialog = defineModel<boolean>('showAddDialog', { default: false })
 
 const teams = useDoctype<GPTeam>('GP Team')
-const showAddMembersDialog = ref(false)
 const selectedUser = ref<string | null>(null)
 const membersToAdd = ref<{ value: string; label: string }[]>([])
 
@@ -134,6 +157,17 @@ const communityMembers = computed(() => {
     .sort((a, b) => {
       return useUser(a.user).full_name.localeCompare(useUser(b.user).full_name)
     })
+})
+
+const filteredMembers = computed(() => {
+  const term = search.value.trim().toLowerCase()
+  if (!term) return communityMembers.value
+  return communityMembers.value.filter((member) => {
+    const user = useUser(member.user)
+    return (
+      user.full_name.toLowerCase().includes(term) || (user.email || '').toLowerCase().includes(term)
+    )
+  })
 })
 
 const addableMembers = computed(() => {
@@ -157,7 +191,7 @@ watch(selectedUser, (value) => {
   selectedUser.value = null
 })
 
-watch(showAddMembersDialog, (value) => {
+watch(showAddDialog, (value) => {
   if (!value) {
     selectedUser.value = null
     membersToAdd.value = []
@@ -175,7 +209,7 @@ async function addMembers() {
     },
   })
   await communities.reload()
-  toast.success('Members added')
-  showAddMembersDialog.value = false
+  toast.success('Users added')
+  showAddDialog.value = false
 }
 </script>

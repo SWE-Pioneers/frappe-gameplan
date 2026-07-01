@@ -2,8 +2,19 @@ import { computed, reactive } from 'vue'
 import { useCall } from 'frappe-ui'
 import router from '@/router'
 import { setCommunityOrder } from './communityOrder'
+import { loadQuickReactionSlots } from './reactionPreferences'
 import { setSidebarBadgeStyle, type SidebarBadgeStyle } from './sidebarPreferences'
 import { session } from './session'
+
+export type EmailDigestFrequency = 'Off' | 'Weekly' | 'Fortnightly' | 'Monthly'
+export type EmailDigestDayOfWeek =
+  | 'Monday'
+  | 'Tuesday'
+  | 'Wednesday'
+  | 'Thursday'
+  | 'Friday'
+  | 'Saturday'
+  | 'Sunday'
 
 let usersByName = reactive<Record<string, UserInfo>>({})
 
@@ -21,7 +32,11 @@ interface UserInfo {
   discussions_count_3m: number
   comments_count_3m: number
   community_order?: unknown
+  quick_reaction_emojis?: unknown
   sidebar_badge_style?: SidebarBadgeStyle
+  email_digest_frequency?: EmailDigestFrequency
+  email_digest_day_of_week?: EmailDigestDayOfWeek
+  email_digest_last_sent_on?: string
   bio: string
   role: 'Gameplan Admin' | 'Gameplan Member' | 'Gameplan Guest'
   isGuest?: boolean
@@ -41,6 +56,7 @@ export let users = useCall<UserInfo[]>({
       usersByName[user.name] = user
       if (user.name === session.user) {
         setCommunityOrder(user.community_order)
+        loadQuickReactionSlots(user.quick_reaction_emojis, user.user_profile)
         setSidebarBadgeStyle(user.sidebar_badge_style)
       }
     }
