@@ -37,7 +37,7 @@ class GPUserProfile(HasAttachments, Document):
 		full_name = frappe.db.get_value("User", self.user, "full_name")
 		return append_number_if_name_exists(self.doctype, cleanup_page_name(full_name))
 
-	@frappe.whitelist()
+	@frappe.whitelist(methods=["POST"])
 	def set_image(self, image):
 		self.image = image
 		self.is_image_background_removed = False
@@ -46,7 +46,7 @@ class GPUserProfile(HasAttachments, Document):
 		self.save()
 		gameplan.refetch_resource("Users")
 
-	@frappe.whitelist()
+	@frappe.whitelist(methods=["POST"])
 	def change_user_role(self, role):
 		require_admin()
 
@@ -58,16 +58,20 @@ class GPUserProfile(HasAttachments, Document):
 			if _role.role in ["Gameplan Guest", "Gameplan Member", "Gameplan Admin"]:
 				user_doc.remove(_role)
 		user_doc.append_roles(role)
+		# Admin-gated by require_admin() above; bypass User's own permission checks so an
+		# admin can change another user's roles.
 		user_doc.save(ignore_permissions=True)
 
 		return get_user_info(self.user)[0]
 
-	@frappe.whitelist()
+	@frappe.whitelist(methods=["POST"])
 	def disable_user(self):
 		require_admin()
 
 		user_doc = frappe.get_doc("User", self.user)
 		user_doc.enabled = 0
+		# Admin-gated by require_admin() above; bypass User's own permission checks so an
+		# admin can disable another user.
 		user_doc.save(ignore_permissions=True)
 
 		return self.user
