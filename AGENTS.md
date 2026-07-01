@@ -65,3 +65,10 @@ Explain *why*, not *what*. JSDoc/TSDoc for complex functions/composables. No com
 - Prefer generic components and utilities if code is repeated in multiple areas
 - Prefer simpler code over complex
 - When working on a specific component in Gameplan, if some generic part could be extracted out which can benefit other Frappe apps via frappe-ui, suggest it.
+
+## Fixing bugs in dependencies
+
+If a bug is actually in `frappe` or `frappe-ui`, fix it upstream (PR against `frappe/frappe` or `frappe/frappe-ui`) instead of working around it in Gameplan.
+
+- No local hacks (dropping a field, reimplementing framework logic, monkey-patching) to dodge a dependency bug — that just hides it from every other app using the same dependency.
+- A temporary local workaround is fine only if Gameplan is blocked and the upstream fix won't land in time — reference the upstream PR in a comment and remove the workaround once it ships.
