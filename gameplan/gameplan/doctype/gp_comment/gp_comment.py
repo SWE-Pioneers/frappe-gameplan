@@ -94,3 +94,15 @@ def get_permission_query_conditions(user):
 
 def has_permission(doc, ptype="read", user=None):
 	return content_has_permission(doc, ptype, user)
+
+
+def on_doctype_update():
+	add_indexes()
+
+
+def add_indexes():
+	# Speeds up the "commented by user" lookups (participating feed and
+	# get_participating_unread_count): WHERE owner = ? AND reference_doctype = ?
+	# returning reference_name. Without it MariaDB full-scans GP Comment as a
+	# per-row dependent subquery — ~18s on large sites vs ~20ms with the index.
+	frappe.db.add_index("GP Comment", ["owner", "reference_doctype", "reference_name"], "owner_reference")
