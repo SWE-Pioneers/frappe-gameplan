@@ -182,15 +182,25 @@ watch(showInviteDialog, (open, wasOpen) => {
 
 // `users` is a useCall resource (no setData); refetch after mutations so the
 // list — role labels and membership — reflects the server-side change.
-const changeUserRoleCall = useCall<unknown, { user: string; role: string }>({
-  url: 'gameplan.api.change_user_role',
+//
+// change_user_role and disable_user are both GP User Profile doc methods, so
+// their URLs are keyed on the target profile. `targetProfile` is swapped in
+// per row (set right before submit) rather than going through a full useDoc,
+// since neither call needs the target's doc data loaded — only the ability
+// to invoke a method on it.
+const targetProfile = ref('')
+function profileMethodUrl(method: string) {
+  return computed(() => `/api/v2/document/GP User Profile/${targetProfile.value}/method/${method}`)
+}
+const changeUserRoleCall = useCall<unknown, { role: string }>({
+  url: profileMethodUrl('change_user_role'),
+  method: 'POST',
   immediate: false,
   onSuccess: () => users.reload(),
 })
-// Backend endpoint is named remove_user, but it disables the account
-// (sets enabled = 0) rather than deleting it.
-const disableUserCall = useCall<unknown, { user: string }>({
-  url: 'gameplan.api.remove_user',
+const disableUserCall = useCall<unknown>({
+  url: profileMethodUrl('disable_user'),
+  method: 'POST',
   immediate: false,
   onSuccess: () => users.reload(),
 })
@@ -211,7 +221,7 @@ const filteredUsers = computed(() => {
 // large team never instantiates hundreds of role Selects at once. Rows are a fixed
 // height, which keeps the windowing exact — the row's inline height must match
 // ROW_HEIGHT or the scroll position drifts.
-const ROW_HEIGHT = 64
+const ROW_HEIGHT = 60
 const body = useTemplateRef<{ viewportElement: HTMLElement | null }>('body')
 // useVirtualList types its source as a writable `MaybeRef<T[]>`, but it only ever
 // reads the list — so passing our readonly computed is safe; assert it to Ref.
@@ -276,7 +286,10 @@ function changeUserRole(user: UserRow, role: string) {
     title: 'Change Role',
     message: `Are you sure you want to change ${user.full_name}'s role to ${role}?`,
     confirmLabel: 'Change Role',
-    onConfirm: () => changeUserRoleCall.submit({ user: user.name, role }),
+    onConfirm: () => {
+      targetProfile.value = user.user_profile
+      changeUserRoleCall.submit({ role })
+    },
   })
 }
 
@@ -293,7 +306,10 @@ function disableUser(user: UserRow) {
     title: 'Disable user',
     message: `${user.full_name} (${user.email}) will be disabled and can no longer sign in to Gameplan. You can re-enable them later from the Frappe admin.`,
     confirmLabel: 'Disable',
-    onConfirm: () => disableUserCall.submit({ user: user.name }),
+    onConfirm: () => {
+      targetProfile.value = user.user_profile
+      disableUserCall.submit()
+    },
   })
 }
 </script>

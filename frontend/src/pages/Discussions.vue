@@ -138,6 +138,7 @@ import {
 } from '@/data/unreadCount'
 import { canManageCommunity } from '@/utils/permissions'
 import { showCommunitiesSettings } from '@/components/Settings'
+import { useCommandPaletteCommands } from '@/components/CommandPalette/registry'
 
 type FeedType = 'recent' | 'unread' | 'participating'
 
@@ -232,6 +233,28 @@ const actionOptions = computed<DropdownOptions>(() => [
   },
 ])
 const canManageCurrentCommunity = computed(() => canManageCommunity(community.value, sessionUser))
+
+useCommandPaletteCommands(
+  computed(() =>
+    actionOptions.value.map((action) => ({
+      title: action.label.replace(/\.\.\.$/, ''),
+      name: `community-${action.label.toLowerCase().replace(/\W+/g, '-')}`,
+      group: 'Community',
+      icon: action.icon,
+      aliases: communityActionAliases(action.label),
+      onClick: action.onClick,
+      condition: action.condition,
+      defaultScore: 2,
+    })),
+  ),
+)
+
+function communityActionAliases(label: string) {
+  if (label.startsWith('Manage spaces')) return ['spaces settings', 'configure spaces']
+  if (label.startsWith('Manage users')) return ['members', 'invite users', 'community members']
+  if (label.startsWith('Mark all as read')) return ['clear unread', 'read all']
+  return []
+}
 
 watch(
   () => props.communityId,

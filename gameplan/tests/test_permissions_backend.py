@@ -6,7 +6,6 @@ from unittest.mock import patch
 import frappe
 from frappe.tests.utils import FrappeTestCase
 
-from gameplan.api import active_projects, get_unread_items, get_unread_items_by_project
 from gameplan.extends.client import get_list as get_client_list
 from gameplan.gameplan.doctype.gp_discussion.api import get_discussions
 from gameplan.gameplan.doctype.gp_member.patches.backfill_team_admins import (
@@ -281,27 +280,6 @@ class TestPermissionAwareQueries(PermissionBackendTestCase):
 		discussions = get_discussions(limit=20)
 
 		self.assertNotIn(discussion.name, [discussion.name for discussion in discussions])
-
-	def test_unread_counters_filter_public_space_in_private_community(self):
-		team = self.create_community("Private Unread Community", is_private=1, members=[self.alice.name])
-		space = self.create_space("Public Unread Space", team.name)
-		self.create_discussion("Hidden Unread Discussion", space.name, owner=self.alice.name)
-
-		frappe.set_user(self.bob.name)
-
-		self.assertNotIn(team.name, get_unread_items())
-		self.assertNotIn(space.name, get_unread_items_by_project(frappe.as_json([space.name])))
-
-	def test_active_projects_filters_public_space_in_private_community(self):
-		team = self.create_community("Private Active Community", is_private=1, members=[self.alice.name])
-		space = self.create_space("Public Active Space", team.name)
-		discussion = self.create_discussion("Hidden Active Discussion", space.name, owner=self.alice.name)
-		self.create_comment(discussion, owner=self.alice.name)
-
-		frappe.set_user(self.bob.name)
-		projects = active_projects()
-
-		self.assertNotIn(space.name, [project.name for project in projects])
 
 	def test_search_accessible_projects_filters_public_space_in_private_community(self):
 		team = self.create_community("Private Search Community", is_private=1, members=[self.alice.name])
@@ -584,18 +562,3 @@ class TestSpaceManagement(PermissionBackendTestCase):
 		frappe.set_user(self.bob.name)
 		with self.assertRaises(frappe.PermissionError):
 			space.invite_guest("blocked_perm_guest@example.com")
-
-	def test_regular_member_cannot_invite_members_to_public_space(self):
-		team = self.create_community("Blocked Member Invite Community", members=[self.alice.name])
-		space = self.create_space("Blocked Member Invite Space", team.name)
-
-		frappe.set_user(self.alice.name)
-		with patch("frappe.sendmail") as sendmail:
-			with self.assertRaises(frappe.PermissionError):
-				space.invite_members(["blocked_member_invite@example.com"])
-
-		sendmail.assert_not_called()
-		space.reload()
-		self.assertFalse(
-			any(row.get("email") == "blocked_member_invite@example.com" for row in space.members)
-		)

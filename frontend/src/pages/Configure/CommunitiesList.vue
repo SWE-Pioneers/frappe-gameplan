@@ -9,7 +9,7 @@
     v-if="!manageableCommunities.length"
     icon="lucide-blocks"
     title="No communities yet"
-    description="Create a community to group related spaces, users, and discussions."
+    description="Create a community to group related spaces, members, and discussions."
   >
     <template #actions>
       <Button
@@ -30,7 +30,7 @@
     <template v-if="showControls" #header>
       <div>Community</div>
       <div class="px-1.5">Spaces</div>
-      <div class="px-1.5">Users</div>
+      <div class="px-1.5">Members</div>
       <div />
     </template>
     <CommunityRow

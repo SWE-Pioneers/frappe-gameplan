@@ -8,11 +8,7 @@ from frappe.query_builder.functions import Count
 from frappe.utils import split_emails, validate_email_address
 
 import gameplan
-from gameplan.permissions import apply_accessible_project_filter
 from gameplan.utils import validate_type
-
-DISCUSSION_VISIT_JOIN_INDEX = "discussion_user_index"
-_has_discussion_visit_join_index = None
 
 
 def require_admin():
@@ -115,35 +111,7 @@ def get_user_info(user=None):
 	return users
 
 
-@frappe.whitelist()
-@validate_type
-def change_user_role(user: str, role: str):
-	require_admin()
-
-	if role not in ["Gameplan Guest", "Gameplan Member", "Gameplan Admin"]:
-		return get_user_info(user)[0]
-
-	user_doc = frappe.get_doc("User", user)
-	for _role in user_doc.roles:
-		if _role.role in ["Gameplan Guest", "Gameplan Member", "Gameplan Admin"]:
-			user_doc.remove(_role)
-	user_doc.append_roles(role)
-	user_doc.save(ignore_permissions=True)
-
-	return get_user_info(user)[0]
-
-
-@frappe.whitelist()
-@validate_type
-def remove_user(user: str):
-	require_admin()
-	user_doc = frappe.get_doc("User", user)
-	user_doc.enabled = 0
-	user_doc.save(ignore_permissions=True)
-	return user
-
-
-@frappe.whitelist()
+@frappe.whitelist(methods=["POST"])
 @validate_type
 def invite_by_email(emails: str, role: str, projects: list = None):
 	require_admin()
@@ -237,77 +205,7 @@ def get_unsplash_photos(keyword=None):
 	return frappe.cache().get_value("unsplash_photos", generator=get_list)
 
 
-@frappe.whitelist()
-def get_unread_items():
-	Discussion = frappe.qb.DocType("GP Discussion")
-	Visit = frappe.qb.DocType("GP Discussion Visit")
-	query = (
-		frappe.qb.from_(Discussion)
-		.select(Discussion.team, Count(Discussion.team).as_("count"))
-		.left_join(Visit)
-		.on((Visit.discussion == Discussion.name) & (Visit.user == frappe.session.user))
-		.where((Visit.last_visit.isnull()) | (Visit.last_visit < Discussion.last_post_at))
-		.groupby(Discussion.team)
-	)
-	query = apply_accessible_project_filter(query, Discussion.project)
-
-	data = run_unread_items_query(query)
-
-	out = {}
-	for d in data:
-		out[d.team] = d.count
-	return out
-
-
-def run_unread_items_query(query):
-	if not has_discussion_visit_join_index():
-		return query.run(as_dict=1)
-
-	sql = query.get_sql()
-	# MariaDB's optimizer picks a much slower plan for this page-load query on real data.
-	sql = sql.replace(
-		"LEFT JOIN `tabGP Discussion Visit`",
-		f"LEFT JOIN `tabGP Discussion Visit` FORCE INDEX FOR JOIN({DISCUSSION_VISIT_JOIN_INDEX})",
-	)
-	return frappe.db.sql(sql, as_dict=1)
-
-
-def has_discussion_visit_join_index():
-	global _has_discussion_visit_join_index
-
-	if _has_discussion_visit_join_index is None:
-		_has_discussion_visit_join_index = bool(
-			frappe.db.has_index("tabGP Discussion Visit", DISCUSSION_VISIT_JOIN_INDEX)
-		)
-	return _has_discussion_visit_join_index
-
-
-@frappe.whitelist()
-def get_unread_items_by_project(projects):
-	from frappe.query_builder.functions import Count
-
-	project_names = frappe.parse_json(projects)
-	Discussion = frappe.qb.DocType("GP Discussion")
-	Visit = frappe.qb.DocType("GP Discussion Visit")
-	query = (
-		frappe.qb.from_(Discussion)
-		.select(Discussion.project, Count(Discussion.project).as_("count"))
-		.left_join(Visit)
-		.on((Visit.discussion == Discussion.name) & (Visit.user == frappe.session.user))
-		.where((Visit.last_visit.isnull()) | (Visit.last_visit < Discussion.last_post_at))
-		.where(Discussion.project.isin(project_names))
-		.groupby(Discussion.project)
-	)
-	query = apply_accessible_project_filter(query, Discussion.project)
-
-	data = query.run(as_dict=1)
-	out = {}
-	for d in data:
-		out[d.project] = d.count
-	return out
-
-
-@frappe.whitelist()
+@frappe.whitelist(methods=["POST"])
 def mark_all_notifications_as_read():
 	Notification = frappe.qb.DocType("GP Notification")
 	(
@@ -318,83 +216,7 @@ def mark_all_notifications_as_read():
 	gameplan.refetch_resource("Unread Notifications Count", user=frappe.session.user)
 
 
-@frappe.whitelist()
-def recent_projects():
-	from frappe.query_builder.functions import Max
-
-	ProjectVisit = frappe.qb.DocType("GP Project Visit")
-	Team = frappe.qb.DocType("GP Team")
-	Project = frappe.qb.DocType("GP Project")
-	Pin = frappe.qb.DocType("GP Pinned Project")
-	pinned_projects_query = frappe.qb.from_(Pin).select(Pin.project).where(Pin.user == frappe.session.user)
-	projects = (
-		frappe.qb.from_(ProjectVisit)
-		.select(
-			ProjectVisit.project.as_("name"),
-			Project.team,
-			Project.title.as_("project_title"),
-			Team.title.as_("team_title"),
-			Project.icon,
-			Max(ProjectVisit.last_visit).as_("timestamp"),
-		)
-		.left_join(Project)
-		.on(Project.name == ProjectVisit.project)
-		.left_join(Team)
-		.on(Team.name == Project.team)
-		.groupby(ProjectVisit.project)
-		.where(ProjectVisit.user == frappe.session.user)
-		.where(ProjectVisit.project.notin(pinned_projects_query))
-		.orderby(ProjectVisit.last_visit, order=frappe.qb.desc)
-		.limit(12)
-	)
-	projects = apply_accessible_project_filter(projects, Project.name)
-
-	return projects.run(as_dict=1)
-
-
-@frappe.whitelist()
-def active_projects():
-	from frappe.query_builder.functions import Count
-
-	Comment = frappe.qb.DocType("GP Comment")
-	Discussion = frappe.qb.DocType("GP Discussion")
-	CommentCount = Count(Comment.name).as_("comments_count")
-	active_projects = (
-		frappe.qb.from_(Comment)
-		.select(CommentCount, Discussion.project)
-		.left_join(Discussion)
-		.on(Discussion.name == Comment.reference_name)
-		.where(Comment.reference_doctype == "GP Discussion")
-		.where(Comment.creation > frappe.utils.add_days(frappe.utils.now(), -70))
-		.groupby(Discussion.project)
-		.orderby(CommentCount, order=frappe.qb.desc)
-		.limit(12)
-	)
-	active_projects = apply_accessible_project_filter(active_projects, Discussion.project).run(as_dict=1)
-
-	projects = frappe.qb.get_query(
-		"GP Project",
-		fields=[
-			"name",
-			"title as project_title",
-			"team",
-			"team.title as team_title",
-			"icon",
-			"modified as timestamp",
-		],
-		filters={"name": ("in", [d.project for d in active_projects])},
-	).run(as_dict=1)
-
-	active_projects_comment_count = {d.project: d.comments_count for d in active_projects}
-	for d in projects:
-		d.comments_count = active_projects_comment_count.get(str(d.name), 0)
-
-	projects.sort(key=lambda d: d.comments_count, reverse=True)
-
-	return projects
-
-
-@frappe.whitelist()
+@frappe.whitelist(methods=["POST"])
 def onboarding(community, space, icon, emails, is_private=0):
 	emails = frappe.parse_json(emails)
 
@@ -417,44 +239,6 @@ def onboarding(community, space, icon, emails, is_private=0):
 	# role is hardcoded, so no escalation is possible.
 	_invite_by_email(", ".join(emails), role="Gameplan Member")
 	return {"team": team.name, "space": project.name}
-
-
-@frappe.whitelist(allow_guest=True)
-def oauth_providers():
-	from frappe.utils.html_utils import get_icon_html
-	from frappe.utils.oauth import get_oauth2_authorize_url, get_oauth_keys
-	from frappe.utils.password import get_decrypted_password
-
-	out = []
-	providers = frappe.get_all(
-		"Social Login Key",
-		filters={"enable_social_login": 1},
-		fields=["name", "client_id", "base_url", "provider_name", "icon"],
-		order_by="name",
-	)
-
-	for provider in providers:
-		client_secret = get_decrypted_password("Social Login Key", provider.name, "client_secret")
-		if not client_secret:
-			continue
-
-		icon = None
-		if provider.icon:
-			if provider.provider_name == "Custom":
-				icon = get_icon_html(provider.icon, small=True)
-			else:
-				icon = f"<img src='{provider.icon}' alt={provider.provider_name}>"
-
-		if provider.client_id and provider.base_url and get_oauth_keys(provider.name):
-			out.append(
-				{
-					"name": provider.name,
-					"provider_name": provider.provider_name,
-					"auth_url": get_oauth2_authorize_url(provider.name, "/g"),
-					"icon": icon,
-				}
-			)
-	return out
 
 
 @frappe.whitelist()

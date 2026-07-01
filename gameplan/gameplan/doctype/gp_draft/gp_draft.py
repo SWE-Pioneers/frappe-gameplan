@@ -240,13 +240,13 @@ def get_my_drafts():
 	return drafts
 
 
-@frappe.whitelist()
+@frappe.whitelist(methods=["POST"])
 def publish_draft(name: str):
 	"""Publish a discussion draft by name. Returns the new GP Discussion name."""
 	return frappe.get_doc("GP Draft", name).publish()
 
 
-@frappe.whitelist()
+@frappe.whitelist(methods=["POST"])
 def commit_draft(name: str, reference_doctype: str, reference_name: str):
 	"""Finalize an edit/comment draft after its content has been saved onto the target.
 	See GPDraft.commit for the attachment-migration rationale."""

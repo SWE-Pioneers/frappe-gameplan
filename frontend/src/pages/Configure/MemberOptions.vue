@@ -3,7 +3,7 @@
     v-if="visibleOptions.length"
     :button="{ icon: 'lucide-more-horizontal', size: 'xs', variant: 'ghost' }"
     align="end"
-    :label="`${user.full_name} User Options`"
+    :label="`${user.full_name} Member Options`"
     :options="visibleOptions"
   />
 </template>
@@ -58,7 +58,7 @@ function removeMember() {
   if (!props.canManage) return
 
   dialog.confirm({
-    title: 'Remove user',
+    title: 'Remove member',
     message: `${user.value.full_name} will lose access to private spaces and discussions in this community.`,
     confirmLabel: 'Remove',
     onConfirm: async () => {

@@ -75,9 +75,19 @@ describe('Search privacy', () => {
       fieldname: 'enabled',
       value: 1,
     })
-    cy.request('POST', '/api/v2/method/gameplan.api.change_user_role', {
-      user: 'john@example.com',
-      role: 'Gameplan Member',
+    // change_user_role is a GP User Profile doc method, so it's addressed by
+    // profile name, not user email — look that up first.
+    cy.request('POST', '/api/method/frappe.client.get_value', {
+      doctype: 'GP User Profile',
+      filters: JSON.stringify({ user: 'john@example.com' }),
+      fieldname: 'name',
+    }).then((response) => {
+      const johnProfile = response.body.message.name
+      cy.request(
+        'POST',
+        `/api/v2/document/GP User Profile/${johnProfile}/method/change_user_role`,
+        { role: 'Gameplan Member' },
+      )
     })
 
     cy.login('john@example.com', 'gameplan123')

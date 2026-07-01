@@ -84,7 +84,7 @@ const rowClass = [
 ]
 
 const spacesLabel = computed(() => formatCount(props.spacesCount, 'space'))
-const membersLabel = computed(() => formatCount(props.community.members?.length || 0, 'user'))
+const membersLabel = computed(() => formatCount(props.community.members?.length || 0, 'member'))
 
 function formatCount(count: number, label: string) {
   return `${count} ${count === 1 ? label : `${label}s`}`

@@ -92,6 +92,10 @@ import SpaceTabs from '@/components/SpaceTabs.vue'
 import DropdownMoreOptions from '@/components/DropdownMoreOptions.vue'
 import SpaceAccessDialog from '@/components/SpaceAccessDialog.vue'
 import { useGroupedSpaceOptions } from '@/data/groupedSpaces'
+import { useCommunity } from '@/data/communities'
+import { useSessionUser } from '@/data/users'
+import { canManageCommunity } from '@/utils/permissions'
+import { showCommunitiesSettings } from '@/components/Settings'
 import {
   useSpace,
   useSpacePermissions,
@@ -130,7 +134,19 @@ const {
 } = useSpacePermissions(() => props.spaceId)
 const showSpaceAccessDialog = ref(false)
 
+// The space's community, so the "Settings" shortcut can jump to its Spaces admin
+// and be gated by community-manage permission (mirrors "Manage spaces" elsewhere).
+const sessionUser = useSessionUser()
+const community = useCommunity(() => currentSpace.value?.team)
+const canManageCurrentCommunity = computed(() => canManageCommunity(community.value, sessionUser))
+
 const spaceActions = computed(() => [
+  {
+    label: 'Settings',
+    icon: 'lucide-settings',
+    onClick: () => showCommunitiesSettings(currentSpace.value?.team, 'spaces'),
+    condition: () => canManageCurrentCommunity.value,
+  },
   {
     label: 'Copy link',
     icon: 'lucide-link',

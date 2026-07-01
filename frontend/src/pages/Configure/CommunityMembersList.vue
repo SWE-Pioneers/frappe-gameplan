@@ -4,9 +4,9 @@
     class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
   >
     <div>
-      <h2 class="text-lg-medium text-ink-gray-9">Users</h2>
+      <h2 class="text-lg-medium text-ink-gray-9">Members</h2>
       <p class="mt-1 text-base text-ink-gray-5">
-        Users can access public spaces in this community.
+        Members can access public spaces in this community.
       </p>
     </div>
     <Button
@@ -15,7 +15,7 @@
       :disabled="Boolean(community.archived_at)"
       @click="showAddDialog = true"
     >
-      Add users
+      Add members
     </Button>
   </div>
 
@@ -38,8 +38,8 @@
   <ConfigureEmptyState
     v-else-if="!communityMembers.length"
     icon="lucide-users"
-    title="No users yet"
-    description="Add users so they can access public spaces here."
+    title="No members yet"
+    description="Add members so they can access public spaces here."
   >
     <template v-if="canManage" #actions>
       <Button
@@ -47,7 +47,7 @@
         :disabled="Boolean(community.archived_at)"
         @click="showAddDialog = true"
       >
-        Add users
+        Add members
       </Button>
     </template>
   </ConfigureEmptyState>
@@ -55,7 +55,7 @@
   <ConfigureEmptyState
     v-else
     icon="lucide-search-x"
-    title="No users match your search"
+    title="No members match your search"
     description="Try a different name or email."
   >
     <template #actions>
@@ -65,7 +65,7 @@
 
   <CommunityGuestsList class="mt-10" :community="community" :can-manage="canManage" />
 
-  <Dialog v-if="canManage" title="Add users" v-model:open="showAddDialog">
+  <Dialog v-if="canManage" title="Add members" v-model:open="showAddDialog">
     <div class="space-y-4">
       <ul v-if="membersToAdd.length" class="flex flex-wrap gap-2">
         <li
@@ -209,7 +209,7 @@ async function addMembers() {
     },
   })
   await communities.reload()
-  toast.success('Users added')
+  toast.success('Members added')
   showAddDialog.value = false
 }
 </script>

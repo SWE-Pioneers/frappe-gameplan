@@ -22,21 +22,20 @@ export const activeTab = ref<Tab | null>(null)
 // behind the overlay while the URL is a /settings/* route. Set by the router guard.
 export const settingsBackgroundPath = ref<string | null>(null)
 
-// Lets callers deep-link into the Communities tab with a community + view
-// pre-selected (e.g. a discussion's "Manage spaces" action). Read once by
-// CommunitiesSettings when the dialog opens.
+// Lets callers deep-link into the Communities tab, optionally with a specific
+// community + view (e.g. a discussion's "Manage spaces" action). The community
+// selection lives in the URL, so this is a plain navigation.
 export type CommunitiesView = 'spaces' | 'members'
-export const communitiesTarget = ref<{ communityId: string | null; view: CommunitiesView }>({
-  communityId: null,
-  view: 'spaces',
-})
 
 export function showCommunitiesSettings(
   communityId: string | null = null,
   view: CommunitiesView = 'spaces',
 ) {
-  communitiesTarget.value = { communityId, view }
-  showSettingsDialog('Communities')
+  if (communityId) {
+    router.push({ name: 'SettingsCommunity', params: { communityId, view } })
+  } else {
+    router.push({ name: 'SettingsTab', params: { tab: 'communities' } })
+  }
 }
 
 // Registered tabs (kept in sync by SettingsDialog.vue). Used to map a tab's

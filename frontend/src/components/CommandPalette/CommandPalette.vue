@@ -1,6 +1,9 @@
 <template>
   <Dialog v-model:open="show" size="xl" position="top" bare @after-leave="filteredOptions = []">
-    <div class="flex flex-col">
+    <div class="command-palette-dialog flex flex-col">
+      <Dialog.Title as-child>
+        <h2 class="sr-only">Command palette</h2>
+      </Dialog.Title>
       <div class="relative">
         <div class="relative">
           <div class="absolute inset-y-0 left-0 flex items-center pl-4.5">
@@ -15,32 +18,49 @@
             @keydown="onKeyDown"
             v-model="query"
             autocomplete="off"
+            role="combobox"
+            aria-autocomplete="list"
+            :aria-expanded="show"
+            :aria-controls="commandPaletteListId"
+            :aria-activedescendant="activeItemId"
           />
         </div>
         <div
+          :id="commandPaletteListId"
           ref="scrollContainerRef"
           class="max-h-96 overflow-auto border-t border-outline-gray-1 dark:border-outline-gray-2"
+          role="listbox"
+          aria-label="Command palette results"
           @click="inputRef?.focus()"
         >
           <div
             class="mb-2 mt-4.5 first:mt-3"
             v-for="group in groupedSearchResults"
-            :key="group.title"
+            :key="getCommandPaletteGroupKey(group)"
+            role="group"
+            :aria-labelledby="getCommandPaletteGroupId(group)"
           >
-            <div class="mb-2.5 px-4.5 text-base text-ink-gray-5" v-if="!group.hideTitle">
+            <div
+              :id="getCommandPaletteGroupId(group)"
+              class="mb-2.5 px-4.5 text-base text-ink-gray-5"
+              v-if="!group.hideTitle"
+            >
               {{ group.title }}
             </div>
             <div
               v-for="item in group.items"
-              :key="`${item.doctype}:${item.name}`"
+              :key="getCommandPaletteItemKey(item)"
               class="px-2.5"
               :class="{ 'pointer-events-none opacity-50': item.disabled }"
             >
               <div
+                :id="getCommandPaletteItemElementId(item)"
                 @click="onSelection(item)"
-                @mouseover="onItemHover(item)"
+                @mousemove="onItemMouseMove(item, $event)"
                 class="rounded"
                 :class="[item.isActive ? 'bg-surface-gray-3' : '']"
+                role="option"
+                :aria-selected="item.isActive ? 'true' : 'false'"
                 :ref="
                   (el) => {
                     if (item.isActive) activeItemRef = el as HTMLDivElement
@@ -88,26 +108,15 @@
 </template>
 
 <script setup lang="ts">
-import {
-  h,
-  ref,
-  computed,
-  onBeforeUnmount,
-  watch,
-  nextTick,
-  markRaw,
-  useTemplateRef,
-  type Component,
-} from 'vue'
+import { h, ref, computed, onBeforeUnmount, watch, nextTick, markRaw, useTemplateRef } from 'vue'
 import { useEventListener } from '@vueuse/core'
-import { RouteLocationRaw, useRouter } from 'vue-router'
-import { dayjs, debounce } from 'frappe-ui'
-import { useCall, useNewDoc } from 'frappe-ui'
-import fuzzysort from 'fuzzysort'
-import { activeUsers, useUser } from '@/data/users'
+import { useRouter } from 'vue-router'
+import { Dialog, dayjs, debounce, useCall, useNewDoc } from 'frappe-ui'
+import { activeUsers, isGameplanAdmin, useSessionUser, useUser } from '@/data/users'
 import ItemProject from './ItemProject.vue'
 import Item from './Item.vue'
 import UserAvatar from '../UserAvatar.vue'
+import CommunityImage from '../CommunityImage.vue'
 import { getSpace, spaces, useSpace } from '@/data/spaces'
 import { communityState } from '@/data/communityState'
 import { activeCommunities } from '@/data/communities'
@@ -117,80 +126,60 @@ import KeyboardShortcut from '../KeyboardShortcut.vue'
 
 import { showNewTaskDialog } from '../NewTaskDialog'
 import { GPPage } from '@/types/doctypes'
+import { showCommunitiesSettings, showSettingsDialog } from '@/components/Settings'
+import { useCanManageCommunities } from '@/composables/useCanManageCommunities'
+import {
+  registeredCommands,
+  type CommandPaletteGroup,
+  type CommandPaletteItem,
+  type SearchResult,
+  type SearchResultItem,
+} from './registry'
+import { useCommandPaletteSearch } from './useCommandPaletteSearch'
 
 const query = ref('')
-const filteredOptions = ref<CommandPaletteItem[]>([])
 const inputRef = useTemplateRef<HTMLInputElement>('inputRef')
-const groupedSearchResults = ref<CommandPaletteGroup[]>([])
 const scrollContainerRef = useTemplateRef<HTMLDivElement>('scrollContainerRef')
 const activeItemRef = ref<HTMLDivElement | null>(null)
+const commandPaletteListId = 'command-palette-listbox'
 
 const router = useRouter()
+const sessionUser = useSessionUser()
+const canManageCommunities = useCanManageCommunities()
 const activeCommunityIds = computed(
   () => new Set(activeCommunities.value.map((community) => community.name)),
+)
+const activeCommunityById = computed(
+  () => new Map(activeCommunities.value.map((community) => [community.name, community])),
 )
 const currentSpace = computed(() => {
   const spaceId = router.currentRoute.value.params?.spaceId
   return typeof spaceId === 'string' ? getSpace(spaceId) : null
 })
 const canCreateFromPalette = computed(() => !readOnlyMode && !currentSpace.value?.archived_at)
-
-interface SearchResult {
-  title: string
-  items: SearchResultItem[]
-}
-
-interface SearchResultItem {
-  author: string
-  content: string
-  doctype: string
-  id: string
-  name: string
-  project: string
-  team?: string
-  reference_doctype?: string
-  reference_name?: string
-  score: number
-  modified: number
-  title: string
-}
-
-interface CommandPaletteItem extends Partial<SearchResultItem> {
-  title: string
-  search?: string
-  name: string
-  doctype?: string
-  route?: RouteLocationRaw
-  isActive?: boolean
-  group?: string
-  type?: string
-  icon?: Component
-  onClick?: () => void
-  condition?: () => boolean | undefined
-  disabled?: boolean
-}
-
-interface CommandPaletteGroup {
-  title: string
-  items: CommandPaletteItem[]
-  component?: Component
-}
+const normalizedQuery = computed(() => query.value.trim())
+const serverSearchQuery = ref('')
+const serverSearchResults = ref<SearchResult[]>([])
 
 const titleSearch = useCall<SearchResult[], { query: string }>({
   url: '/api/v2/method/gameplan.command_palette.search_sqlite',
   immediate: false,
 })
 
-const debouncedTitleSearch = debounce(() => titleSearch.submit({ query: query.value }), 500)
+const debouncedTitleSearch = debounce(submitTitleSearch, 500)
 
 const transformedSearchResults = computed(() => {
-  if (!titleSearch.data) return []
+  if (!serverSearchResults.value.length) return []
+  if (serverSearchQuery.value !== normalizedQuery.value) return []
 
-  return titleSearch.data
+  return serverSearchResults.value
     .map((group) => ({
       title: group.title,
       items: group.items.filter(isSearchItemVisible).map((item) => {
-        const baseItem: CommandPaletteItem = { ...item, modified: dayjs.unix(item.modified) }
+        const baseItem: CommandPaletteItem = {
+          ...item,
+          modified: dayjs.unix(item.modified).format('YYYY-MM-DD HH:mm:ss'),
+        }
 
         if (group.title === 'Discussions') {
           baseItem.route = {
@@ -239,30 +228,49 @@ const shortcuts = computed((): CommandPaletteGroup[] => [
         title: 'Advanced Search',
         name: 'search',
         icon: 'lucide-search',
+        aliases: ['full text search', 'find'],
         route: { name: 'Search' },
       },
       {
         title: 'Home',
         name: 'home',
         icon: 'lucide-home',
+        aliases: ['dashboard', 'start'],
         route: { name: 'Home' },
+      },
+      {
+        title: 'Drafts',
+        name: 'drafts',
+        icon: 'lucide-pencil-line',
+        aliases: ['saved drafts'],
+        route: { name: 'Drafts' },
+      },
+      {
+        title: 'Bookmarks',
+        name: 'bookmarks',
+        icon: 'lucide-bookmark',
+        aliases: ['saved', 'saved posts'],
+        route: { name: 'Bookmarks' },
       },
       {
         title: 'Tasks',
         name: 'tasks',
         icon: 'lucide-list-todo',
+        aliases: ['my tasks', 'todos', 'todo'],
         route: { name: 'MyTasks' },
       },
       {
         title: 'Pages',
         name: 'pages',
         icon: 'lucide-files',
+        aliases: ['my pages', 'docs', 'documents', 'wiki'],
         route: { name: 'MyPages' },
       },
       {
         title: 'People',
         name: 'people',
         icon: 'lucide-users',
+        aliases: ['users', 'members', 'team'],
         route: { name: 'People' },
         condition: () => useUser().isNotGuest,
       },
@@ -270,8 +278,73 @@ const shortcuts = computed((): CommandPaletteGroup[] => [
         title: 'Notifications',
         name: 'notifications',
         icon: 'lucide-bell',
+        aliases: ['inbox', 'mentions', 'activity'],
         route: { name: 'Notifications' },
         condition: () => useUser().isNotGuest,
+      },
+      {
+        title: 'Customize Profile',
+        name: 'customize-profile',
+        icon: 'lucide-user-pen',
+        aliases: ['profile bento', 'edit profile'],
+        route: { name: 'ProfileCustomize' },
+        condition: () => useUser().isNotGuest,
+      },
+    ].filter((item) => (item.condition ? item.condition() : true)),
+  },
+  {
+    title: 'Settings',
+    items: [
+      {
+        title: 'Profile',
+        name: 'settings-profile',
+        icon: 'lucide-user',
+        search: 'Settings Profile account',
+        aliases: ['account', 'profile'],
+        onClick: () => showSettingsDialog('Profile'),
+      },
+      {
+        title: 'Preferences',
+        name: 'settings-preferences',
+        icon: 'lucide-sliders-horizontal',
+        search: 'Settings Preferences sidebar reactions appearance',
+        aliases: ['sidebar', 'reactions', 'appearance'],
+        onClick: () => showSettingsDialog('Preferences'),
+      },
+      {
+        title: 'Notifications',
+        name: 'settings-notifications',
+        icon: 'lucide-bell',
+        search: 'Settings Notifications email digest alerts',
+        aliases: ['email digest', 'digest', 'alerts'],
+        onClick: () => showSettingsDialog('Notifications'),
+      },
+      {
+        title: 'Custom Emojis',
+        name: 'settings-custom-emojis',
+        icon: 'lucide-smile-plus',
+        search: 'Settings Custom Emojis emoji settings upload emoji',
+        aliases: ['emoji settings', 'upload emoji'],
+        onClick: () => showSettingsDialog('Emojis'),
+        condition: () => isGameplanAdmin(sessionUser),
+      },
+      {
+        title: 'Communities',
+        name: 'settings-communities',
+        icon: 'lucide-building-2',
+        search: 'Settings Communities manage communities manage spaces spaces settings',
+        aliases: ['communities settings', 'manage spaces', 'spaces settings'],
+        onClick: () => showCommunitiesSettings(),
+        condition: () => canManageCommunities.value,
+      },
+      {
+        title: 'Users',
+        name: 'settings-users',
+        icon: 'lucide-users',
+        search: 'Settings Users members invite users administration',
+        aliases: ['members', 'invite users', 'administration'],
+        onClick: () => showSettingsDialog('Users'),
+        condition: () => isGameplanAdmin(sessionUser),
       },
     ].filter((item) => (item.condition ? item.condition() : true)),
   },
@@ -286,6 +359,7 @@ const shortcuts = computed((): CommandPaletteGroup[] => [
         title: 'Add Discussion',
         name: 'add-discussion',
         search: 'Add Discussion New Discussion',
+        aliases: ['new discussion', 'start discussion', 'post'],
         icon: 'lucide-message-square-plus',
         condition: () => canCreateFromPalette.value,
         onClick() {
@@ -304,6 +378,7 @@ const shortcuts = computed((): CommandPaletteGroup[] => [
         title: 'Add Task',
         name: 'add-task',
         search: 'Add Task New Task',
+        aliases: ['new task', 'todo', 'create task'],
         icon: 'lucide-square-plus',
         condition: () => canCreateFromPalette.value,
         onClick() {
@@ -334,6 +409,7 @@ const shortcuts = computed((): CommandPaletteGroup[] => [
         title: 'Add Page',
         name: 'add-page',
         search: 'Add Page New Page',
+        aliases: ['new page', 'doc', 'document', 'note'],
         icon: 'lucide-file-plus',
         condition: () => canCreateFromPalette.value,
         onClick() {
@@ -367,87 +443,54 @@ const shortcuts = computed((): CommandPaletteGroup[] => [
   },
 ])
 
-function generateSearchResults() {
-  let groups = [{ title: 'Spaces', component: markRaw(ItemProject) }, { title: 'People' }]
-  let itemsByGroup: Record<string, CommandPaletteItem[]> = {}
-  for (const group of groups) {
-    itemsByGroup[group.title] = []
-  }
-
-  for (const item of filteredOptions.value) {
-    itemsByGroup[item.group || '']?.push(item)
-  }
-  let localResults = groups
-    .map((group) => ({
-      ...group,
-      items: itemsByGroup[group.title],
-    }))
-    .filter((group) => group.items.length > 0)
-
-  let titleSearchResults = query.value.length > 2 ? transformedSearchResults.value : []
-
-  // Filter shortcuts based on query
-  let filteredShortcuts = shortcuts.value
-    .map((group) => ({
-      ...group,
-      items: group.items.filter((item: CommandPaletteItem) =>
-        (item.search || item.title).toLowerCase().includes(query.value.toLowerCase()),
-      ),
-    }))
-    .filter((group) => group.items.length > 0)
-
-  let results = [...localResults, ...titleSearchResults].filter((group) => group.items.length > 0)
-
-  let fullTextSearchItem: CommandPaletteItem = {
-    title: `Search for "${query.value}"`,
-    name: 'search-full-text',
-    doctype: 'Search',
-    icon: 'lucide-file-search',
-    route: { name: 'Search', query: { q: query.value } },
-  }
-
-  if (query.value.length > 2) {
-    if (filteredShortcuts.length === 0) {
-      filteredShortcuts.push({
-        title: 'Jump to',
-        items: [],
-      })
-    }
-    filteredShortcuts[0].items.push(fullTextSearchItem)
-  }
-
-  const allResults = [...filteredShortcuts, ...results]
-
-  for (let group of allResults) {
-    for (let item of group.items) {
-      item.isActive = false
-    }
-  }
-
-  if (allResults.length > 0 && allResults[0].items.length > 0) {
-    allResults[0].items[0].isActive = true
-  }
-
-  groupedSearchResults.value = allResults
+function getCommandSourceGroups() {
+  return [...groupRegisteredCommands(), ...shortcuts.value]
 }
 
-// Watch dependencies and update results
-watch([query, filteredOptions, transformedSearchResults], generateSearchResults, {
-  immediate: true,
-})
+function groupRegisteredCommands() {
+  let groups: CommandPaletteGroup[] = []
+
+  for (const command of registeredCommands.value) {
+    if (command.condition && !command.condition()) continue
+
+    let title = command.group || 'Actions'
+    let group = groups.find((group) => group.title === title)
+    if (!group) {
+      group = { title, items: [] }
+      groups.push(group)
+    }
+    group.items.push(command)
+  }
+
+  return groups
+}
 
 const searchList = computed(() => {
   let list: CommandPaletteItem[] = []
+  for (const community of activeCommunities.value) {
+    list.push({
+      type: 'Community',
+      group: 'communities',
+      doctype: 'GP Team',
+      name: community.name,
+      title: community.title,
+      search: `${community.title} ${community.name} community switch`,
+      icon: () => h(CommunityImage, { community, class: 'size-4' }),
+      onClick: () => switchCommunity(community.name),
+    })
+  }
+
   for (const project of spaces.data || []) {
     if (project.archived_at || !activeCommunityIds.value.has(project.team)) continue
 
     list.push({
       type: 'Project',
-      group: 'Spaces',
+      group: getCommunityGroupId(project.team),
       doctype: 'GP Project',
       name: project.name,
       title: project.title,
-      search: `${project.title} ${project.team}`,
+      search: `${project.title} ${project.team} ${getCommunityTitle(project.team)}`,
+      hideCommunity: true,
       route: {
         name: 'Space',
         params: { communityId: project.team, spaceId: project.name },
@@ -458,7 +501,7 @@ const searchList = computed(() => {
   for (const user of activeUsers.value) {
     list.push({
       type: 'People',
-      group: 'People',
+      group: 'people',
       doctype: 'GP User Profile',
       name: user.name,
       title: user.full_name,
@@ -473,6 +516,52 @@ const searchList = computed(() => {
   return list
 })
 
+const localResultGroups = computed(() => [
+  { id: 'communities', title: 'Communities' },
+  ...activeCommunities.value.map((community) => ({
+    id: getCommunityGroupId(community.name),
+    title: community.title,
+    component: markRaw(ItemProject),
+  })),
+  { id: 'people', title: 'People' },
+])
+
+const commandSourceGroups = computed(() => getCommandSourceGroups())
+
+const {
+  activeItem,
+  activeItemId,
+  activateItem,
+  filteredOptions,
+  generateSearchResults,
+  getCommandPaletteGroupId,
+  getCommandPaletteGroupKey,
+  getCommandPaletteItemElementId,
+  getCommandPaletteItemKey,
+  groupedSearchResults,
+  navigateList,
+  updateLocalResults,
+} = useCommandPaletteSearch({
+  query,
+  commandGroups: commandSourceGroups,
+  localItems: searchList,
+  localGroups: localResultGroups,
+  serverGroups: transformedSearchResults,
+})
+
+function switchCommunity(communityId: string) {
+  communityState.change(communityId)
+  router.push({ name: 'Discussions', params: { communityId } })
+}
+
+function getCommunityGroupId(communityId: string) {
+  return `community:${communityId}`
+}
+
+function getCommunityTitle(communityId: string) {
+  return activeCommunityById.value.get(communityId)?.title || communityId
+}
+
 function isSearchItemVisible(item: SearchResultItem) {
   if (!item.project) return true
 
@@ -482,33 +571,47 @@ function isSearchItemVisible(item: SearchResultItem) {
 
 function onInput(e: Event) {
   query.value = (e.target as HTMLInputElement).value
-  if (query.value) {
-    let results = fuzzysort
-      .go(query.value, searchList.value, {
-        key: 'search',
-        limit: 100,
-        threshold: -10000,
-      })
-      .map((result) => result.obj)
+  updateLocalResults()
 
-    filteredOptions.value = results
-
-    if (query.value.length > 2) {
-      debouncedTitleSearch()
-    }
+  if (normalizedQuery.value.length > 2) {
+    debouncedTitleSearch()
   } else {
-    filteredOptions.value = []
+    clearTitleSearchResults()
   }
 }
 
+async function submitTitleSearch() {
+  const submittedQuery = normalizedQuery.value
+  if (submittedQuery.length <= 2) {
+    clearTitleSearchResults()
+    return
+  }
+
+  const response = await (titleSearch.submit({ query: submittedQuery }) as Promise<
+    SearchResult[] | null
+  >)
+  if (submittedQuery !== normalizedQuery.value) return
+
+  serverSearchQuery.value = submittedQuery
+  serverSearchResults.value = response || []
+}
+
+function clearTitleSearchResults() {
+  serverSearchQuery.value = ''
+  serverSearchResults.value = []
+}
+
 function onSelection(value: CommandPaletteItem) {
-  if (value) {
-    if (value.route) {
-      router.push(value.route)
-    } else if (value.onClick) {
-      value.onClick()
-    }
-    hideCommandPalette()
+  if (value.disabled) return
+
+  hideCommandPalette()
+
+  if (value.route) {
+    router.push(value.route)
+  } else if (value.onClick) {
+    requestAnimationFrame(() => {
+      value.onClick?.()
+    })
   }
 }
 
@@ -516,40 +619,16 @@ function onKeyDown(e: KeyboardEvent) {
   if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
     e.preventDefault()
     navigateList(e.key === 'ArrowDown' ? 1 : -1)
+    nextTick(scrollActiveItemIntoView)
   } else if (e.key === 'Enter') {
-    const activeItem = groupedSearchResults.value
-      .flatMap((group) => group.items)
-      .find((item) => item.isActive)
-    if (activeItem) {
-      onSelection(activeItem)
+    e.preventDefault()
+    e.stopPropagation()
+    if (activeItem.value) {
+      onSelection(activeItem.value)
     }
   } else if (e.key === 'Escape') {
     hideCommandPalette()
-  } else {
-    if (groupedSearchResults.value.length > 0) {
-      if (groupedSearchResults.value[0].items?.length > 0) {
-        groupedSearchResults.value[0].items[0].isActive = true
-      }
-    }
   }
-}
-
-function navigateList(direction: number) {
-  if (!groupedSearchResults.value.length) return
-
-  const allItems = groupedSearchResults.value.flatMap((group) => group.items)
-  const currentIndex = allItems.findIndex((item) => item.isActive)
-
-  if (currentIndex !== -1) {
-    allItems[currentIndex].isActive = false
-  }
-
-  let newIndex = currentIndex + direction
-  if (newIndex < 0) newIndex = allItems.length - 1
-  if (newIndex >= allItems.length) newIndex = 0
-
-  allItems[newIndex].isActive = true
-  nextTick(scrollActiveItemIntoView)
 }
 
 function scrollActiveItemIntoView() {
@@ -560,20 +639,18 @@ function scrollActiveItemIntoView() {
   }
 }
 
-function onItemHover(hoveredItem: CommandPaletteItem) {
-  for (let group of groupedSearchResults.value) {
-    for (let item of group.items) {
-      item.isActive = false
-    }
-  }
-  hoveredItem.isActive = true
+function onItemMouseMove(hoveredItem: CommandPaletteItem, event: MouseEvent) {
+  if (event.movementX === 0 && event.movementY === 0) return
+
+  activateItem(hoveredItem)
 }
 
 watch(show, (value) => {
   if (value) {
     query.value = ''
     filteredOptions.value = []
-    generateSearchResults()
+    clearTitleSearchResults()
+    generateSearchResults({ preserveActive: false })
     nextTick(() => {
       inputRef.value?.focus()
     })
@@ -583,11 +660,8 @@ watch(show, (value) => {
 // useEventListener auto-removes on unmount, so remounting across the 640px
 // layout breakpoint can't stack duplicate keydown handlers (the V2 leak).
 useEventListener(window, 'keydown', (e: KeyboardEvent) => {
-  if (
-    e.key === 'k' &&
-    (e.ctrlKey || e.metaKey) &&
-    !(e.target as HTMLElement).classList.contains('ProseMirror')
-  ) {
+  const target = e.target as HTMLElement | null
+  if (e.key === 'k' && (e.ctrlKey || e.metaKey) && !target?.classList?.contains('ProseMirror')) {
     toggleCommandPalette()
     e.preventDefault()
   }
@@ -601,5 +675,10 @@ onBeforeUnmount(() => {
 mark {
   background-color: theme('colors.amber.100');
   font-weight: 500;
+}
+
+.dialog-overlay:has(.command-palette-dialog),
+.dialog-content:has(.command-palette-dialog) {
+  animation: none !important;
 }
 </style>

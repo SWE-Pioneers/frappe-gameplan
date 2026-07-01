@@ -192,6 +192,7 @@ const readNotificationList = useNotificationList(1, 'Read Notifications')
 
 const markAllAsRead = useCall({
   url: 'gameplan.api.mark_all_notifications_as_read',
+  method: 'POST',
   immediate: false,
   onSuccess() {
     unreadNotifications.reload()

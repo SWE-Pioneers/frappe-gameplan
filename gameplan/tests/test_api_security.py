@@ -1,7 +1,8 @@
 # Copyright (c) 2026, Frappe Technologies Pvt Ltd and Contributors
 # See license.txt
 
-"""Authorization tests for the user-management endpoints in gameplan.api.
+"""Authorization tests for the user-management endpoints in gameplan.api and
+gameplan's GP User Profile doctype.
 
 These guard the privilege-escalation / account-takeover holes where any
 authenticated Gameplan user (incl. a Guest) could change roles, disable
@@ -11,7 +12,7 @@ accounts, or send invites. The contract: only admins may call them.
 import frappe
 from frappe.tests.utils import FrappeTestCase
 
-from gameplan.api import change_user_role, get_user_info, invite_by_email, remove_user
+from gameplan.api import get_user_info, invite_by_email
 from gameplan.tests.utils import (
 	create_guest,
 	create_member,
@@ -35,8 +36,9 @@ class TestApiSecurity(FrappeTestCase):
 		victim = create_member("sec_victim@example.com")
 
 		frappe.set_user(member.name)
+		victim_profile = frappe.get_doc("GP User Profile", {"user": victim.name})
 		with self.assertRaises(frappe.PermissionError):
-			change_user_role(user=victim.name, role="Gameplan Admin")
+			victim_profile.change_user_role(role="Gameplan Admin")
 
 	def test_admin_can_change_user_role(self):
 		"""An admin retains the ability to change roles."""
@@ -44,18 +46,20 @@ class TestApiSecurity(FrappeTestCase):
 		target = create_member("sec_target@example.com")
 
 		frappe.set_user(admin.name)
-		change_user_role(user=target.name, role="Gameplan Admin")
+		target_profile = frappe.get_doc("GP User Profile", {"user": target.name})
+		target_profile.change_user_role(role="Gameplan Admin")
 
 		self.assertIn("Gameplan Admin", frappe.get_roles(target.name))
 
-	def test_member_cannot_remove_user(self):
+	def test_member_cannot_disable_user(self):
 		"""A Member must not be able to disable another account."""
 		member = create_member("sec_member2@example.com")
 		victim = create_member("sec_victim2@example.com")
 
 		frappe.set_user(member.name)
+		victim_profile = frappe.get_doc("GP User Profile", {"user": victim.name})
 		with self.assertRaises(frappe.PermissionError):
-			remove_user(user=victim.name)
+			victim_profile.disable_user()
 
 		frappe.set_user("Administrator")
 		self.assertEqual(frappe.db.get_value("User", victim.name, "enabled"), 1)
