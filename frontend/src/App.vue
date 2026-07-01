@@ -64,6 +64,12 @@ watch(
     }
     const target = router.resolve(settingsBackgroundPath.value || getHomeRoute())
     await loadRouteLocation(target)
+    // Closing the dialog nulls settingsBackgroundPath (router guard) a tick before
+    // the URL leaves /settings, so this watcher can start resolving a background
+    // page (falling back to Home) while still on the settings route. If the
+    // overlay has since closed, the non-overlay branch already set the real route
+    // — don't let this stale async result clobber it back to Home.
+    if (!route.matched.some((r) => r.meta?.settingsOverlay)) return
     displayedRoute.value = target
   },
   { immediate: true },
