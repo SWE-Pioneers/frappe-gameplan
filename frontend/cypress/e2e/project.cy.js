@@ -1,4 +1,14 @@
 describe('Project', () => {
+  // Space management moved out of the old `/configure/:community` pages and into
+  // the Settings dialog (Communities tab). The "Community actions" menu on a
+  // community's discussions page opens that dialog straight onto the community's
+  // spaces list, where each space still exposes its "<title> Space Options" menu.
+  function openCommunitySpaces(communityId) {
+    cy.visit(`/g/community/${communityId}/discussions`)
+    cy.iconButton('Community actions').first().click()
+    cy.get('[role="menuitem"]:visible').contains('Manage spaces').first().click()
+  }
+
   it('moves a space to another community and archives it', () => {
     cy.login()
     cy.request({
@@ -33,7 +43,7 @@ describe('Project', () => {
         })
 
         // move to community
-        cy.visit('/g/configure/engineering')
+        openCommunitySpaces('engineering')
         cy.selectDropdownOption('Project 1 Space Options', 'Change Community')
         cy.selectCombobox('Select a community', 'DevOps')
         cy.button('Move to DevOps').click()
@@ -58,11 +68,13 @@ describe('Project', () => {
           },
         })
 
-        cy.visit('/g/configure/devops')
+        openCommunitySpaces('devops')
         cy.selectDropdownOption('Project 1 Space Options', 'Archive')
-        cy.scope('dialog').button('Archive').click()
-        // The confirm dialog dismisses once the archive completes server-side.
-        cy.get('[role=dialog]').should('not.exist')
+        // The archive confirmation stacks on top of the still-open Settings
+        // dialog, so scope to it by title instead of asserting "no dialog".
+        cy.contains('[role=dialog]', 'Archive space').as('archiveConfirm')
+        cy.get('@archiveConfirm').contains('button', 'Archive').click()
+        cy.contains('[role=dialog]', 'Archive space').should('not.exist')
         // Archiving removes the current user's pin for the space (backend cleanup).
         cy.request('POST', '/api/method/frappe.client.get_list', {
           doctype: 'GP Pinned Project',
@@ -71,12 +83,14 @@ describe('Project', () => {
         })
           .its('body.message')
           .should('have.length', 0)
-        // Re-visit for fresh data. The community keeps its auto-created "General"
-        // space active; archived spaces are hidden until "Show archived" is on and
-        // render a disabled title input (archived spaces are read-only).
-        cy.visit('/g/configure/devops')
+
+        // Re-open the spaces list. Archived spaces are hidden until the visibility
+        // filter is switched to "Archived", and render a disabled title input
+        // (archived spaces are read-only).
+        openCommunitySpaces('devops')
         cy.get('input[aria-label="Space title"]:disabled').should('not.exist')
-        cy.contains('Show archived').click()
+        cy.contains('button[aria-haspopup="listbox"]', 'All (').click({ force: true })
+        cy.get('[role="option"]:visible').contains('Archived').click()
         cy.get('input[aria-label="Space title"]:disabled').should('have.value', 'Project 1')
       })
   })

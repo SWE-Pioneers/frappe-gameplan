@@ -63,14 +63,17 @@ describe('Community discussions actions', () => {
         cy.iconButton('Community actions').should('be.visible')
       })
 
+    // Community management moved into the Settings dialog: both actions now open
+    // the Communities tab at /g/settings/communities (the target community + view
+    // are held in memory, not the URL).
     cy.iconButton('Community actions').first().click()
     cy.get('[role="menuitem"]:visible').contains('Manage spaces').first().click()
-    cy.url().should('include', `/g/configure/${community}`)
+    cy.url().should('include', '/g/settings/communities')
 
     cy.visit(`/g/community/${community}/discussions`)
     cy.iconButton('Community actions').first().click()
-    cy.get('[role="menuitem"]:visible').contains('Manage members').first().click()
-    cy.url().should('include', `/g/configure/${community}/members`)
+    cy.get('[role="menuitem"]:visible').contains('Manage users').first().click()
+    cy.url().should('include', '/g/settings/communities')
 
     cy.visit(`/g/community/${community}/discussions`)
     cy.contains('button:visible', 'Unread').first().click()
