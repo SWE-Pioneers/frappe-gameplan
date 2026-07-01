@@ -1,7 +1,7 @@
 <template>
   <Dialog title="Merge community" @after-leave="selectedCommunity = null" v-model:open="show">
     <p class="mb-4 text-p-base text-ink-gray-7">
-      This will move all spaces and users from
+      This will move all spaces and members from
       <span class="whitespace-nowrap font-semibold">{{ community.title }}</span>
       into the selected community. The old community will be archived and content links will use
       each item's current space.

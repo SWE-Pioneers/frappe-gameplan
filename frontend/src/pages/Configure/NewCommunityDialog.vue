@@ -2,7 +2,7 @@
   <Dialog title="New Community" v-model:open="show">
     <div class="space-y-4">
       <p class="text-p-base text-ink-gray-6">
-        Communities group spaces, users, and visibility settings for a team or group.
+        Communities group spaces, members, and visibility settings for a team or group.
       </p>
       <TextInput
         v-model="title"
@@ -14,7 +14,7 @@
       <FormControl
         v-model="isPrivate"
         type="checkbox"
-        label="Keep it private &mdash; Only visible to users"
+        label="Keep it private &mdash; Only visible to members"
       />
       <ErrorMessage :message="communities.insert.error" />
     </div>

@@ -1,7 +1,7 @@
 <template>
   <SettingsHeader>
     <div class="w-full max-w-[800px]">
-      <!-- Selected community: back button, title, and the Spaces/Users switcher. -->
+      <!-- Selected community: back button, title, and the Spaces/Members switcher. -->
       <template v-if="selectedCommunityId">
         <div class="flex items-center gap-2">
           <Button
@@ -44,7 +44,7 @@
               :disabled="Boolean(selectedCommunity.archived_at)"
               @click="showAddMembers = true"
             >
-              Add users
+              Add members
             </Button>
           </template>
         </CommunityMembersListControls>
@@ -75,7 +75,7 @@
         >
           <div>Community</div>
           <div class="px-1.5">Spaces</div>
-          <div class="px-1.5">Users</div>
+          <div class="px-1.5">Members</div>
           <div />
         </div>
       </template>
@@ -139,6 +139,7 @@
 // fallthrough (this component renders a fragment); it simply isn't emitted here.
 defineEmits<{ (e: 'close-dialog'): void }>()
 import { computed, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { Button, SettingsBody, SettingsHeader, Select } from 'frappe-ui'
 import NewSpaceDialog from '@/components/NewSpaceDialog.vue'
 import { communities } from '@/data/communities'
@@ -152,13 +153,30 @@ import CommunityMembersListControls from '@/pages/Configure/CommunityMembersList
 import CommunitySpacesList from '@/pages/Configure/CommunitySpacesList.vue'
 import CommunitySpacesListControls from '@/pages/Configure/CommunitySpacesListControls.vue'
 import NewCommunityDialog from '@/pages/Configure/NewCommunityDialog.vue'
-import { communitiesTarget } from './index'
 
 type CommunityView = 'spaces' | 'members'
 
+const route = useRoute()
+const router = useRouter()
 const sessionUser = useSessionUser()
-const selectedCommunityId = ref<string | null>(null)
-const view = ref<CommunityView>('spaces')
+
+// The selected community and its Spaces/Users view are derived from the URL, so
+// entering a community, switching views, and going "back" are all real router
+// navigations (browser/OS back button included). The list is shown when no
+// community is in the URL (the plain /settings/communities tab).
+const selectedCommunityId = computed(() =>
+  route.name === 'SettingsCommunity' ? String(route.params.communityId) : null,
+)
+const view = computed<CommunityView>({
+  get: () => (route.params.view === 'members' ? 'members' : 'spaces'),
+  set: (nextView) => {
+    if (!selectedCommunityId.value) return
+    router.push({
+      name: 'SettingsCommunity',
+      params: { communityId: selectedCommunityId.value, view: nextView },
+    })
+  },
+})
 // Filter state; controls live in the fixed header for each view.
 const search = ref('')
 const visibilityFilter = ref<'All' | 'Public' | 'Private' | 'Archived'>('All')
@@ -171,7 +189,7 @@ const newCommunityDialog = ref(false)
 
 const viewButtons = [
   { label: 'Spaces', value: 'spaces' },
-  { label: 'Users', value: 'members' },
+  { label: 'Members', value: 'members' },
 ]
 
 const selectedCommunity = computed(() => {
@@ -194,48 +212,26 @@ const canCreateSpace = computed(() =>
       !selectedCommunity.value.archived_at,
   ),
 )
-watch(selectedCommunity, (community) => {
-  if (selectedCommunityId.value && !community && communities.isFinished) {
-    selectedCommunityId.value = null
-  }
-})
-
 function openCommunitySpaces(communityId: string) {
-  selectedCommunityId.value = communityId
-  view.value = 'spaces'
-  resetCommunityFilters()
+  router.push({ name: 'SettingsCommunity', params: { communityId, view: 'spaces' } })
 }
 
 function openCommunityMembers(communityId: string) {
-  selectedCommunityId.value = communityId
-  view.value = 'members'
-  resetCommunityFilters()
+  router.push({ name: 'SettingsCommunity', params: { communityId, view: 'members' } })
 }
 
 function showCommunities() {
-  selectedCommunityId.value = null
-  view.value = 'spaces'
-  resetCommunityFilters()
+  router.push({ name: 'SettingsTab', params: { tab: 'communities' } })
 }
 
-// Clear a community's search/filter state when entering or leaving it.
+// Clear a community's search/filter state when entering, leaving, or switching
+// views, so stale filters never carry over between communities.
 function resetCommunityFilters() {
   spaceSearch.value = ''
   spaceFilter.value = 'All'
   memberSearch.value = ''
 }
-
-// Apply a deep-link target (community + view) when a caller opens this tab via
-// showCommunitiesSettings(). Runs on mount and whenever the target changes.
-watch(
-  communitiesTarget,
-  () => {
-    selectedCommunityId.value = communitiesTarget.value.communityId
-    view.value = communitiesTarget.value.view
-    resetCommunityFilters()
-  },
-  { immediate: true },
-)
+watch([selectedCommunityId, view], resetCommunityFilters)
 
 function openNewSpaceDialog() {
   if (!canCreateSpace.value) return

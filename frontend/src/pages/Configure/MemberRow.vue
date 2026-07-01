@@ -51,7 +51,7 @@ const rowClass = [
 ]
 
 const user = computed(() => useUser(props.member.user))
-const roleLabel = computed(() => (props.member.is_admin ? 'Community Admin' : 'User'))
+const roleLabel = computed(() => (props.member.is_admin ? 'Community Admin' : 'Member'))
 const profileRoute = computed(() => {
   return user.value.user_profile
     ? { name: 'PersonProfileProfile', params: { personId: user.value.user_profile } }

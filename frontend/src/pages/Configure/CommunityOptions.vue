@@ -40,7 +40,7 @@ const options = computed(() => [
     onClick: () => emit('view-spaces', props.community.name),
   },
   {
-    label: 'View users',
+    label: 'View members',
     icon: 'lucide-users-2',
     onClick: () => emit('view-members', props.community.name),
   },

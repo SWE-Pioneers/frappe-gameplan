@@ -383,6 +383,15 @@ const routes: RouteRecordRaw[] = [
     redirect: { name: 'SettingsTab', params: { tab: 'profile' } },
     children: [
       {
+        // Nested route for a single community's spaces/members inside the
+        // Communities tab, so it gets its own URL and "back" returns to the
+        // communities list. `:view` defaults to spaces when omitted.
+        path: 'communities/:communityId/:view(spaces|members)?',
+        name: 'SettingsCommunity',
+        component: RouteGuard,
+        meta: { settingsOverlay: true },
+      },
+      {
         path: ':tab',
         name: 'SettingsTab',
         component: RouteGuard,

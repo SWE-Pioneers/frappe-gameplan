@@ -25,7 +25,7 @@
     <SettingsContent>
       <!-- One reka-ui tabpanel per tab. unmount-on-hide=false keeps a visited
            panel mounted (just hidden) so switching back is instant and inactive
-           tabs keep reacting to shared state (e.g. communitiesTarget); the v-if
+           tabs keep reacting to shared state (e.g. the active route); the v-if
            defers first mount until a tab is opened, so the heavy Users and
            Communities trees stay lazy. -->
       <SettingsPanel v-for="tab in tabs" :key="tab.slug" :value="tab.slug">
@@ -158,9 +158,12 @@ const tabGroups = computed<TabGroup[]>(() => {
 watch(tabs, (list) => registerTabs(list), { immediate: true })
 
 const onSettingsRoute = computed(() => route.matched.some((r) => r.meta?.settingsOverlay))
-const routeTab = computed(() =>
-  Array.isArray(route.params.tab) ? route.params.tab[0] : route.params.tab,
-)
+const routeTab = computed(() => {
+  // The nested community detail routes (/settings/communities/:communityId/...)
+  // still belong to the Communities tab, so the dialog highlights and mounts it.
+  if (route.name === 'SettingsCommunity') return 'communities'
+  return Array.isArray(route.params.tab) ? route.params.tab[0] : route.params.tab
+})
 
 // Route → store: the URL drives which tab is shown and whether the dialog is open.
 // Re-runs when admin-only tabs resolve async, so a deep link to an admin tab works
