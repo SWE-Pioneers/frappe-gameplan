@@ -1,10 +1,10 @@
 <template>
   <div class="relative flex h-full flex-col" v-if="postId">
-    <MobileHeader class="sm:hidden" :title="mobileHeaderTitle">
+    <PageHeaderMobile class="sm:hidden" :title="mobileHeaderTitle">
       <template #left>
-        <MobileBackButton :to="backRoute" />
+        <PageHeaderBackButton :to="backRoute" />
       </template>
-    </MobileHeader>
+    </PageHeaderMobile>
     <PageHeader class="hidden sm:flex">
       <SpaceBreadcrumbs
         class="flex"
@@ -291,6 +291,9 @@ import {
 } from 'vue'
 import { useRouter, useRoute, type RouteLocationRaw } from 'vue-router'
 import {
+  PageHeaderBackButton,
+  PageHeaderMobile,
+  PageHeader,
   Combobox,
   Avatar,
   Dropdown,
@@ -310,9 +313,6 @@ import DiscussionViewEditor from './editor/DiscussionViewEditor.vue'
 import UserProfileLink from './UserProfileLink.vue'
 // Lazy: htmldiff-js + motion-v only load when a viewer opens edit history.
 const RevisionsDialog = defineAsyncComponent(() => import('./RevisionsDialog.vue'))
-import MobileBackButton from './MobileBackButton.vue'
-import MobileHeader from './MobileHeader.vue'
-import PageHeader from './PageHeader.vue'
 import SpaceBreadcrumbs from './SpaceBreadcrumbs.vue'
 import EmptyStateBox from './EmptyStateBox.vue'
 import { copyToClipboard } from '@/utils'
@@ -501,7 +501,7 @@ function copyLink() {
   copyToClipboard(url)
 }
 
-// Undefined falls through to MobileBackButton's router.back() fallback.
+// Undefined falls through to PageHeaderBackButton's router.back() fallback.
 const backRoute = computed<RouteLocationRaw | undefined>(() => {
   const communityId = routeParam(route.params.communityId)
   const spaceId = routeParam(route.params.spaceId)

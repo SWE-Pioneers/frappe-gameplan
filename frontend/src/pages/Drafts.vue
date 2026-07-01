@@ -1,10 +1,10 @@
 <template>
-  <MobileHeader class="sm:hidden" title="Drafts">
+  <PageHeaderMobile class="sm:hidden" title="Drafts">
     <template #left>
       <Button v-if="isBulkDeleteMode" variant="ghost" size="md" @click="cancelBulkDelete">
         Cancel
       </Button>
-      <MobileBackButton v-else :to="{ name: 'More' }" />
+      <PageHeaderBackButton v-else :to="{ name: 'More' }" />
     </template>
     <template #right>
       <Button
@@ -27,7 +27,7 @@
         Delete{{ selectedDrafts.length ? ` ${selectedDrafts.length}` : '' }}
       </Button>
     </template>
-  </MobileHeader>
+  </PageHeaderMobile>
   <PageHeader class="hidden sm:flex">
     <Breadcrumbs class="h-7" :items="[{ label: 'Drafts', route: { name: 'Drafts' } }]" />
     <div class="flex items-center gap-2">
@@ -156,6 +156,9 @@
 </template>
 <script setup lang="ts">
 import {
+  PageHeaderBackButton,
+  PageHeaderMobile,
+  PageHeader,
   Tooltip,
   dayjsLocal,
   Breadcrumbs,
@@ -167,9 +170,6 @@ import {
 } from 'frappe-ui'
 import UserAvatarWithHover from '@/components/UserAvatarWithHover.vue'
 import { relativeTimestamp } from '@/utils'
-import MobileBackButton from '@/components/MobileBackButton.vue'
-import MobileHeader from '@/components/MobileHeader.vue'
-import PageHeader from '@/components/PageHeader.vue'
 import { onMounted, ref } from 'vue'
 import type { RouteLocationRaw } from 'vue-router'
 import { recoverOrphanedDrafts } from '@/data/useDraftSync'

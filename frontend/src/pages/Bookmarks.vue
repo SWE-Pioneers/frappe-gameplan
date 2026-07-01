@@ -1,9 +1,9 @@
 <template>
-  <MobileHeader class="sm:hidden" title="Bookmarks">
+  <PageHeaderMobile class="sm:hidden" title="Bookmarks">
     <template #left>
-      <MobileBackButton :to="{ name: 'More' }" />
+      <PageHeaderBackButton :to="{ name: 'More' }" />
     </template>
-  </MobileHeader>
+  </PageHeaderMobile>
   <PageHeader class="hidden sm:flex">
     <Breadcrumbs class="h-7" :items="[{ label: 'Bookmarks', route: { name: 'Bookmarks' } }]" />
   </PageHeader>
@@ -18,11 +18,14 @@
 </template>
 
 <script setup lang="ts">
-import { Breadcrumbs, usePageMeta } from 'frappe-ui'
+import {
+  PageHeaderBackButton,
+  PageHeaderMobile,
+  PageHeader,
+  Breadcrumbs,
+  usePageMeta,
+} from 'frappe-ui'
 import DiscussionList from '@/components/DiscussionList.vue'
-import MobileBackButton from '@/components/MobileBackButton.vue'
-import MobileHeader from '@/components/MobileHeader.vue'
-import PageHeader from '@/components/PageHeader.vue'
 
 usePageMeta(() => ({ title: 'Bookmarks' }))
 </script>

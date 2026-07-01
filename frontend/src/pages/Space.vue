@@ -1,20 +1,24 @@
 <template>
   <router-view v-slot="{ Component, route }">
-    <MobileHeader v-if="!route.meta.hideHeader" class="sm:hidden" :title="space?.title || 'Space'">
+    <PageHeaderMobile
+      v-if="!route.meta.hideHeader"
+      class="sm:hidden"
+      :title="space?.title || 'Space'"
+    >
       <button
         type="button"
         class="inline-flex max-w-full items-center gap-1 transition active:opacity-60"
         @click="menuOpen = true"
       >
-        <MobileHeaderTitle :title="space?.title || 'Space'">
+        <PageHeaderMobileTitle :title="space?.title || 'Space'">
           <template #icon>
             <SpaceIcon :icon="space?.icon" class="size-5 text-ink-gray-6" />
           </template>
-        </MobileHeaderTitle>
+        </PageHeaderMobileTitle>
         <span class="size-4 shrink-0 text-ink-gray-5 lucide-chevron-down" aria-hidden="true" />
       </button>
       <template #left>
-        <MobileBackButton
+        <PageHeaderBackButton
           :to="{ name: 'Discussions', params: { communityId } }"
           label="All discussions"
         />
@@ -33,7 +37,7 @@
           }"
         />
       </template>
-    </MobileHeader>
+    </PageHeaderMobile>
     <BottomSheet v-model="menuOpen" :title="community?.title || 'Community'">
       <CommunityMenu
         class="pb-6"
@@ -63,7 +67,14 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { Button, useDoctype } from 'frappe-ui'
+import {
+  PageHeaderBackButton,
+  PageHeaderMobile,
+  PageHeaderMobileTitle,
+  PageHeader,
+  Button,
+  useDoctype,
+} from 'frappe-ui'
 import SpaceHeaderActionsTarget from '@/components/SpaceHeaderActionsTarget.vue'
 import { useSpace, spaces as spaceList } from '@/data/spaces'
 import { GPProject } from '@/types/doctypes'
@@ -71,9 +82,6 @@ import BottomSheet from '@/components/BottomSheet.vue'
 import CommunityMenu from '@/components/CommunityMenu.vue'
 import EmptyStateBox from '@/components/EmptyStateBox.vue'
 import SpaceBreadcrumbs from '@/components/SpaceBreadcrumbs.vue'
-import MobileBackButton from '@/components/MobileBackButton.vue'
-import MobileHeader from '@/components/MobileHeader.vue'
-import MobileHeaderTitle from '@/components/MobileHeaderTitle.vue'
 import SpaceIcon from '@/components/SpaceIcon.vue'
 import { useCommunity } from '@/data/communities'
 import { readOnlyMode } from '@/data/readOnlyMode'

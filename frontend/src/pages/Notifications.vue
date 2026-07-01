@@ -1,5 +1,5 @@
 <template>
-  <MobileHeader class="sm:hidden" title="Notifications" />
+  <PageHeaderMobile class="sm:hidden" title="Notifications" />
   <PageHeader class="hidden sm:flex">
     <Breadcrumbs :items="[{ label: 'Notifications', route: { name: 'Notifications' } }]" />
   </PageHeader>
@@ -140,6 +140,8 @@
 import { computed, ref } from 'vue'
 import { RouterLink, type RouteLocationRaw } from 'vue-router'
 import {
+  PageHeader,
+  PageHeaderMobile,
   TabButtons,
   Tooltip,
   Breadcrumbs,
@@ -149,8 +151,6 @@ import {
   useList,
   usePageMeta,
 } from 'frappe-ui'
-import PageHeader from '@/components/PageHeader.vue'
-import MobileHeader from '@/components/MobileHeader.vue'
 import ReactionFaceIcon from '@/components/ReactionFaceIcon.vue'
 import UserAvatarWithHover from '@/components/UserAvatarWithHover.vue'
 import { unreadNotifications } from '@/data/notifications'

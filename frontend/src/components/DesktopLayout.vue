@@ -9,7 +9,7 @@
             class="flex min-w-0 flex-1 overflow-hidden rounded-lg bg-surface-base shadow-sm dark:rounded-none dark:border-l dark:shadow-none"
           >
             <div class="flex flex-1 min-w-0 flex-col">
-              <div id="pageHeaderTarget" />
+              <PageHeaderTarget />
               <ScrollContainer>
                 <ReadOnlyBanner v-if="readOnlyMode" class="mb-3" />
                 <slot />
@@ -25,6 +25,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { PageHeaderTarget } from 'frappe-ui'
 import ScrollContainer from './ScrollContainer.vue'
 import AppRail from './AppRail'
 import AppSidebar from './AppSidebar.vue'

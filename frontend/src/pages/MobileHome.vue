@@ -1,5 +1,5 @@
 <template>
-  <MobileHeader title="Communities">
+  <PageHeaderMobile title="Communities">
     <template #left>
       <GameplanLogo class="ml-1 size-7 rounded-[7px]" />
     </template>
@@ -14,7 +14,7 @@
         {{ editMode ? 'Done' : 'Edit' }}
       </Button>
     </template>
-  </MobileHeader>
+  </PageHeaderMobile>
 
   <div class="pb-24 pt-5">
     <nav v-if="visibleCommunities.length">
@@ -63,10 +63,9 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { Button, Switch, toast, useCall, usePageMeta } from 'frappe-ui'
+import { PageHeaderMobile, Button, Switch, toast, useCall, usePageMeta } from 'frappe-ui'
 import CommunityImage from '@/components/CommunityImage.vue'
 import GameplanLogo from '@/components/GameplanLogo.vue'
-import MobileHeader from '@/components/MobileHeader.vue'
 import MobileListRow from '@/components/MobileListRow.vue'
 import { activeCommunities, availableCommunities, communities } from '@/data/communities'
 import { communityState } from '@/data/communityState'

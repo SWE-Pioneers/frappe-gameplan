@@ -2,9 +2,9 @@
   <div class="flex h-full flex-col">
     <div class="flex flex-1">
       <div class="w-full">
-        <MobileHeader class="sm:hidden" title="People">
+        <PageHeaderMobile class="sm:hidden" title="People">
           <template #left>
-            <MobileBackButton :to="{ name: 'More' }" />
+            <PageHeaderBackButton :to="{ name: 'More' }" />
           </template>
           <template #right>
             <Button
@@ -16,7 +16,7 @@
               @click="showSettingsDialog('Users')"
             />
           </template>
-        </MobileHeader>
+        </PageHeaderMobile>
         <PageHeader class="hidden sm:flex">
           <Breadcrumbs :items="[{ label: 'People', route: { name: 'People' } }]" />
           <div class="h-7"></div>
@@ -171,10 +171,17 @@
 </template>
 <script>
 import { computed } from 'vue'
-import { Breadcrumbs, Badge, Button, Input, Select, TextInput } from 'frappe-ui'
-import MobileBackButton from '@/components/MobileBackButton.vue'
-import MobileHeader from '@/components/MobileHeader.vue'
-import PageHeader from '@/components/PageHeader.vue'
+import {
+  PageHeaderBackButton,
+  PageHeaderMobile,
+  PageHeader,
+  Breadcrumbs,
+  Badge,
+  Button,
+  Input,
+  Select,
+  TextInput,
+} from 'frappe-ui'
 import { showSettingsDialog } from '@/components/Settings'
 import { isGameplanAdmin } from '@/data/users'
 import UserAvatarWithHover from '@/components/UserAvatarWithHover.vue'
@@ -190,8 +197,8 @@ export default {
     TextInput,
     Select,
     Breadcrumbs,
-    MobileBackButton,
-    MobileHeader,
+    PageHeaderBackButton,
+    PageHeaderMobile,
     PageHeader,
     ReactionFaceIcon,
   },

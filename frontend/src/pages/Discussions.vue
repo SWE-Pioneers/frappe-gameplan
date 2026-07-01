@@ -1,17 +1,17 @@
 <template>
-  <MobileHeader v-if="communityState.doc" class="sm:hidden" :title="feedTitle">
+  <PageHeaderMobile v-if="communityState.doc" class="sm:hidden" :title="feedTitle">
     <template #left>
-      <MobileBackButton :to="{ name: 'Home' }" label="Communities" />
+      <PageHeaderBackButton :to="{ name: 'Home' }" label="Communities" />
     </template>
     <button
       type="button"
       class="inline-flex max-w-full items-center gap-1 transition active:opacity-60"
       @click="menuOpen = true"
     >
-      <MobileHeaderTitle :title="feedTitle" />
+      <PageHeaderMobileTitle :title="feedTitle" />
       <span class="size-4 shrink-0 text-ink-gray-5 lucide-chevron-down" aria-hidden="true" />
     </button>
-  </MobileHeader>
+  </PageHeaderMobile>
 
   <BottomSheet v-model="menuOpen" :title="community?.title || 'Community'">
     <CommunityMenu
@@ -108,6 +108,10 @@
 <script setup lang="ts">
 import { computed, ref, useTemplateRef, watch } from 'vue'
 import {
+  PageHeader,
+  PageHeaderBackButton,
+  PageHeaderMobile,
+  PageHeaderMobileTitle,
   Button,
   DatePicker,
   dayjsLocal,
@@ -122,11 +126,7 @@ import { useRouter } from 'vue-router'
 import BottomSheet from '@/components/BottomSheet.vue'
 import CommunityMenu from '@/components/CommunityMenu.vue'
 import DiscussionList from '@/components/DiscussionList.vue'
-import PageHeader from '@/components/PageHeader.vue'
 import LastPostReminder from '@/components/LastPostReminder.vue'
-import MobileBackButton from '@/components/MobileBackButton.vue'
-import MobileHeader from '@/components/MobileHeader.vue'
-import MobileHeaderTitle from '@/components/MobileHeaderTitle.vue'
 import { communityState } from '@/data/communityState'
 import { useCommunity } from '@/data/communities'
 import { getSpaceUnreadCount, spaces } from '@/data/spaces'

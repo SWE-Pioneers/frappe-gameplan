@@ -1,6 +1,6 @@
 <template>
   <div class="fixed inset-0 flex flex-col overflow-hidden touch-none">
-    <div id="pageHeaderTarget" class="standalone:pt-[env(safe-area-inset-top)]" />
+    <PageHeaderTarget class="standalone:pt-[env(safe-area-inset-top)]" />
 
     <div
       id="scrollContainer"
@@ -52,6 +52,7 @@ defineOptions({
 
 import { computed } from 'vue'
 import { useRoute, useRouter, type RouteLocationRaw } from 'vue-router'
+import { PageHeaderTarget } from 'frappe-ui'
 import { isNewCommentOpen } from '@/data/newComment'
 import { useSessionUser } from '@/data/users'
 import { scrollTo } from '@/utils/scrollContainer'

@@ -51,8 +51,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Breadcrumbs, Button, TabButtons, useDoc, usePageMeta } from 'frappe-ui'
-import PageHeader from '@/components/PageHeader.vue'
+import { PageHeader, Breadcrumbs, Button, TabButtons, useDoc, usePageMeta } from 'frappe-ui'
 import { showSettingsDialog } from '@/components/Settings'
 import { getProfileBentoCards } from '@/components/ProfileBento/profileBentoSource'
 import type { ProfileBentoCard } from '@/components/ProfileBento/types'

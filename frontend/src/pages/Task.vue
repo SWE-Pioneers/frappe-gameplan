@@ -1,10 +1,10 @@
 <template>
   <div>
-    <MobileHeader class="sm:hidden" :title="taskTitle">
+    <PageHeaderMobile class="sm:hidden" :title="taskTitle">
       <template #left>
-        <MobileBackButton :to="backRoute" :label="isSpaceTask ? 'Tasks' : 'My Tasks'" />
+        <PageHeaderBackButton :to="backRoute" :label="isSpaceTask ? 'Tasks' : 'My Tasks'" />
       </template>
-    </MobileHeader>
+    </PageHeaderMobile>
     <PageHeader class="hidden sm:flex">
       <SpaceBreadcrumbs
         v-if="space"
@@ -49,10 +49,13 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute, type RouteLocationRaw } from 'vue-router'
-import { Breadcrumbs, usePageMeta } from 'frappe-ui'
-import MobileBackButton from '@/components/MobileBackButton.vue'
-import MobileHeader from '@/components/MobileHeader.vue'
-import PageHeader from '@/components/PageHeader.vue'
+import {
+  PageHeaderBackButton,
+  PageHeaderMobile,
+  PageHeader,
+  Breadcrumbs,
+  usePageMeta,
+} from 'frappe-ui'
 import SpaceBreadcrumbs from '@/components/SpaceBreadcrumbs.vue'
 import TaskDetail from '@/components/TaskDetail.vue'
 import { useTask } from '@/data/tasks'

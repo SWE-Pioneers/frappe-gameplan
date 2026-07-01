@@ -1,7 +1,7 @@
 <template>
   <div>
     <div>
-      <MobileHeader class="sm:hidden" title="Search" />
+      <PageHeaderMobile class="sm:hidden" title="Search" />
       <PageHeader class="hidden sm:flex">
         <Breadcrumbs :items="[{ label: 'Search', route: { name: 'Search' } }]" />
       </PageHeader>
@@ -260,6 +260,8 @@
 import { ref, onMounted, onUnmounted, computed, useTemplateRef } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import {
+  PageHeader,
+  PageHeaderMobile,
   Avatar,
   Breadcrumbs,
   Button,
@@ -270,8 +272,6 @@ import {
   debounce,
   usePageMeta,
 } from 'frappe-ui'
-import PageHeader from '@/components/PageHeader.vue'
-import MobileHeader from '@/components/MobileHeader.vue'
 import { useCall, useNewDoc } from 'frappe-ui'
 import { GPSearchFeedback } from '@/types/doctypes'
 import { useSessionUser } from '@/data/users'
