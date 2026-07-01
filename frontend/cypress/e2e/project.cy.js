@@ -89,7 +89,10 @@ describe('Project', () => {
         // (archived spaces are read-only).
         openCommunitySpaces('devops')
         cy.get('input[aria-label="Space title"]:disabled').should('not.exist')
-        cy.contains('button[aria-haspopup="listbox"]', 'All (').click({ force: true })
+        // The visibility filter is a reka-ui Select (role=combobox); its trigger
+        // shows the current value "All (N)". Switch it to "Archived" to reveal the
+        // archived space.
+        cy.contains('[role="combobox"]', 'All').click()
         cy.get('[role="option"]:visible').contains('Archived').click()
         cy.get('input[aria-label="Space title"]:disabled').should('have.value', 'Project 1')
       })
