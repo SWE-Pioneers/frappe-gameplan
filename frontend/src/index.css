@@ -1,12 +1,9 @@
 @import 'frappe-ui/style.css';
-/* The editor's CSS ships only as a bindingless side-effect import inside
-   `frappe-ui/editor` (`import './style.css'`). Vite 8's Rolldown engine ignores
-   `sideEffects` globs that end in a file extension (only trailing-`**` directory
-   globs are honored), so it tree-shakes that statement out of the production build
-   and the editor loses its table/taskList/cell-selection styles. Dev is unaffected
-   (no tree-shaking). Import the editor stylesheet explicitly so it's a real, non-
-   elidable dependency — this is the bundler-agnostic supported entry point. */
+/* Editor and list CSS ship as bindingless side-effect imports inside
+   `frappe-ui/editor` / `frappe-ui/list`, which Rolldown tree-shakes out of
+   production builds (dev is unaffected) — so import them explicitly here. */
 @import 'frappe-ui/editor-style.css';
+@import 'frappe-ui/list-style.css';
 
 /*
   Inter OpenType features:
