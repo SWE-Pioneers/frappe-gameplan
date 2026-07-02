@@ -6,27 +6,36 @@
   <SettingsBody>
     <div class="space-y-11 pt-6">
       <section>
-        <SettingsRow
-          title="Appearance"
-          description="Choose a light, dark, or system-matched interface"
-        >
-          <Select :options="themeOptions" v-model="selectedTheme">
-            <template #item-prefix="{ item }">
-              <div
-                class="size-3 rounded-full border border-outline-gray-2 flex overflow-hidden"
-                v-if="item.value === 'system'"
-              >
-                <div class="w-1/2 bg-white"></div>
-                <div class="w-1/2 bg-gray-950"></div>
-              </div>
-              <div
-                v-else
-                class="size-3 rounded-full border"
-                :class="item.value == 'light' ? 'bg-white border-outline-gray-2' : 'bg-gray-950'"
-              ></div>
-            </template>
-          </Select>
-        </SettingsRow>
+        <div class="divide-y divide-outline-gray-1">
+          <SettingsRow
+            title="Appearance"
+            description="Choose a light, dark, or system-matched interface"
+          >
+            <Select :options="themeOptions" v-model="selectedTheme">
+              <template #item-prefix="{ item }">
+                <div
+                  class="size-3 rounded-full border border-outline-gray-2 flex overflow-hidden"
+                  v-if="item.value === 'system'"
+                >
+                  <div class="w-1/2 bg-white"></div>
+                  <div class="w-1/2 bg-gray-950"></div>
+                </div>
+                <div
+                  v-else
+                  class="size-3 rounded-full border"
+                  :class="item.value == 'light' ? 'bg-white border-outline-gray-2' : 'bg-gray-950'"
+                ></div>
+              </template>
+            </Select>
+          </SettingsRow>
+
+          <SettingsRow
+            title="Cursor"
+            description="Show the pointer on everything clickable, or only on external links"
+          >
+            <Select :options="cursorStyleOptions" v-model="selectedCursorStyle" />
+          </SettingsRow>
+        </div>
       </section>
 
       <section>
@@ -119,11 +128,13 @@ import {
 } from '@/data/sidebarPreferences'
 import { useSessionUser } from '@/data/users'
 import { useTheme, type Theme } from '@/utils/useTheme'
+import { useCursorStyle, type CursorStyle } from '@/utils/useCursorStyle'
 import type { GPUserProfile } from '@/types/doctypes'
 import QuickReactionsEditor from './QuickReactionsEditor.vue'
 
 const sessionUser = useSessionUser()
 const { currentTheme, setTheme } = useTheme()
+const { currentCursorStyle, setCursorStyle } = useCursorStyle()
 const userProfiles = useDoctype<GPUserProfile>('GP User Profile')
 
 const showCustomizeSidebar = ref(false)
@@ -133,6 +144,11 @@ const themeOptions: Array<{ label: string; value: Theme }> = [
   { label: 'Light', value: 'light' },
   { label: 'Dark', value: 'dark' },
   { label: 'System Default', value: 'system' },
+]
+
+const cursorStyleOptions: Array<{ label: string; value: CursorStyle }> = [
+  { label: 'Pointer', value: 'pointer' },
+  { label: 'Normal', value: 'normal' },
 ]
 
 const badgeStyleOptions: Array<{ label: SidebarBadgeStyle; value: SidebarBadgeStyle }> = [
@@ -148,6 +164,11 @@ const spaceSortOptions: Array<{ label: SpaceSidebarSort; value: SpaceSidebarSort
 const selectedTheme = computed({
   get: () => currentTheme.value,
   set: (theme: Theme) => setTheme(theme),
+})
+
+const selectedCursorStyle = computed({
+  get: () => currentCursorStyle.value,
+  set: (style: CursorStyle) => setCursorStyle(style),
 })
 
 const selectedSpaceSort = computed({

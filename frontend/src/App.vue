@@ -21,6 +21,7 @@ import { users } from '@/data/users'
 import { session } from '@/data/session'
 import { useScreenSize } from '@/composables/useScreenSize'
 import { useTheme } from '@/utils/useTheme'
+import { useCursorStyle } from '@/utils/useCursorStyle'
 import NewTaskDialog from './components/NewTaskDialog/NewTaskDialog.vue'
 import SettingsDialog from './components/Settings/SettingsDialog.vue'
 import { settingsBackgroundPath } from './components/Settings'
@@ -30,6 +31,7 @@ const screenSize = useScreenSize()
 const route = useRoute()
 const router = useRouter()
 useTheme()
+useCursorStyle()
 const MobileLayout = defineAsyncComponent(() => import('./components/MobileLayout.vue'))
 const DesktopLayout = defineAsyncComponent(() => import('./components/DesktopLayout.vue'))
 const Layout = computed(() => {

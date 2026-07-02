@@ -56,6 +56,29 @@ html {
   }
 }
 
+/*
+  Cursor preference (Settings → Preferences → Cursor, utils/useCursorStyle.ts).
+  With data-cursor="normal", clickable elements keep the default arrow — like a
+  native app — and only raw external links show the pointer.
+
+  The [class*='cursor-'] guard leaves other cursor utilities (cursor-grab,
+  cursor-col-resize, cursor-text, …) alone; .cursor-pointer is re-included since
+  it's exactly what this preference overrides. :where() keeps specificity low.
+*/
+html[data-cursor='normal']
+  :where(a, button, [role='button'], summary, .cursor-pointer):where(
+    :not([class*='cursor-']),
+    .cursor-pointer
+  ) {
+  cursor: default;
+}
+
+/* Internal navigation uses relative hrefs (vue-router), so absolute http(s)
+   hrefs are raw external links — the one place the pointer stays */
+html[data-cursor='normal'] a:where([href^='http://'], [href^='https://']) {
+  cursor: pointer;
+}
+
 /* disable webkit tap highlight color */
 body {
   -webkit-tap-highlight-color: transparent;
