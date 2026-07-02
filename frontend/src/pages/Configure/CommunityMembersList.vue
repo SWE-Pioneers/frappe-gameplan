@@ -19,13 +19,21 @@
     </Button>
   </div>
 
-  <CommunityMembersListControls
-    v-if="showControls"
-    :has-members="communityMembers.length > 0"
-    v-model:search="search"
-  />
+  <CommunityMembersListControls v-if="showControls" v-model:search="search" />
 
-  <ConfigureList v-if="filteredMembers.length">
+  <List
+    v-if="filteredMembers.length"
+    :columns="['1.25rem', 'minmax(12rem,1fr)', 'minmax(12rem,1fr)', '8rem', '1.5rem']"
+    class="max-md:list-cols-[1.25rem_minmax(0,1fr)]"
+  >
+    <!-- Sticky at the settings scroll-viewport top — it rests exactly where it
+         pins, so it never visibly moves. -->
+    <ListHeader class="sticky top-0 z-10 bg-surface-elevation-1 max-md:hidden">
+      <ListHeaderCell class="col-span-2">Member</ListHeaderCell>
+      <ListHeaderCell>Email</ListHeaderCell>
+      <ListHeaderCell>Role</ListHeaderCell>
+      <ListHeaderCell />
+    </ListHeader>
     <MemberRow
       v-for="member in filteredMembers"
       :key="member.user"
@@ -33,7 +41,7 @@
       :member="member"
       :can-manage="canManage"
     />
-  </ConfigureList>
+  </List>
 
   <ConfigureEmptyState
     v-else-if="!communityMembers.length"
@@ -113,13 +121,13 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { Button, Combobox, Dialog, ErrorMessage, toast, useDoctype } from 'frappe-ui'
+import { List, ListHeader, ListHeaderCell } from 'frappe-ui/list'
 import type { Community } from '@/data/communities'
 import { communities } from '@/data/communities'
 import { activeUsers, useUser } from '@/data/users'
 import UserAvatar from '@/components/UserAvatar.vue'
 import type { GPTeam } from '@/types/doctypes'
 import ConfigureEmptyState from './ConfigureEmptyState.vue'
-import ConfigureList from './ConfigureList.vue'
 import CommunityGuestsList from './CommunityGuestsList.vue'
 import CommunityMembersListControls from './CommunityMembersListControls.vue'
 import MemberRow from './MemberRow.vue'

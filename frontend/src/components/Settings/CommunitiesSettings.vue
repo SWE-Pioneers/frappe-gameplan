@@ -17,9 +17,11 @@
           <Select variant="ghost" v-if="selectedCommunity" :options="viewButtons" v-model="view" />
         </div>
 
+        <!-- md:pb-3 on both controls keeps the gap to their sticky ListHeader,
+             which lives at the top of the scroll viewport in each list. -->
         <CommunitySpacesListControls
           v-if="selectedCommunity && view === 'spaces'"
-          class="mt-4"
+          class="mt-4 md:pb-3"
           :community-id="selectedCommunityId"
           v-model:search="spaceSearch"
           v-model:visibility-filter="spaceFilter"
@@ -33,8 +35,7 @@
 
         <CommunityMembersListControls
           v-if="selectedCommunity && view === 'members'"
-          class="mt-4"
-          :has-members="selectedCommunity.members.length > 0"
+          class="mt-4 md:pb-3"
           v-model:search="memberSearch"
         >
           <template #action>
@@ -54,7 +55,10 @@
       <template v-else>
         <h2 class="text-lg-semibold text-ink-gray-8">Communities</h2>
 
-        <div class="mt-4 flex items-center justify-between gap-3">
+        <!-- md:pb-3 keeps the gap to the column header, which lives at the top
+             of the scroll viewport (a sticky ListHeader in CommunitiesList)
+             instead of being duplicated here. -->
+        <div class="mt-4 flex items-center justify-between gap-3 md:pb-3">
           <CommunitiesListFilters
             v-model:search="search"
             v-model:visibility-filter="visibilityFilter"
@@ -66,17 +70,6 @@
           >
             New community
           </Button>
-        </div>
-
-        <!-- Fixed column header, aligned with CommunityRow's grid. -->
-        <div
-          v-if="manageableCommunities.length"
-          class="mt-3 hidden grid-cols-[minmax(12rem,6fr)_minmax(6rem,1.2fr)_minmax(6rem,1.2fr)_1.5rem] items-center gap-12 border-b h-8 text-sm text-ink-gray-5 md:grid"
-        >
-          <div>Community</div>
-          <div class="px-1.5">Spaces</div>
-          <div class="px-1.5">Members</div>
-          <div />
         </div>
       </template>
     </div>
@@ -144,7 +137,7 @@ import { Button, SettingsBody, SettingsHeader, Select } from 'frappe-ui'
 import NewSpaceDialog from '@/components/NewSpaceDialog.vue'
 import { communities } from '@/data/communities'
 import { useSessionUser } from '@/data/users'
-import { canManageCommunity, getManageableCommunities, isGlobalAdmin } from '@/utils/permissions'
+import { canManageCommunity, isGlobalAdmin } from '@/utils/permissions'
 import CommunitiesList from '@/pages/Configure/CommunitiesList.vue'
 import CommunitiesListFilters from '@/pages/Configure/CommunitiesListFilters.vue'
 import ConfigureEmptyState from '@/pages/Configure/ConfigureEmptyState.vue'
@@ -196,9 +189,6 @@ const selectedCommunity = computed(() => {
   if (!selectedCommunityId.value) return null
   return (communities.data || []).find((community) => community.name === selectedCommunityId.value)
 })
-const manageableCommunities = computed(() =>
-  getManageableCommunities(communities.data || [], sessionUser),
-)
 const canManageSelectedCommunity = computed(() =>
   canManageCommunity(selectedCommunity.value, sessionUser),
 )

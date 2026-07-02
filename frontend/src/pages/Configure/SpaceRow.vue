@@ -1,6 +1,6 @@
 <template>
-  <div :class="rowClass">
-    <div class="flex min-w-0 items-center gap-0">
+  <ListRow class="h-10">
+    <ListCell>
       <IconPicker :modelValue="space.icon || ''" @update:modelValue="updateIcon">
         <template #default="{ togglePopover }">
           <Button
@@ -39,17 +39,17 @@
           <span v-if="guestsLabel">{{ guestsLabel }}</span>
         </div>
       </div>
-    </div>
+    </ListCell>
 
-    <div class="hidden truncate text-sm text-ink-gray-5 md:block">
-      {{ contentLabel }}
-    </div>
+    <ListCell class="max-md:hidden">
+      <div class="w-full truncate text-sm text-ink-gray-5">{{ contentLabel }}</div>
+    </ListCell>
 
-    <div v-if="showGuests" class="hidden truncate text-sm text-ink-gray-5 md:block">
-      {{ guestsLabel }}
-    </div>
+    <ListCell v-if="showGuests" class="max-md:hidden">
+      <div class="w-full truncate text-sm text-ink-gray-5">{{ guestsLabel }}</div>
+    </ListCell>
 
-    <div class="flex items-center justify-end gap-1">
+    <ListCell class="justify-end gap-1">
       <Button
         v-if="space.archived_at"
         variant="ghost"
@@ -59,13 +59,14 @@
         @click="restoreSpace"
       />
       <SpaceOptions v-else align="end" :spaceId="space.name" />
-    </div>
-  </div>
+    </ListCell>
+  </ListRow>
 </template>
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { Button, useDoctype } from 'frappe-ui'
+import { ListCell, ListRow } from 'frappe-ui/list'
 import IconPicker from '@/components/IconPicker.vue'
 import SpaceIcon from '@/components/SpaceIcon.vue'
 import SpaceOptions from '@/components/SpaceOptions.vue'
@@ -80,13 +81,6 @@ const props = defineProps<{
   guestsCount: number
   showGuests: boolean
 }>()
-
-const rowClass = computed(() => [
-  'grid grid-cols-[minmax(0,1fr)_auto] items-center gap-1 h-10',
-  props.showGuests
-    ? 'md:grid-cols-[minmax(8rem,1fr)_15.25rem_5rem_1.5rem] md:gap-12'
-    : 'md:grid-cols-[minmax(8rem,1fr)_15.25rem_1.5rem] md:gap-12',
-])
 
 const project = useDoctype<GPProject>('GP Project')
 const title = ref(props.space.title)

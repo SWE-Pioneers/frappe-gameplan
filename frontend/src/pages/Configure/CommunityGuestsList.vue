@@ -7,39 +7,40 @@
       </p>
     </div>
 
-    <ConfigureList
-      header-class="hidden grid-cols-[1.25rem_minmax(12rem,1fr)_minmax(12rem,1fr)_8rem_3rem] gap-2 items-center h-7 text-sm text-ink-gray-6 md:grid"
+    <List
+      :columns="['1.25rem', 'minmax(12rem,1fr)', 'minmax(12rem,1fr)', '8rem', '3rem']"
+      class="max-md:list-cols-[1.25rem_minmax(0,1fr)_2rem]"
     >
-      <template #header>
-        <div class="col-span-2">Guest</div>
-        <div>Email</div>
-        <div>Spaces</div>
-        <div />
-      </template>
-      <div
-        v-for="guest in communityGuests"
-        :key="guest.key"
-        class="grid h-10 grid-cols-[1.25rem_minmax(0,1fr)_2rem] items-center gap-2 md:grid-cols-[1.25rem_minmax(12rem,1fr)_minmax(12rem,1fr)_8rem_3rem]"
-      >
-        <UserAvatar :user="guest.user" size="sm" class="shrink-0" />
+      <ListHeader class="max-md:hidden">
+        <ListHeaderCell class="col-span-2">Guest</ListHeaderCell>
+        <ListHeaderCell>Email</ListHeaderCell>
+        <ListHeaderCell>Spaces</ListHeaderCell>
+        <ListHeaderCell />
+      </ListHeader>
+      <ListRow v-for="guest in communityGuests" :key="guest.key" class="h-10">
+        <ListCell>
+          <UserAvatar :user="guest.user" size="sm" class="shrink-0" />
+        </ListCell>
 
-        <div class="min-w-0">
-          <div class="truncate text-base-medium text-ink-gray-7">
-            {{ guest.fullName }}
+        <ListCell>
+          <div class="min-w-0">
+            <div class="truncate text-base-medium text-ink-gray-7">
+              {{ guest.fullName }}
+            </div>
+            <div class="mt-1 flex flex-wrap gap-x-2 gap-y-1 text-base text-ink-gray-5 md:hidden">
+              <span>{{ guest.email }}</span>
+              <span>{{ guest.spacesLabel }}</span>
+            </div>
           </div>
-          <div class="mt-1 flex flex-wrap gap-x-2 gap-y-1 text-base text-ink-gray-5 md:hidden">
-            <span>{{ guest.email }}</span>
-            <span>{{ guest.spacesLabel }}</span>
-          </div>
-        </div>
+        </ListCell>
 
-        <div class="hidden truncate text-base text-ink-gray-5 md:block">
-          {{ guest.email }}
-        </div>
-        <div class="hidden truncate text-base text-ink-gray-5 md:block">
-          {{ guest.spacesLabel }}
-        </div>
-        <div class="flex justify-end">
+        <ListCell class="max-md:hidden">
+          <div class="w-full truncate text-base text-ink-gray-5">{{ guest.email }}</div>
+        </ListCell>
+        <ListCell class="max-md:hidden">
+          <div class="w-full truncate text-base text-ink-gray-5">{{ guest.spacesLabel }}</div>
+        </ListCell>
+        <ListCell class="justify-end">
           <Button
             v-if="canManage"
             variant="ghost"
@@ -48,9 +49,9 @@
             :label="guest.pending ? 'Delete invite' : 'Remove guest'"
             @click="removeGuest(guest)"
           />
-        </div>
-      </div>
-    </ConfigureList>
+        </ListCell>
+      </ListRow>
+    </List>
     <ErrorMessage class="mt-2" :message="teams.runDocMethod.error" />
   </div>
 </template>
@@ -58,12 +59,12 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { Button, dialog, ErrorMessage, useDoctype, useList } from 'frappe-ui'
+import { List, ListCell, ListHeader, ListHeaderCell, ListRow } from 'frappe-ui/list'
 import UserAvatar from '@/components/UserAvatar.vue'
 import type { Community } from '@/data/communities'
 import { getSpace, spaces } from '@/data/spaces'
 import { useUser } from '@/data/users'
 import type { GPGuestAccess, GPInvitation, GPTeam } from '@/types/doctypes'
-import ConfigureList from './ConfigureList.vue'
 
 const props = defineProps<{
   community: Community

@@ -6,7 +6,23 @@
     v-model:visibility-filter="visibilityFilter"
   />
 
-  <ConfigureList v-if="filteredSpaces.length">
+  <List
+    v-if="filteredSpaces.length"
+    :columns="
+      hasGuests
+        ? ['minmax(8rem,1fr)', '15.25rem', '5rem', '1.5rem']
+        : ['minmax(8rem,1fr)', '15.25rem', '1.5rem']
+    "
+    class="list-gap-12 max-md:list-gap-1 max-md:list-cols-[minmax(0,1fr)_auto]"
+  >
+    <!-- Sticky at the settings scroll-viewport top — it rests exactly where it
+         pins, so it never visibly moves. -->
+    <ListHeader class="sticky top-0 z-10 bg-surface-elevation-1 max-md:hidden">
+      <ListHeaderCell>Space</ListHeaderCell>
+      <ListHeaderCell>Content</ListHeaderCell>
+      <ListHeaderCell v-if="hasGuests">Guests</ListHeaderCell>
+      <ListHeaderCell />
+    </ListHeader>
     <SpaceRow
       v-for="space in filteredSpaces"
       :key="space.name"
@@ -15,7 +31,7 @@
       :guests-count="getGuestsCount(space.name)"
       :show-guests="hasGuests"
     />
-  </ConfigureList>
+  </List>
 
   <ConfigureEmptyState
     v-else-if="!communitySpaces.length"
@@ -49,9 +65,9 @@
 
 <script setup lang="ts">
 import { Button } from 'frappe-ui'
+import { List, ListHeader, ListHeaderCell } from 'frappe-ui/list'
 import type { Space } from '@/data/spaces'
 import ConfigureEmptyState from './ConfigureEmptyState.vue'
-import ConfigureList from './ConfigureList.vue'
 import SpaceRow from './SpaceRow.vue'
 import CommunitySpacesListControls from './CommunitySpacesListControls.vue'
 import { useCommunitySpaceData } from './useCommunitySpaceData'
