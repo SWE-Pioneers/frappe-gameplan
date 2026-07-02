@@ -82,7 +82,7 @@
       <div
         class="flex min-w-0 flex-1 overflow-hidden rounded-lg bg-surface-base shadow-sm dark:rounded-none dark:border-l dark:shadow-none"
       >
-        <ScrollContainer>
+        <ScrollArea class="block min-h-0 flex-1" viewport-class="isolate bg-surface-base">
           <div class="body-container pt-14 pb-14">
             <div class="max-w-xl mx-auto">
               <div class="text-4xl-semibold text-ink-gray-8">Welcome to Gameplan</div>
@@ -187,7 +187,7 @@
               </div>
             </div>
           </div>
-        </ScrollContainer>
+        </ScrollArea>
       </div>
     </div>
   </div>
@@ -195,10 +195,9 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { useCall } from 'frappe-ui'
+import { useCall, ScrollArea } from 'frappe-ui'
 import GameplanLogo from '@/components/GameplanLogo.vue'
 import IconPicker from '@/components/IconPicker.vue'
-import ScrollContainer from '@/components/ScrollContainer.vue'
 import SpaceIcon from '@/components/SpaceIcon.vue'
 import UserAvatar from '@/components/UserAvatar.vue'
 import UserDropdown from '@/components/UserDropdown.vue'

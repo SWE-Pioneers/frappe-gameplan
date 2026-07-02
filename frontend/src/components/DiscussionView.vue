@@ -322,8 +322,7 @@ import { useGroupedSpaceOptions } from '@/data/groupedSpaces'
 import { useDiscussion } from '@/data/discussions'
 import { useDraftSync } from '@/data/useDraftSync'
 import { tags } from '@/data/tags'
-import { getScrollContainer, useScrollPosition } from '@/utils/scrollContainer'
-import { isMobile as useIsMobile } from '@/composables/isMobile'
+import { useScrollContainer, useIsMobile } from 'frappe-ui'
 import { provideRichQuotes } from '@/components/RichQuoteExtension/useRichQuotes'
 import QuoteBacklinksPopover from '@/components/RichQuoteExtension/QuoteBacklinksPopover.vue'
 import { refreshUnreadCountForProjects } from '@/data/unreadCount'
@@ -344,7 +343,7 @@ const postEditor = useTemplateRef<{ editor: Editor | null }>('postEditor')
 const mainPostContentEl = ref<HTMLElement | null>(null)
 const postTitleEl = useTemplateRef<HTMLElement>('postTitleEl')
 
-const { isScrolled, scrollToTop } = useScrollPosition()
+const { isScrolled, scrollToTop, el: scrollContainerEl } = useScrollContainer()
 const discussion = useDiscussion(() => props.postId)
 // In-app navigation skips the router's server canonicalization for speed, so a stale link to a
 // discussion deleted or moved out of reach after local data loaded would otherwise render a blank
@@ -416,15 +415,25 @@ function onPostEditorChange(value: string) {
   if (editingPost.value) postDraftData.value.content = value
 }
 
+// The scroll container is owned by the shell (Desktop/MobileShell) and registers
+// asynchronously — and re-registers across desktop↔mobile layout swaps — so bind the
+// scroll listener reactively as the element becomes available rather than once at mount.
+watch(
+  scrollContainerEl,
+  (el, prev) => {
+    prev?.removeEventListener('scroll', updateMobileHeaderTitle)
+    el?.addEventListener('scroll', updateMobileHeaderTitle)
+    updateMobileHeaderTitle()
+  },
+  { immediate: true },
+)
+
 onMounted(() => {
-  const scrollContainer = getScrollContainer()
-  scrollContainer.addEventListener('scroll', updateMobileHeaderTitle)
-  updateMobileHeaderTitle()
   scrollToUnread()
 })
 
 onBeforeUnmount(() => {
-  getScrollContainer().removeEventListener('scroll', updateMobileHeaderTitle)
+  scrollContainerEl.value?.removeEventListener('scroll', updateMobileHeaderTitle)
 })
 
 function updateMobileHeaderTitle() {
@@ -439,7 +448,8 @@ function updateMobileHeaderTitle() {
     return
   }
 
-  const scrollContainer = getScrollContainer()
+  const scrollContainer = scrollContainerEl.value
+  if (!scrollContainer) return
   const containerTop = scrollContainer.getBoundingClientRect().top
   const mobileHeaderHeight = parseFloat(
     getComputedStyle(document.documentElement).getPropertyValue('--mobile-header-height'),

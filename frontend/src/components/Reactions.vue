@@ -11,7 +11,7 @@
   </div>
 </template>
 <script setup>
-import { useScreenSize } from '@/composables/useScreenSize'
+import { useScreenSize } from 'frappe-ui'
 import { defineAsyncComponent, computed } from 'vue'
 import { useReactions } from '@/data/reactions'
 

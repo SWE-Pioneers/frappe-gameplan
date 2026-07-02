@@ -261,7 +261,7 @@ import Activity from './Activity.vue'
 import PollEditor from './PollEditor.vue'
 import Poll from './Poll.vue'
 import UserAvatar from './UserAvatar.vue'
-import { getScrollContainer } from '@/utils/scrollContainer'
+import { getScrollContainer } from 'frappe-ui'
 import { dialog } from 'frappe-ui'
 import { useSocket, type NewActivityEvent } from '@/socket'
 import { GPActivity, GPComment, GPPoll } from '@/types/doctypes'
@@ -272,7 +272,7 @@ import { useRichQuotes } from '@/components/RichQuoteExtension/useRichQuotes'
 import { useDraftSync } from '@/data/useDraftSync'
 import { useSessionUser } from '@/data/users'
 import type { Space } from '@/data/spaces'
-import { isMobile } from '@/composables/isMobile'
+import { useIsMobile } from 'frappe-ui'
 import { needsMobileCommentGap } from '@/utils/commentTimeline'
 
 interface Props {
@@ -328,7 +328,7 @@ const router = useRouter()
 const route = useRoute()
 const socket = useSocket()
 const sessionUser = useSessionUser()
-const isMobileViewport = isMobile()
+const isMobileViewport = useIsMobile()
 
 const showCommentBox = ref(false)
 const composerMinimized = ref(false)
@@ -649,6 +649,7 @@ async function scrollToEnd() {
   _scrollToEnd()
   await wait(100)
   const scrollContainer = getScrollContainer()
+  if (!scrollContainer) return
   if (scrollContainer.scrollTop < scrollContainer.scrollHeight) {
     _scrollToEnd()
   }
@@ -656,6 +657,7 @@ async function scrollToEnd() {
 
 function _scrollToEnd() {
   const scrollContainer = getScrollContainer()
+  if (!scrollContainer) return
   scrollContainer.scrollTop = scrollContainer.scrollHeight
 }
 
@@ -687,6 +689,7 @@ async function scrollToElement($el: HTMLElement) {
   let top = _scrollToElement($el)
   await wait(100)
   const scrollContainer = getScrollContainer()
+  if (!scrollContainer) return
   if (scrollContainer.scrollTop != top) {
     _scrollToElement($el)
   }
@@ -694,6 +697,7 @@ async function scrollToElement($el: HTMLElement) {
 
 function _scrollToElement($el: HTMLElement) {
   const scrollContainer = getScrollContainer()
+  if (!scrollContainer) return 0
   const headerHeight = 64
   const top = $el.offsetTop - scrollContainer.scrollTop - headerHeight
   scrollContainer.scrollBy({ top, left: 0 })

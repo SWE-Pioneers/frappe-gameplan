@@ -1,32 +1,23 @@
 <template>
   <div class="relative flex h-full flex-col" v-if="users.isFinished">
-    <div class="h-full flex-1 standalone:border-t">
-      <div class="flex h-full">
+    <DesktopShell class="h-full flex-1 standalone:border-t" :card-class="cardClass">
+      <template #rail>
         <AppRail :show-border="onCommunityRoute" :show-community-active-state="onCommunityRoute" />
+      </template>
+      <template #sidebar>
         <AppSidebar v-if="onCommunityRoute" />
-        <div class="flex min-w-0 flex-1 py-1 pr-1 dark:p-0">
-          <div
-            class="flex min-w-0 flex-1 overflow-hidden rounded-lg bg-surface-base shadow-sm dark:rounded-none dark:border-l dark:shadow-none"
-          >
-            <div class="flex flex-1 min-w-0 flex-col">
-              <PageHeaderTarget />
-              <ScrollContainer>
-                <ReadOnlyBanner v-if="readOnlyMode" class="mb-3" />
-                <slot />
-              </ScrollContainer>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+      </template>
+
+      <ReadOnlyBanner v-if="readOnlyMode" class="mb-3" />
+      <slot />
+    </DesktopShell>
     <CommandPalette />
   </div>
 </template>
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { PageHeaderTarget } from 'frappe-ui'
-import ScrollContainer from './ScrollContainer.vue'
+import { DesktopShell } from 'frappe-ui'
 import AppRail from './AppRail'
 import AppSidebar from './AppSidebar.vue'
 import CommandPalette from './CommandPalette/CommandPalette.vue'
@@ -38,6 +29,12 @@ import { getHomeRoute } from '@/router'
 
 const route = useRoute()
 const router = useRouter()
+
+// The Gameplan "card" look layered over DesktopShell's structural content column:
+// a floating panel with a gutter (margin) on top/bottom/right, flush-left against the
+// sidebar. Dark mode drops the float for a full-bleed panel with a left divider.
+const cardClass =
+  'my-1 mr-1 rounded-lg bg-surface-base shadow-sm dark:m-0 dark:rounded-none dark:border-l dark:shadow-none'
 
 // While the settings dialog is open the URL is /settings/*, but the page it was
 // opened over stays rendered behind the overlay (see App.vue's displayedRoute).
