@@ -12,83 +12,26 @@
         </Dialog.Close>
       </div>
 
-      <ScrollAreaRoot class="relative min-h-0 flex-1">
-        <ScrollAreaViewport class="h-full w-full overflow-y-auto px-4 py-3">
-          <div v-if="manageableCommunities.length > 0" class="space-y-4">
-            <section class="flex items-center justify-between gap-3">
-              <h3 class="text-base font-medium text-ink-gray-8">Badge style</h3>
-              <Select :options="badgeStyleOptions" v-model="selectedBadgeStyle" />
-            </section>
+      <ScrollArea class="min-h-0 flex-1" viewport-class="px-4 py-3">
+        <div v-if="manageableCommunities.length > 0" class="space-y-4">
+          <section class="flex items-center justify-between gap-3">
+            <h3 class="text-base font-medium text-ink-gray-8">Badge style</h3>
+            <Select :options="badgeStyleOptions" v-model="selectedBadgeStyle" />
+          </section>
 
-            <section class="space-y-1.5">
-              <h3 class="text-base font-medium text-ink-gray-8">Shown in sidebar</h3>
-              <div ref="shownSection" :class="getCommunityListClasses('shown')">
-                <div>
-                  <div
-                    v-for="community in selectedManageableCommunities"
-                    :key="community.name"
-                    data-sortable-section="shown"
-                    :data-sortable-id="community.name"
-                    class="group relative flex min-h-8 w-full touch-none cursor-grab select-none items-center gap-2 rounded px-1.5 py-0.5 text-left text-ink-gray-8 hover:bg-surface-gray-1"
-                    :class="getCommunityRowClasses(community.name)"
-                    :style="getItemStyle(community.name, 'shown')"
-                    @pointerdown="startPointerDrag($event, community.name, 'shown')"
-                    @pointermove="updatePointerDrag"
-                    @pointerup="finishPointerDrag"
-                    @pointercancel="cancelPointerDrag"
-                  >
-                    <span
-                      class="lucide-grip-vertical size-4 shrink-0 text-ink-gray-4"
-                      aria-hidden="true"
-                    />
-                    <CommunityImage
-                      :community="community"
-                      class="size-5 shrink-0 bg-surface-gray-1"
-                    />
-                    <span class="min-w-0 flex-1">
-                      <span class="flex items-center gap-1.5 text-base">
-                        <span class="truncate">{{ community.title }}</span>
-                        <span
-                          v-if="community.is_private"
-                          class="lucide-lock size-3.5 shrink-0 text-ink-gray-5"
-                        />
-                      </span>
-                    </span>
-                    <Button
-                      variant="ghost"
-                      size="xs"
-                      icon="lucide-arrow-down"
-                      :label="`Hide ${community.title} from sidebar`"
-                      tooltip="Hide from sidebar"
-                      class="shrink-0 text-ink-gray-5 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100"
-                      @pointerdown.stop
-                      @mousedown.stop
-                      @click.stop="moveCommunityToSection(community.name, 'hidden')"
-                    />
-                  </div>
-                </div>
-
+          <section class="space-y-1.5">
+            <h3 class="text-base font-medium text-ink-gray-8">Shown in sidebar</h3>
+            <div ref="shownSection" :class="getCommunityListClasses('shown')">
+              <div>
                 <div
-                  v-if="selectedManageableCommunities.length === 0"
-                  class="px-3 py-6 text-center text-p-sm text-ink-gray-5"
-                >
-                  No communities shown
-                </div>
-              </div>
-            </section>
-
-            <section class="space-y-1.5">
-              <h3 class="text-base font-medium text-ink-gray-8">Hidden from sidebar</h3>
-              <div ref="hiddenSection" :class="getCommunityListClasses('hidden')">
-                <div
-                  v-for="community in hiddenManageableCommunities"
+                  v-for="community in selectedManageableCommunities"
                   :key="community.name"
-                  data-sortable-section="hidden"
+                  data-sortable-section="shown"
                   :data-sortable-id="community.name"
-                  class="group relative flex min-h-8 w-full touch-none cursor-grab select-none items-center gap-2 rounded-md px-1.5 py-0.5 text-left text-ink-gray-8 hover:bg-surface-gray-1"
+                  class="group relative flex min-h-8 w-full touch-none cursor-grab select-none items-center gap-2 rounded px-1.5 py-0.5 text-left text-ink-gray-8 hover:bg-surface-gray-1"
                   :class="getCommunityRowClasses(community.name)"
-                  :style="getItemStyle(community.name, 'hidden')"
-                  @pointerdown="startPointerDrag($event, community.name, 'hidden')"
+                  :style="getItemStyle(community.name, 'shown')"
+                  @pointerdown="startPointerDrag($event, community.name, 'shown')"
                   @pointermove="updatePointerDrag"
                   @pointerup="finishPointerDrag"
                   @pointercancel="cancelPointerDrag"
@@ -113,32 +56,83 @@
                   <Button
                     variant="ghost"
                     size="xs"
-                    icon="lucide-arrow-up"
-                    :label="`Show ${community.title} in sidebar`"
-                    tooltip="Show in sidebar"
+                    icon="lucide-arrow-down"
+                    :label="`Hide ${community.title} from sidebar`"
+                    tooltip="Hide from sidebar"
                     class="shrink-0 text-ink-gray-5 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100"
                     @pointerdown.stop
                     @mousedown.stop
-                    @click.stop="moveCommunityToSection(community.name, 'shown')"
+                    @click.stop="moveCommunityToSection(community.name, 'hidden')"
                   />
                 </div>
-
-                <div
-                  v-if="hiddenManageableCommunities.length === 0"
-                  class="px-3 py-6 text-center text-p-sm text-ink-gray-5"
-                >
-                  No hidden communities
-                </div>
               </div>
-            </section>
-          </div>
 
-          <div v-else class="px-3 py-6 text-center text-p-sm text-ink-gray-5">
-            No communities found
-          </div>
-        </ScrollAreaViewport>
-        <ScrollBar />
-      </ScrollAreaRoot>
+              <div
+                v-if="selectedManageableCommunities.length === 0"
+                class="px-3 py-6 text-center text-p-sm text-ink-gray-5"
+              >
+                No communities shown
+              </div>
+            </div>
+          </section>
+
+          <section class="space-y-1.5">
+            <h3 class="text-base font-medium text-ink-gray-8">Hidden from sidebar</h3>
+            <div ref="hiddenSection" :class="getCommunityListClasses('hidden')">
+              <div
+                v-for="community in hiddenManageableCommunities"
+                :key="community.name"
+                data-sortable-section="hidden"
+                :data-sortable-id="community.name"
+                class="group relative flex min-h-8 w-full touch-none cursor-grab select-none items-center gap-2 rounded-md px-1.5 py-0.5 text-left text-ink-gray-8 hover:bg-surface-gray-1"
+                :class="getCommunityRowClasses(community.name)"
+                :style="getItemStyle(community.name, 'hidden')"
+                @pointerdown="startPointerDrag($event, community.name, 'hidden')"
+                @pointermove="updatePointerDrag"
+                @pointerup="finishPointerDrag"
+                @pointercancel="cancelPointerDrag"
+              >
+                <span
+                  class="lucide-grip-vertical size-4 shrink-0 text-ink-gray-4"
+                  aria-hidden="true"
+                />
+                <CommunityImage :community="community" class="size-5 shrink-0 bg-surface-gray-1" />
+                <span class="min-w-0 flex-1">
+                  <span class="flex items-center gap-1.5 text-base">
+                    <span class="truncate">{{ community.title }}</span>
+                    <span
+                      v-if="community.is_private"
+                      class="lucide-lock size-3.5 shrink-0 text-ink-gray-5"
+                    />
+                  </span>
+                </span>
+                <Button
+                  variant="ghost"
+                  size="xs"
+                  icon="lucide-arrow-up"
+                  :label="`Show ${community.title} in sidebar`"
+                  tooltip="Show in sidebar"
+                  class="shrink-0 text-ink-gray-5 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100"
+                  @pointerdown.stop
+                  @mousedown.stop
+                  @click.stop="moveCommunityToSection(community.name, 'shown')"
+                />
+              </div>
+
+              <div
+                v-if="hiddenManageableCommunities.length === 0"
+                class="px-3 py-6 text-center text-p-sm text-ink-gray-5"
+              >
+                No hidden communities
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <div v-else class="px-3 py-6 text-center text-p-sm text-ink-gray-5">
+          No communities found
+        </div>
+      </ScrollArea>
 
       <div class="flex shrink-0 justify-end border-t border-outline-gray-1 px-4 py-3">
         <Button
@@ -157,8 +151,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ScrollAreaRoot, ScrollAreaViewport } from 'reka-ui'
-import { Button, Dialog, Select, toast, useCall } from 'frappe-ui'
+import { Button, Dialog, ScrollArea, Select, toast, useCall } from 'frappe-ui'
 import { communityState } from '@/data/communityState'
 import { activeCommunities, availableCommunities, communities } from '@/data/communities'
 import type { Community } from '@/data/communities'
@@ -176,7 +169,6 @@ import {
   type PointerSortableItem,
 } from '@/composables/usePointerSortableSections'
 import CommunityImage from '../CommunityImage.vue'
-import ScrollBar from '../ScrollBar.vue'
 
 type SidebarSection = 'shown' | 'hidden'
 

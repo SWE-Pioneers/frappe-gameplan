@@ -10,6 +10,10 @@
   </ScrollAreaRoot>
 </template>
 <script setup lang="ts">
+// Keeps the reka Root/Viewport primitives because the app-wide scroll global
+// (window.scrollContainer, utils/scrollContainer.ts) finds this element by its
+// id="scrollContainer" — frappe-ui's ScrollArea can't put an id on the viewport.
+// Slated for useScrollContainer() in Phase 4; the styled bar is frappe-ui's.
 import { ScrollAreaRoot, ScrollAreaViewport } from 'reka-ui'
-import ScrollBar from './ScrollBar.vue'
+import { ScrollBar } from 'frappe-ui'
 </script>

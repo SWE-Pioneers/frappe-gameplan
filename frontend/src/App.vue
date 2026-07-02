@@ -1,13 +1,13 @@
 <template>
   <FrappeUIProvider>
-    <ScrollAreaRoot class="h-full overflow-hidden">
+    <div class="relative h-full overflow-hidden">
       <router-view v-if="['Onboarding', 'Login'].includes($route.name)" />
       <Layout v-else-if="$session.isLoggedIn">
         <!-- While on a /settings/* URL, keep rendering the page the dialog was
              opened over (displayedRoute) so it stays visible behind the overlay. -->
         <router-view :route="displayedRoute" />
       </Layout>
-    </ScrollAreaRoot>
+    </div>
     <NewTaskDialog />
     <SettingsDialog v-if="$session.isLoggedIn && users.isFinished" />
   </FrappeUIProvider>
@@ -17,7 +17,6 @@
 import { computed, defineAsyncComponent, nextTick, shallowRef, watch } from 'vue'
 import { loadRouteLocation, useRoute, useRouter } from 'vue-router'
 import { FrappeUIProvider } from 'frappe-ui'
-import { ScrollAreaRoot } from 'reka-ui'
 import { users } from '@/data/users'
 import { session } from '@/data/session'
 import { useScreenSize } from '@/composables/useScreenSize'
