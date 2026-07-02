@@ -76,35 +76,47 @@
             </TextInput>
           </div>
           <div class="mt-4 pb-16 -mx-3">
-            <div
-              class="hidden h-8 items-center px-3 text-sm text-ink-gray-5 sm:grid sm:grid-cols-[minmax(8rem,1fr)_repeat(4,5.5rem)] sm:gap-6"
+            <!-- Desktop: header + numeric columns. The avatar gets its own track so
+                 the inset divider starts at the name text (grid line 2). -->
+            <List
+              class="max-sm:hidden list-gap-3"
+              :columns="['2.5rem', 'minmax(8rem,1fr)', '6.25rem', '6.25rem', '6.25rem', '6.25rem']"
+              divider="inset"
             >
-              <div>Member</div>
-              <div class="text-right">Posts</div>
-              <div class="text-right">Replies</div>
-              <div class="flex items-center justify-end gap-1.5">
-                <ReactionFaceIcon class="size-4 text-ink-gray-5" aria-hidden="true" />
-                <span>Received</span>
-              </div>
-              <div class="flex items-center justify-end gap-1.5">
-                <ReactionFaceIcon class="size-4 text-ink-gray-5" aria-hidden="true" />
-                <span>Given</span>
-              </div>
-            </div>
-            <template v-for="user in people" :key="user.name">
-              <router-link
+              <!-- px-3 matches the interactive rows' default horizontal padding. -->
+              <ListHeader class="px-3">
+                <ListHeaderCell class="col-span-2">Member</ListHeaderCell>
+                <ListHeaderCell class="justify-end">Posts</ListHeaderCell>
+                <ListHeaderCell class="justify-end">Replies</ListHeaderCell>
+                <ListHeaderCell class="justify-end">
+                  <template #prefix>
+                    <ReactionFaceIcon class="size-4 text-ink-gray-5" aria-hidden="true" />
+                  </template>
+                  Received
+                </ListHeaderCell>
+                <ListHeaderCell class="justify-end">
+                  <template #prefix>
+                    <ReactionFaceIcon class="size-4 text-ink-gray-5" aria-hidden="true" />
+                  </template>
+                  Given
+                </ListHeaderCell>
+              </ListHeader>
+              <ListRow
+                v-for="user in people"
+                :key="user.name"
                 :to="{
                   name: 'PersonProfileProfile',
                   params: {
                     personId: user.name,
                   },
                 }"
-                class="flex sm:grid sm:grid-cols-[minmax(8rem,1fr)_repeat(4,5.5rem)] sm:gap-6 sm:items-center sm:rounded px-3 py-2 sm:h-15 sm:hover:bg-surface-gray-2 duration-150 active:bg-surface-gray-2 transition-colors"
-                exact-active-class="!bg-surface-gray-2"
+                class="h-15"
               >
-                <div class="flex w-full min-w-0 items-center">
+                <ListCell>
                   <UserAvatarWithHover :user="user.user" size="2xl" />
-                  <div class="ml-3 min-w-0 flex-1">
+                </ListCell>
+                <ListCell>
+                  <div class="min-w-0 flex-1">
                     <div class="flex items-center space-x-2">
                       <div class="text-base-medium text-ink-gray-8">
                         {{ $user(user.user).full_name }}
@@ -117,44 +129,86 @@
                     >
                       {{ user.bio }}
                     </div>
+                  </div>
+                </ListCell>
+                <ListCell class="justify-end">
+                  <router-link
+                    class="text-base text-ink-gray-5 hover:text-ink-gray-8"
+                    :to="{
+                      name: 'PersonProfilePosts',
+                      params: { personId: user.name },
+                    }"
+                    @click.prevent
+                  >
+                    {{ user.discussions_count }}
+                  </router-link>
+                </ListCell>
+                <ListCell class="justify-end">
+                  <router-link
+                    class="text-base text-ink-gray-5 hover:text-ink-gray-8"
+                    :to="{
+                      name: 'PersonProfileReplies',
+                      params: { personId: user.name },
+                    }"
+                    @click.prevent
+                  >
+                    {{ user.comments_count }}
+                  </router-link>
+                </ListCell>
+                <ListCell class="justify-end text-base text-ink-gray-5">
+                  {{ user.reactions_received }}
+                </ListCell>
+                <ListCell class="justify-end text-base text-ink-gray-5">
+                  {{ user.reactions_given }}
+                </ListCell>
+              </ListRow>
+            </List>
+
+            <!-- Mobile: avatar + details, stats inline under the name. The avatar
+                 track keeps the inset divider starting at the name text. -->
+            <List
+              class="sm:hidden list-gap-3"
+              :columns="['2.5rem', 'minmax(0,1fr)']"
+              divider="inset"
+            >
+              <ListRow
+                v-for="user in people"
+                :key="user.name"
+                :to="{
+                  name: 'PersonProfileProfile',
+                  params: {
+                    personId: user.name,
+                  },
+                }"
+                class="py-2"
+              >
+                <ListCell>
+                  <UserAvatarWithHover :user="user.user" size="2xl" />
+                </ListCell>
+                <ListCell>
+                  <div class="min-w-0 flex-1">
+                    <div class="flex items-center space-x-2">
+                      <div class="text-base-medium text-ink-gray-8">
+                        {{ $user(user.user).full_name }}
+                      </div>
+                      <Badge v-if="$user(user.user).isGuest">Guest</Badge>
+                    </div>
                     <div
-                      class="sm:hidden mt-1.5 flex items-center space-x-1 text-base text-ink-gray-5"
+                      v-if="user.bio"
+                      class="mt-1.5 min-w-0 overflow-hidden text-ellipsis whitespace-nowrap text-base text-ink-gray-5"
                     >
+                      {{ user.bio }}
+                    </div>
+                    <div class="mt-1.5 flex items-center space-x-1 text-base text-ink-gray-5">
                       <span>{{ user.discussions_count }} posts</span>
                       <span class="text-ink-gray-4">&middot;</span>
                       <span>{{ user.comments_count }} replies</span>
                     </div>
                   </div>
-                </div>
-                <router-link
-                  class="hidden items-center justify-end text-base text-ink-gray-5 hover:text-ink-gray-8 sm:flex"
-                  :to="{
-                    name: 'PersonProfilePosts',
-                    params: { personId: user.name },
-                  }"
-                  @click.prevent
-                >
-                  {{ user.discussions_count }}
-                </router-link>
-                <router-link
-                  class="hidden items-center justify-end text-base text-ink-gray-5 hover:text-ink-gray-8 sm:flex"
-                  :to="{
-                    name: 'PersonProfileReplies',
-                    params: { personId: user.name },
-                  }"
-                  @click.prevent
-                >
-                  {{ user.comments_count }}
-                </router-link>
-                <span class="hidden items-center justify-end text-base text-ink-gray-5 sm:flex">
-                  {{ user.reactions_received }}
-                </span>
-                <span class="hidden items-center justify-end text-base text-ink-gray-5 sm:flex">
-                  {{ user.reactions_given }}
-                </span>
-              </router-link>
-              <div class="mx-2 border-b"></div>
-            </template>
+                </ListCell>
+              </ListRow>
+            </List>
+
             <div class="p-3" v-if="$resources.profiles.hasNextPage">
               <Button
                 @click="$resources.profiles.next()"
@@ -182,6 +236,7 @@ import {
   Select,
   TextInput,
 } from 'frappe-ui'
+import { List, ListCell, ListHeader, ListHeaderCell, ListRow } from 'frappe-ui/list'
 import { showSettingsDialog } from '@/components/Settings'
 import { isGameplanAdmin } from '@/data/users'
 import UserAvatarWithHover from '@/components/UserAvatarWithHover.vue'
@@ -201,6 +256,11 @@ export default {
     PageHeaderMobile,
     PageHeader,
     ReactionFaceIcon,
+    List,
+    ListCell,
+    ListHeader,
+    ListHeaderCell,
+    ListRow,
   },
   data() {
     return {
