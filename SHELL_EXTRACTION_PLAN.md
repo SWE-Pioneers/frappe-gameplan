@@ -27,10 +27,18 @@ so other Frappe apps can build the same shell from parts.
   "role" and "device" axes and looks like an unrelated component). Settled
   Phase 1; **revisit Phase 4's `Mobile*` / `AppShell` names against this bar
   before building** (likely `AppShell` + `AppShellMobile*`, TBD).
-- **Stories demo one component, simply.** Each `stories/*.vue` shows a single
-  component in place — no scroll containers, teleport, or multi-part
-  composition. A static preview can't convey a teleport anyway; how the parts
-  assemble goes on a dedicated composition/recipe page, not a story.
+- **Stories demo one component, simply — except a bare-frame family's headline
+  story.** Most `stories/*.vue` show a single component in place, no incidental
+  scaffolding; a static preview can't convey a teleport anyway, and how parts
+  assemble belongs on a composition/recipe page. **Exception:** a
+  composition-first *frame* (Rail, Sidebar) has no value on its own — the whole
+  point is what the app composes into it — so its headline story shows the frame
+  realistically filled (a real header, the app's own scroll region, a long item
+  list, the hover-swap polish; see `Sidebar/stories/Default.vue`, modeled on
+  Gameplan's `AppSidebar`). Keep the *child*-component and secondary-state
+  stories (SidebarItem, Collapsed, Legacy) minimal. Corollary: those filled
+  stories will pull in siblings (`ScrollArea`, `Button`, `Dropdown`) — prefer
+  frappe-ui's own components there, so the story dogfoods the library.
 - **Don't grow the component to serve its docs.** When a preview can't
   represent something (e.g. two previews sharing a module-singleton, or a
   teleport), fix it in the *story*, not by widening the component's runtime
@@ -203,6 +211,13 @@ SettingsDialog `49d2a14ef` refactor replayed) — did **not** ship a second side
   `#suffix`. `active` drives `data-state`; the row's `group/sidebar-item` is the
   hover hook the app uses for the count↔options swap. No `#options` slot — that
   hover-swap is app polish and lives in `#suffix`.
+- `SidebarItem` is **router-optional**: it reads `$router`/`$route` off global
+  properties (not `useRoute`/`useRouter`), rendering `RouterLink` when a router
+  is present and degrading to a plain `<a>` — no warnings, no crash — when
+  mounted without one. A library nav row must not hard-require a router; docs,
+  Vitest, Storybook, and embedded widgets all mount it router-less. (This was
+  the fix for the blank Sidebar docs page: the legacy story's `RouterLink` threw
+  in VitePress, which runs its own router, not vue-router.)
 - Compat: `header`/`sections`/`items` config props still work for one release,
   reimplemented on the new sub-components; the existing config-object `.cy.ts`
   still passes to prove it. Mark deprecated; check CRM/Helpdesk/Drive before the
@@ -216,8 +231,13 @@ SettingsDialog `49d2a14ef` refactor replayed) — did **not** ship a second side
    legacy adapter (fixed its `isCollapsed`/`isSidebarCollapsed` shadowing).
    `types.ts` (JSDoc, `sidebarToggleKey` added) + `index.ts` + `Sidebar.md`
    anatomy prose + `docs:gen` + 3 stories (Default/Collapsed/Legacy) + rewritten
-   `.cy.ts` (6 passing, incl. legacy-compat + sibling-menu). type-check clean,
-   `yarn build` green, `docs:dev` boots clean.
+   `.cy.ts` (6 passing, incl. legacy-compat + sibling-menu). Made `SidebarItem`
+   router-optional so `docs:dev` boots clean (see API note above). The Default
+   story is a faithful Gameplan sidebar — app-switcher header, a long lucide-icon
+   space list with unread counts / private locks / the count↔options hover-swap,
+   inside frappe-ui's own `ScrollArea` (dogfooded; its padded viewport also keeps
+   the active row's `shadow-sm` from being clipped by `overflow-hidden`).
+   type-check clean, `yarn build` green.
 2. Gameplan: rebuilt `AppSidebar.vue` over `Sidebar`/`SidebarItem`/`SidebarLabel`,
    keeping AppDropdown, the reka `ScrollArea`/`ScrollBar` trio, NewSpaceDialog,
    and all `@/data/*` logic. Deleted dead code (`communitySpaceList`, `spaces`
@@ -226,7 +246,20 @@ SettingsDialog `49d2a14ef` refactor replayed) — did **not** ship a second side
    truncation + private lock, active highlight across routes, unread count↔`…`
    hover swap, sort dropdown + hide-inactive switch, console clean, pixel parity.
 
+Committed: frappe-ui `feat: rework Sidebar into a composition-first component
+family`; Gameplan `refactor: migrate app sidebar to frappe-ui Sidebar family`.
+
 Remaining: frappe-ui PR → beta release → Gameplan PR (bump `frappe-ui` dep).
+
+Done (same pending pin): migrated Gameplan to frappe-ui's scroll components.
+`AppSidebar` + `CustomizeSidebarDialog` now use frappe-ui `ScrollArea`; the
+duplicated local `ScrollBar.vue` is deleted (App.vue's non-scrolling
+`ScrollAreaRoot` became a plain `div`). `ScrollContainer.vue` keeps the reka
+`ScrollAreaRoot`/`ScrollAreaViewport` primitives on purpose — the app-wide scroll
+global resolves `window.scrollContainer` via the browser's named-window-property
+on `id="scrollContainer"`, which frappe-ui's `ScrollArea` can't place on the
+viewport — but adopts frappe-ui's `ScrollBar`. Full `useScrollContainer()`
+replacement of that global stays Phase 4.
 
 ---
 
