@@ -16,116 +16,100 @@
       </Button>
     </div>
 
-    <div v-if="notifications?.length">
-      <div
-        v-for="(notification, index) in notifications"
+    <List v-if="notifications?.length" class="max-sm:list-gap-3 sm:list-gap-4 max-sm:list-row-px-4">
+      <ListRow
+        v-for="notification in notifications"
         :key="notification.name"
-        class="group relative h-[68px] sm:h-15"
+        :to="notificationRoute(notification) ?? undefined"
+        class="group h-[68px] sm:h-15"
+        :class="!notification.read && 'w-[calc(100%-2.5rem)]'"
+        @click="openNotification(notification)"
       >
-        <component
-          :is="notificationRoute(notification) ? RouterLink : 'div'"
-          class="relative block h-full select-none px-4 py-2 transition-colors duration-150 active:bg-surface-gray-2 sm:rounded-[10px] sm:px-3 sm:hover:bg-surface-gray-1"
-          :class="notification.read ? 'w-full' : 'w-[calc(100%-2.5rem)]'"
-          v-bind="notificationRoute(notification) ? { to: notificationRoute(notification) } : {}"
-          @click="openNotification(notification)"
-        >
-          <div class="flex h-full items-center overflow-hidden">
-            <div class="flex items-center space-x-3">
-              <div class="relative flex">
-                <UserAvatarWithHover
-                  size="2xl"
-                  :user="notification.from_user"
-                  v-if="showAvatar(notification)"
-                />
-                <div
-                  class="grid size-10 place-items-center rounded-[8px] bg-surface-gray-2 group-hover:bg-surface-base"
-                  v-else
+        <ListCell>
+          <UserAvatarWithHover
+            size="2xl"
+            :user="notification.from_user"
+            v-if="showAvatar(notification)"
+          />
+          <div
+            class="grid size-10 place-items-center rounded-[8px] bg-surface-gray-2 group-hover:bg-surface-base"
+            v-else
+          >
+            <ReactionFaceIcon
+              class="size-5 text-ink-gray-6"
+              v-if="notification.type === 'Reaction'"
+            />
+            <span
+              :class="[notificationIcon(notification), 'size-5 text-ink-gray-6']"
+              aria-hidden="true"
+              v-else
+            />
+          </div>
+        </ListCell>
+        <ListCell>
+          <div class="min-w-0 flex-1">
+            <div class="flex min-w-0 items-center">
+              <div
+                class="overflow-hidden text-ellipsis whitespace-nowrap leading-none text-ink-gray-8"
+              >
+                <span
+                  class="overflow-hidden text-ellipsis whitespace-nowrap"
+                  :class="
+                    notification.read
+                      ? 'text-lg sm:text-base'
+                      : 'text-lg-medium sm:text-base-medium'
+                  "
                 >
-                  <ReactionFaceIcon
-                    class="size-5 text-ink-gray-6"
-                    v-if="notification.type === 'Reaction'"
-                  />
-                  <span
-                    :class="[notificationIcon(notification), 'size-5 text-ink-gray-6']"
-                    aria-hidden="true"
-                    v-else
-                  />
-                </div>
+                  {{ notification.message }}
+                </span>
               </div>
             </div>
 
-            <div class="mx-3 min-w-0 flex-1 sm:ml-4 sm:mr-4">
-              <div class="flex min-w-0 items-center">
-                <div
-                  class="overflow-hidden text-ellipsis whitespace-nowrap leading-none text-ink-gray-8"
-                >
-                  <span
-                    class="overflow-hidden text-ellipsis whitespace-nowrap"
-                    :class="
-                      notification.read
-                        ? 'text-lg sm:text-base'
-                        : 'text-lg-medium sm:text-base-medium'
-                    "
-                  >
-                    {{ notification.message }}
-                  </span>
-                </div>
-              </div>
-
-              <div class="mt-1.5 flex min-w-0 items-center justify-between">
-                <div
-                  class="inline-flex items-center overflow-hidden text-ellipsis whitespace-nowrap text-md text-ink-gray-5 sm:text-base"
-                >
-                  <div
-                    class="flex min-w-0 items-center"
-                    v-if="notificationTargetTitle(notification)"
-                  >
-                    <div class="truncate">
-                      {{ notificationTargetTitle(notification) }}
-                    </div>
+            <div class="mt-1.5 flex min-w-0 items-center justify-between">
+              <div
+                class="inline-flex items-center overflow-hidden text-ellipsis whitespace-nowrap text-md text-ink-gray-5 sm:text-base"
+              >
+                <div class="flex min-w-0 items-center" v-if="notificationTargetTitle(notification)">
+                  <div class="truncate">
+                    {{ notificationTargetTitle(notification) }}
                   </div>
                 </div>
               </div>
             </div>
-
-            <div class="ml-auto flex shrink-0 items-center space-x-3">
-              <div>
-                <time
-                  class="block shrink-0 whitespace-nowrap text-right text-sm text-ink-gray-5"
-                  :datetime="notification.creation"
-                >
-                  <span class="sm:hidden">{{ shortTimestamp(notification.creation) }}</span>
-                  <span class="hidden sm:inline">
-                    {{ dayjsLocal(notification.creation).fromNow() }}
-                  </span>
-                </time>
-                <div
-                  class="mt-1.5 hidden whitespace-nowrap text-right text-sm text-ink-gray-5 sm:block"
-                  v-if="notificationLocation(notification)"
-                >
-                  {{ notificationLocation(notification) }}
-                </div>
-              </div>
+          </div>
+        </ListCell>
+        <ListCell class="justify-end">
+          <div>
+            <time
+              class="block shrink-0 whitespace-nowrap text-right text-sm text-ink-gray-5"
+              :datetime="notification.creation"
+            >
+              <span class="sm:hidden">{{ shortTimestamp(notification.creation) }}</span>
+              <span class="hidden sm:inline">
+                {{ dayjsLocal(notification.creation).fromNow() }}
+              </span>
+            </time>
+            <div
+              class="mt-1.5 hidden whitespace-nowrap text-right text-sm text-ink-gray-5 sm:block"
+              v-if="notificationLocation(notification)"
+            >
+              {{ notificationLocation(notification) }}
             </div>
           </div>
-          <div
-            class="pointer-events-none absolute bottom-0 left-1 right-4 transition-opacity group-hover:opacity-0 sm:right-3"
-            v-if="index < notifications.length - 1"
-          >
-            <div class="ml-16 h-px border-t" />
-          </div>
-        </component>
-        <div class="absolute right-0 top-1/2 z-10 -translate-y-1/2" v-if="!notification.read">
+        </ListCell>
+        <!-- Sits in the 2.5rem gutter the unread row's reduced width leaves free.
+             stop+prevent keep the click from bubbling into row navigation. -->
+        <div class="absolute -right-10 top-1/2 z-10 -translate-y-1/2" v-if="!notification.read">
           <Tooltip text="Mark as read">
             <Button
               variant="subtle"
               icon="lucide-check"
-              @click.stop="markAsRead(notification.name)"
+              @click.stop.prevent="markAsRead(notification.name)"
             />
           </Tooltip>
         </div>
-      </div>
-    </div>
+      </ListRow>
+    </List>
 
     <div v-else class="rounded border border-dashed border-outline-gray-2 px-6 py-12 text-center">
       <div class="mx-auto grid size-10 place-items-center rounded bg-surface-gray-2">
@@ -138,7 +122,7 @@
 </template>
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { RouterLink, type RouteLocationRaw } from 'vue-router'
+import type { RouteLocationRaw } from 'vue-router'
 import {
   PageHeader,
   PageHeaderMobile,
@@ -151,6 +135,7 @@ import {
   useList,
   usePageMeta,
 } from 'frappe-ui'
+import { List, ListRow, ListCell } from 'frappe-ui/list'
 import ReactionFaceIcon from '@/components/ReactionFaceIcon.vue'
 import UserAvatarWithHover from '@/components/UserAvatarWithHover.vue'
 import { unreadNotifications } from '@/data/notifications'
