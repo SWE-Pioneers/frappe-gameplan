@@ -151,67 +151,82 @@ Remaining: frappe-ui PR → beta release → Gameplan PR (bump `frappe-ui` dep).
 
 ---
 
-## Phase 3 — Sidebar rework (breaking change in frappe-ui)
+## Phase 3 — Sidebar rework ✅ (done, pending PRs)
 
-frappe-ui already has `src/components/Sidebar/` — but it's config-object-driven
+frappe-ui already had `src/components/Sidebar/` — config-object-driven
 (`header: {...}`, `sections: [{ items: [...] }]`), the opposite of the
-composition style. **Rework it; do not ship a second sidebar.** This is the
-SettingsDialog `49d2a14ef` refactor replayed: same names, composition-first.
+composition style. Reworked in place (same names, composition-first, the
+SettingsDialog `49d2a14ef` refactor replayed) — did **not** ship a second sidebar.
 
-Gameplan's `AppSidebar.vue` (204 lines, zero props, fully store-driven) is the
-consumer to model: section header with actions (sort, add), item rows with
-icon/label/suffix (lock, unread count), per-item options menu, empty state.
+**Three decisions settled with the user reshaped the original sketch below:**
+1. **Bare frame (Rail-style), not a structured frame.** `Sidebar` owns width +
+   `bg-surface-sidebar` + collapse machinery + one default slot. The app composes
+   its own header, scroll region, and footer. Width moved to an inline `width`/
+   `collapsedWidth` prop (CSS length) so apps override it without a Tailwind
+   class fight (Gameplan `width="14rem"`).
+2. **No public `SidebarSection`.** The flat set mirrors `Rail` + `RailItem`:
+   `Sidebar` + `SidebarItem` + `SidebarLabel` + `SidebarCollapseToggle`. The old
+   section bundled label/`#actions`/`#empty`/grouping — all plain divs the app
+   already owns. `SidebarSection` survives **internal-only** as the adapter for
+   the deprecated `sections` config prop.
+3. **Gameplan stays no-collapse.** Migrated `AppSidebar` is a fixed
+   `disable-collapse width="14rem"` panel — pure refactor, pixel parity. The
+   frame keeps `v-model:collapsed` for other apps.
 
-### Target API
+### Final API
 
 ```vue
-<Sidebar v-model:collapsed="collapsed">
-  <template #header>
-    <AppDropdown />   <!-- app-specific -->
-  </template>
+<Sidebar disable-collapse width="14rem">
+  <div class="p-2"><AppDropdown /></div>          <!-- app pins its own header -->
 
-  <SidebarSection label="Spaces">
-    <template #actions>
-      <Button variant="ghost" icon="lucide-arrow-up-down" @click="cycleSort" />
-      <Button variant="ghost" icon="lucide-plus" @click="newSpace" />
-    </template>
+  <ScrollAreaRoot> <ScrollAreaViewport>           <!-- app owns scroll (styled bar) -->
+    <div class="flex items-center justify-between">
+      <SidebarLabel>Spaces</SidebarLabel>
+      <div class="flex"><Button …sort/><Button …new/></div>   <!-- app owns #actions -->
+    </div>
 
-    <SidebarItem
-      v-for="space in communitySpaces.list"
-      :key="space.name"
-      :label="space.title"
-      :to="spaceRoute(space)"
-      :active="isActiveSpace(space)"
-      :suffix="getSpaceUnreadCount(space.name) || undefined"
-    >
-      <template #prefix><SpaceIcon :space="space" /></template>
-      <template #options> ...dropdown items... </template>
+    <SidebarItem v-for="space in spacesList" :to="spaceRoute(space)" :active="…">
+      <template #prefix><SpaceIcon :icon="space.icon" /></template>
+      {{ space.title }} <LucideLock v-if="space.is_private" />   <!-- default slot = label -->
+      <template #suffix>…unread count ↔ options menu (app polish)…</template>
     </SidebarItem>
 
-    <template #empty>{{ communitySpaces.emptyMessage }}</template>
-  </SidebarSection>
+    <div v-if="!spacesList.length">empty state</div>            <!-- app owns #empty -->
+  </ScrollAreaViewport> <ScrollBar /> </ScrollAreaRoot>
 </Sidebar>
 ```
 
-- Keep `v-model:collapsed`, the `sidebarCollapsedKey` injection, and responsive
-  collapse — that part of the existing component is right.
-- `SidebarItem` gets `#prefix`/`#suffix`/`#options` slots per the shared slot
-  vocabulary; `active` drives `data-state`.
-- Migration for existing consumers: keep the `sections`/`items` props working
-  for one release by implementing them *on top of* the new sub-components
-  internally, mark deprecated in docs, then remove. Check consumers (CRM,
-  Helpdesk, Drive, …) before deciding the removal release.
+- `SidebarItem` is now a **container** (not a single `<Button>`): a navigable
+  main area (`RouterLink`/`button`, keyed off `to`) with the `#suffix` trailing
+  zone as a **sibling**, so an options `Dropdown` isn't illegally nested inside a
+  link/button. Slots: `#prefix` (fallback `icon`), default (fallback `label`),
+  `#suffix`. `active` drives `data-state`; the row's `group/sidebar-item` is the
+  hover hook the app uses for the count↔options swap. No `#options` slot — that
+  hover-swap is app polish and lives in `#suffix`.
+- Compat: `header`/`sections`/`items` config props still work for one release,
+  reimplemented on the new sub-components; the existing config-object `.cy.ts`
+  still passes to prove it. Mark deprecated; check CRM/Helpdesk/Drive before the
+  removal release.
 
-### Steps
+### Steps (done)
 
-1. frappe-ui: rework Sidebar internals into sub-components; config props become
-   a deprecated compatibility layer. Update docs/stories/cy tests to the
-   composition API.
-2. Gameplan: rebuild `AppSidebar.vue` on the new parts. Sorting, preferences,
-   unread counts, NewSpaceDialog stay app-side.
-3. Verify: Gameplan sidebar (sort, hide-inactive, unread, item options, empty
-   state) + at least one config-driven consumer still working via the compat
-   layer (run frappe-ui cy suite).
+1. frappe-ui: reworked `Sidebar` (bare frame, dual-mode: default slot vs legacy
+   config fallback), `SidebarItem` (container), new `SidebarLabel` +
+   `SidebarCollapseToggle` + internal `SidebarItemIcon`; `SidebarSection` kept as
+   legacy adapter (fixed its `isCollapsed`/`isSidebarCollapsed` shadowing).
+   `types.ts` (JSDoc, `sidebarToggleKey` added) + `index.ts` + `Sidebar.md`
+   anatomy prose + `docs:gen` + 3 stories (Default/Collapsed/Legacy) + rewritten
+   `.cy.ts` (6 passing, incl. legacy-compat + sibling-menu). type-check clean,
+   `yarn build` green, `docs:dev` boots clean.
+2. Gameplan: rebuilt `AppSidebar.vue` over `Sidebar`/`SidebarItem`/`SidebarLabel`,
+   keeping AppDropdown, the reka `ScrollArea`/`ScrollBar` trio, NewSpaceDialog,
+   and all `@/data/*` logic. Deleted dead code (`communitySpaceList`, `spaces`
+   import). `yarn build` green.
+3. Verified on `gameplan-demo.test:8080` (dev:frappe-ui): space list w/ icons +
+   truncation + private lock, active highlight across routes, unread count↔`…`
+   hover swap, sort dropdown + hide-inactive switch, console clean, pixel parity.
+
+Remaining: frappe-ui PR → beta release → Gameplan PR (bump `frappe-ui` dep).
 
 ---
 
