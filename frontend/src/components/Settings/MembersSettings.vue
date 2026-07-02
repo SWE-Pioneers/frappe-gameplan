@@ -1,57 +1,70 @@
 <template>
   <SettingsHeader>
-    <div class="flex flex-col gap-4">
-      <h2 class="text-lg-semibold text-ink-gray-8">Users</h2>
-      <div class="flex items-center justify-between gap-3">
-        <TextInput
-          class="w-72"
-          placeholder="Search by name or email"
-          @input="search = $event.target.value"
-          :debounce="300"
-        >
-          <template #prefix>
-            <span class="lucide-search h-4 w-4 text-ink-gray-4" />
-          </template>
-        </TextInput>
-        <Button icon-left="lucide-plus" @click="showInviteDialog = true">Invite</Button>
+    <!-- pb-3 keeps the 0.75rem gap to the column header, which now lives at the
+         top of the scroll viewport (sticky) instead of inside this fixed region. -->
+    <div class="pb-3">
+      <div class="flex flex-col gap-4">
+        <h2 class="text-lg-semibold text-ink-gray-8">Users</h2>
+        <div class="flex items-center justify-between gap-3">
+          <TextInput
+            class="w-72"
+            placeholder="Search by name or email"
+            @input="search = $event.target.value"
+            :debounce="300"
+          >
+            <template #prefix>
+              <span class="lucide-search h-4 w-4 text-ink-gray-4" />
+            </template>
+          </TextInput>
+          <Button icon-left="lucide-plus" @click="showInviteDialog = true">Invite</Button>
+        </div>
       </div>
-    </div>
 
-    <button
-      v-if="pendingInvites.data?.length"
-      class="mt-2 flex w-full items-center justify-between gap-3 rounded bg-surface-gray-2 px-3 py-2 text-left transition-colors hover:bg-surface-gray-3"
-      @click="showInviteDialog = true"
-    >
-      <span class="flex items-center gap-2 text-base text-ink-gray-7">
-        <span class="lucide-mail h-4 w-4 text-ink-gray-5" />
-        {{ pendingInvitesLabel }}
-      </span>
-      <span class="text-base text-ink-gray-6">View</span>
-    </button>
-
-    <div
-      class="mt-3 grid grid-cols-[minmax(0,1fr)_12.5rem_7.5rem_2rem] items-center gap-2 border-b h-8 text-sm text-ink-gray-5"
-    >
-      <SortHeader field="name" label="User" />
-      <SortHeader field="role" label="Role" />
-      <SortHeader field="creation" label="User since" />
-      <div />
+      <button
+        v-if="pendingInvites.data?.length"
+        class="mt-2 flex w-full items-center justify-between gap-3 rounded bg-surface-gray-2 px-3 py-2 text-left transition-colors hover:bg-surface-gray-3"
+        @click="showInviteDialog = true"
+      >
+        <span class="flex items-center gap-2 text-base text-ink-gray-7">
+          <span class="lucide-mail h-4 w-4 text-ink-gray-5" />
+          {{ pendingInvitesLabel }}
+        </span>
+        <span class="text-base text-ink-gray-6">View</span>
+      </button>
     </div>
   </SettingsHeader>
 
-  <!-- Virtualized: only the rows in/near the viewport mount, so a large team
-       never instantiates hundreds of role Selects at once. useVirtualList drives
-       off SettingsBody's exposed scroll viewport, keeping the styled scrollbar. -->
-  <SettingsBody ref="body">
-    <div v-bind="wrapperProps">
-      <div class="divide-y">
-        <div
-          class="grid grid-cols-[minmax(0,1fr)_12.5rem_7.5rem_2rem] items-center gap-2"
-          v-for="{ data: user } in list"
-          :key="user.name"
-          :style="{ height: ROW_HEIGHT + 'px' }"
-        >
-          <div class="flex min-w-0 items-center">
+  <SettingsBody>
+    <List :columns="['minmax(0,1fr)', '12.5rem', '7.5rem', '2rem']" :row-height="60">
+      <!-- Sticky at the viewport top — it rests exactly where it pins, so it
+           never visibly moves; the bg covers rows scrolling beneath it. -->
+      <ListHeader class="sticky top-0 z-10 bg-surface-elevation-1">
+        <ListHeaderCellSort :direction="directionFor('name')" @click="toggleSort('name')">
+          User
+          <template #suffix="{ direction }">
+            <span class="size-3.5 text-ink-gray-5" :class="sortIcon(direction)" />
+          </template>
+        </ListHeaderCellSort>
+        <ListHeaderCellSort :direction="directionFor('role')" @click="toggleSort('role')">
+          Role
+          <template #suffix="{ direction }">
+            <span class="size-3.5 text-ink-gray-5" :class="sortIcon(direction)" />
+          </template>
+        </ListHeaderCellSort>
+        <ListHeaderCellSort :direction="directionFor('creation')" @click="toggleSort('creation')">
+          User since
+          <template #suffix="{ direction }">
+            <span class="size-3.5 text-ink-gray-5" :class="sortIcon(direction)" />
+          </template>
+        </ListHeaderCellSort>
+        <ListHeaderCell />
+      </ListHeader>
+
+      <!-- Virtualized: only the rows in/near the viewport mount, so a large team
+           never instantiates hundreds of role Selects at once. -->
+      <ListRows :items="filteredUsers" virtual v-slot="{ item: user }">
+        <ListRow>
+          <ListCell>
             <UserAvatar :user="user.name" size="xl" />
             <div class="ml-3 min-w-0">
               <div class="truncate text-base text-ink-gray-8">
@@ -61,29 +74,29 @@
                 {{ user.email }}
               </div>
             </div>
-          </div>
-          <div class="flex justify-start">
+          </ListCell>
+          <ListCell>
             <Select
               placeholder="Role"
               :options="roleOptions"
               :model-value="user.role"
               @update:model-value="(role) => onRoleChange(user, role)"
             />
-          </div>
-          <div class="text-base text-ink-gray-6">
+          </ListCell>
+          <ListCell class="text-base text-ink-gray-6">
             <span v-if="user.creation">{{ getMemberSince(user) }}</span>
-          </div>
-          <div class="flex justify-end">
+          </ListCell>
+          <ListCell class="justify-end">
             <Button
               variant="ghost"
               icon="lucide-trash-2"
               :label="`Disable ${user.full_name}`"
               @click="disableUser(user)"
             />
-          </div>
-        </div>
-      </div>
-    </div>
+          </ListCell>
+        </ListRow>
+      </ListRows>
+    </List>
   </SettingsBody>
 
   <Dialog v-model:open="showInviteDialog">
@@ -94,20 +107,27 @@
 // Declared so the parent's @close-dialog isn't treated as a failed attribute
 // fallthrough (this component renders a fragment); it simply isn't emitted here.
 defineEmits<{ (e: 'close-dialog'): void }>()
-import { computed, h, ref, useTemplateRef, watch, watchEffect, type Ref } from 'vue'
-import { useEventListener, useVirtualList } from '@vueuse/core'
+import { computed, ref, watch } from 'vue'
 import {
   Button,
   Dialog,
   SettingsBody,
   SettingsHeader,
   Select,
-  Tooltip,
   dialog,
   dayjsLocal,
   useCall,
   useList,
 } from 'frappe-ui'
+import {
+  List,
+  ListCell,
+  ListHeader,
+  ListHeaderCell,
+  ListHeaderCellSort,
+  ListRow,
+  ListRows,
+} from 'frappe-ui/list'
 import InvitePeople from './InvitePeople.vue'
 import { users, activeUsers } from '@/data/users'
 import { GPInvitation } from '@/types/doctypes'
@@ -131,38 +151,6 @@ const search = ref('')
 const sortField = ref<SortField>('name')
 const sortDirection = ref<SortDirection>('asc')
 const showInviteDialog = ref(false)
-
-const SortHeader = (props: { field: SortField; label: string }) =>
-  h(
-    Tooltip,
-    { text: `Order by ${props.label.toLowerCase()}` },
-    {
-      default: () =>
-        h(
-          'button',
-          {
-            type: 'button',
-            class: [
-              'group inline-flex h-7 w-fit items-center gap-1 rounded text-left text-ink-gray-5 text-sm-medium transition-colors',
-            ],
-            onClick: () => toggleSort(props.field),
-          },
-          [
-            props.label,
-            h('span', {
-              class: [
-                sortIcon(props.field),
-                'size-3.5 text-ink-gray-5',
-                sortField.value === props.field
-                  ? 'opacity-100'
-                  : 'opacity-0 group-hover:opacity-100',
-              ],
-              'aria-hidden': 'true',
-            }),
-          ],
-        ),
-    },
-  )
 
 const pendingInvites = useList<GPInvitation>({
   doctype: 'GP Invitation',
@@ -217,32 +205,6 @@ const filteredUsers = computed(() => {
   return [...list].sort(compareUsers)
 })
 
-// Virtualize the list: only the rows in (and just outside) the viewport mount, so a
-// large team never instantiates hundreds of role Selects at once. Rows are a fixed
-// height, which keeps the windowing exact — the row's inline height must match
-// ROW_HEIGHT or the scroll position drifts.
-const ROW_HEIGHT = 60
-const body = useTemplateRef<{ viewportElement: HTMLElement | null }>('body')
-// useVirtualList types its source as a writable `MaybeRef<T[]>`, but it only ever
-// reads the list — so passing our readonly computed is safe; assert it to Ref.
-const { list, containerProps, wrapperProps } = useVirtualList(filteredUsers as Ref<UserRow[]>, {
-  itemHeight: ROW_HEIGHT,
-  overscan: 6,
-})
-
-// useVirtualList wants to own its scroll container, but we want SettingsBody's
-// styled scrollbar. So instead of binding containerProps to our own element, point
-// the virtualizer's container ref at SettingsBody's exposed reka scroll viewport
-// and forward that element's scroll events to it.
-watchEffect(() => {
-  containerProps.ref.value = body.value?.viewportElement ?? null
-})
-useEventListener(
-  () => containerProps.ref.value,
-  'scroll',
-  () => containerProps.onScroll(),
-)
-
 function toggleSort(field: SortField) {
   if (sortField.value === field) {
     sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc'
@@ -251,6 +213,10 @@ function toggleSort(field: SortField) {
 
   sortField.value = field
   sortDirection.value = defaultSortDirection(field)
+}
+
+function directionFor(field: SortField) {
+  return sortField.value === field ? sortDirection.value : null
 }
 
 function compareUsers(a: UserRow, b: UserRow) {
@@ -272,9 +238,9 @@ function defaultSortDirection(field: SortField): SortDirection {
   return field === 'creation' ? 'desc' : 'asc'
 }
 
-function sortIcon(field: SortField) {
-  if (sortField.value !== field) return 'lucide-arrow-up-down'
-  return sortDirection.value === 'asc' ? 'lucide-arrow-up' : 'lucide-arrow-down'
+function sortIcon(direction: SortDirection | null) {
+  if (!direction) return 'lucide-arrow-up-down'
+  return direction === 'asc' ? 'lucide-arrow-up' : 'lucide-arrow-down'
 }
 
 function getMemberSince(user: UserRow) {
