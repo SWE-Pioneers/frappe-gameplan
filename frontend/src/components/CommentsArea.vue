@@ -95,7 +95,7 @@
           <div v-if="!showCommentBox" class="sm:-mx-3">
             <button
               type="button"
-              class="flex w-full items-center gap-3 text-left sm:gap-0 sm:rounded-lg sm:border sm:bg-surface-base sm:px-2 sm:py-2 sm:text-base sm:text-ink-gray-5 sm:shadow-sm sm:hover:border-outline-gray-3 sm:hover:bg-surface-gray-1"
+              class="flex w-full items-center gap-3 text-left sm:gap-0 sm:rounded-lg sm:bg-surface-elevation-2 sm:px-2 sm:py-2 sm:text-base sm:text-ink-gray-5 sm:hover:bg-surface-elevation-3 sm:shadow-md"
               @click="openCommentBox"
             >
               <UserAvatar class="sm:hidden" :user="$user().name" size="xl" />
@@ -110,7 +110,7 @@
           </div>
           <div
             v-else-if="composerMinimized"
-            class="flex cursor-pointer items-center gap-3 text-left focus:outline-none sm:-mx-3 sm:gap-0 sm:rounded-lg sm:border sm:bg-surface-base sm:pl-2 sm:pr-1 sm:py-1 sm:shadow-sm sm:hover:border-outline-gray-3 sm:hover:bg-surface-gray-1 sm:focus:border-outline-gray-3"
+            class="flex cursor-pointer items-center gap-3 text-left focus:outline-none sm:-mx-3 sm:gap-0 sm:rounded-lg sm:bg-surface-elevation-2 sm:py-1 sm:pl-2 sm:pr-1 sm:text-base sm:text-ink-gray-5 sm:shadow-md sm:hover:bg-surface-elevation-3 sm:focus:bg-surface-elevation-3"
             role="button"
             tabindex="0"
             @click="restoreComposer"
@@ -136,11 +136,11 @@
           </div>
           <div
             v-else
-            class="group/comment-composer relative -mx-3 bg-surface-base p-4 focus-within:border-outline-gray-3 sm:p-3"
+            class="group/comment-composer relative -mx-3 bg-surface-base p-4 sm:bg-surface-elevation-2 sm:p-3 sm:shadow-md"
             :class="
               isComposerFullscreen
                 ? 'flex h-full flex-col'
-                : 'border-t border-outline-gray-2 sm:rounded-lg sm:border sm:shadow-sm'
+                : 'border-t border-outline-gray-2 sm:rounded-lg sm:border-t-0'
             "
             @keydown.ctrl.enter.capture.stop="submitComment"
             @keydown.meta.enter.capture.stop="submitComment"
