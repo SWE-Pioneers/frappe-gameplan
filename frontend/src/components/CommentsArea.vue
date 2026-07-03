@@ -95,7 +95,7 @@
           <div v-if="!showCommentBox" class="sm:-mx-3">
             <button
               type="button"
-              class="flex w-full items-center gap-3 text-left sm:gap-0 sm:rounded-lg sm:border sm:bg-surface-base sm:px-2 sm:py-2 sm:text-base sm:text-ink-gray-5 sm:shadow-sm sm:hover:border-outline-gray-3 sm:hover:bg-surface-gray-1"
+              class="flex w-full items-center gap-3 text-left sm:gap-0 sm:rounded-lg sm:bg-surface-elevation-2 sm:px-2 sm:py-2 sm:text-base sm:text-ink-gray-5 sm:hover:bg-surface-elevation-3 sm:shadow-md"
               @click="openCommentBox"
             >
               <UserAvatar class="sm:hidden" :user="$user().name" size="xl" />
@@ -110,7 +110,7 @@
           </div>
           <div
             v-else-if="composerMinimized"
-            class="flex cursor-pointer items-center gap-3 text-left focus:outline-none sm:-mx-3 sm:gap-0 sm:rounded-lg sm:border sm:bg-surface-base sm:pl-2 sm:pr-1 sm:py-1 sm:shadow-sm sm:hover:border-outline-gray-3 sm:hover:bg-surface-gray-1 sm:focus:border-outline-gray-3"
+            class="flex cursor-pointer items-center gap-3 text-left focus:outline-none sm:-mx-3 sm:gap-0 sm:rounded-lg sm:bg-surface-elevation-2 sm:py-1 sm:pl-2 sm:pr-1 sm:text-base sm:text-ink-gray-5 sm:shadow-md sm:hover:bg-surface-elevation-3 sm:focus:bg-surface-elevation-3"
             role="button"
             tabindex="0"
             @click="restoreComposer"
@@ -136,11 +136,11 @@
           </div>
           <div
             v-else
-            class="group/comment-composer relative -mx-3 bg-surface-base p-4 focus-within:border-outline-gray-3 sm:p-3"
+            class="group/comment-composer relative -mx-3 bg-surface-base p-4 sm:bg-surface-elevation-2 sm:p-3 sm:shadow-md"
             :class="
               isComposerFullscreen
                 ? 'flex h-full flex-col'
-                : 'border-t border-outline-gray-2 sm:rounded-lg sm:border sm:shadow-sm'
+                : 'border-t border-outline-gray-2 sm:rounded-lg sm:border-t-0'
             "
             @keydown.ctrl.enter.capture.stop="submitComment"
             @keydown.meta.enter.capture.stop="submitComment"
@@ -261,7 +261,7 @@ import Activity from './Activity.vue'
 import PollEditor from './PollEditor.vue'
 import Poll from './Poll.vue'
 import UserAvatar from './UserAvatar.vue'
-import { getScrollContainer } from '@/utils/scrollContainer'
+import { getScrollContainer } from 'frappe-ui'
 import { dialog } from 'frappe-ui'
 import { useSocket, type NewActivityEvent } from '@/socket'
 import { GPActivity, GPComment, GPPoll } from '@/types/doctypes'
@@ -272,7 +272,7 @@ import { useRichQuotes } from '@/components/RichQuoteExtension/useRichQuotes'
 import { useDraftSync } from '@/data/useDraftSync'
 import { useSessionUser } from '@/data/users'
 import type { Space } from '@/data/spaces'
-import { isMobile } from '@/composables/isMobile'
+import { useIsMobile } from 'frappe-ui'
 import { needsMobileCommentGap } from '@/utils/commentTimeline'
 
 interface Props {
@@ -328,7 +328,7 @@ const router = useRouter()
 const route = useRoute()
 const socket = useSocket()
 const sessionUser = useSessionUser()
-const isMobileViewport = isMobile()
+const isMobileViewport = useIsMobile()
 
 const showCommentBox = ref(false)
 const composerMinimized = ref(false)
@@ -649,6 +649,7 @@ async function scrollToEnd() {
   _scrollToEnd()
   await wait(100)
   const scrollContainer = getScrollContainer()
+  if (!scrollContainer) return
   if (scrollContainer.scrollTop < scrollContainer.scrollHeight) {
     _scrollToEnd()
   }
@@ -656,6 +657,7 @@ async function scrollToEnd() {
 
 function _scrollToEnd() {
   const scrollContainer = getScrollContainer()
+  if (!scrollContainer) return
   scrollContainer.scrollTop = scrollContainer.scrollHeight
 }
 
@@ -687,6 +689,7 @@ async function scrollToElement($el: HTMLElement) {
   let top = _scrollToElement($el)
   await wait(100)
   const scrollContainer = getScrollContainer()
+  if (!scrollContainer) return
   if (scrollContainer.scrollTop != top) {
     _scrollToElement($el)
   }
@@ -694,6 +697,7 @@ async function scrollToElement($el: HTMLElement) {
 
 function _scrollToElement($el: HTMLElement) {
   const scrollContainer = getScrollContainer()
+  if (!scrollContainer) return 0
   const headerHeight = 64
   const top = $el.offsetTop - scrollContainer.scrollTop - headerHeight
   scrollContainer.scrollBy({ top, left: 0 })

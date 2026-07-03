@@ -1,13 +1,13 @@
 <template>
   <FrappeUIProvider>
-    <ScrollAreaRoot class="h-full overflow-hidden">
+    <div class="relative isolate h-full overflow-hidden">
       <router-view v-if="['Onboarding', 'Login'].includes($route.name)" />
       <Layout v-else-if="$session.isLoggedIn">
         <!-- While on a /settings/* URL, keep rendering the page the dialog was
              opened over (displayedRoute) so it stays visible behind the overlay. -->
         <router-view :route="displayedRoute" />
       </Layout>
-    </ScrollAreaRoot>
+    </div>
     <NewTaskDialog />
     <SettingsDialog v-if="$session.isLoggedIn && users.isFinished" />
   </FrappeUIProvider>
@@ -17,11 +17,11 @@
 import { computed, defineAsyncComponent, nextTick, shallowRef, watch } from 'vue'
 import { loadRouteLocation, useRoute, useRouter } from 'vue-router'
 import { FrappeUIProvider } from 'frappe-ui'
-import { ScrollAreaRoot } from 'reka-ui'
 import { users } from '@/data/users'
 import { session } from '@/data/session'
-import { useScreenSize } from '@/composables/useScreenSize'
+import { useScreenSize } from 'frappe-ui'
 import { useTheme } from '@/utils/useTheme'
+import { useCursorStyle } from '@/utils/useCursorStyle'
 import NewTaskDialog from './components/NewTaskDialog/NewTaskDialog.vue'
 import SettingsDialog from './components/Settings/SettingsDialog.vue'
 import { settingsBackgroundPath } from './components/Settings'
@@ -31,6 +31,7 @@ const screenSize = useScreenSize()
 const route = useRoute()
 const router = useRouter()
 useTheme()
+useCursorStyle()
 const MobileLayout = defineAsyncComponent(() => import('./components/MobileLayout.vue'))
 const DesktopLayout = defineAsyncComponent(() => import('./components/DesktopLayout.vue'))
 const Layout = computed(() => {

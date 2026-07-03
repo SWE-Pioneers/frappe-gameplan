@@ -1,68 +1,68 @@
 <template>
-  <div class="flex h-full w-56 flex-col bg-surface-sidebar">
+  <Sidebar disable-collapse width="14rem">
     <template v-if="communityState.doc">
       <div class="flex shrink-0 items-center p-2">
         <AppDropdown />
       </div>
 
-      <ScrollAreaRoot class="relative flex min-h-0 flex-1 flex-col">
-        <ScrollAreaViewport class="h-full w-full overflow-y-auto px-2 pt-0.5 pb-10">
-          <div class="group/spaces">
-            <div class="flex h-7 items-center justify-between pl-2 text-base text-ink-gray-5">
-              <span>Spaces</span>
-              <div class="flex items-center">
-                <Dropdown :options="spaceSortOptions" align="end">
-                  <template #trigger="{ open }">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      icon="lucide-arrow-up-down text-ink-gray-5"
-                      label="Sort spaces"
-                      tooltip="Sort spaces"
-                      :active="open || hasCustomSpaceSidebarOptions"
-                    />
-                  </template>
-                </Dropdown>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  icon="lucide-plus text-ink-gray-5"
-                  label="New space"
-                  @click="openNewSpaceDialog"
-                />
-              </div>
+      <!--
+        The app owns the scroll region: frappe-ui's ScrollArea keeps the thin,
+        auto-hiding overlay scrollbar; padding the viewport gives the active
+        row's shadow room so overflow-hidden doesn't clip it.
+      -->
+      <ScrollArea class="min-h-0 flex-1" viewport-class="px-2 pt-0.5 pb-10">
+        <div>
+          <div class="flex h-7 items-center justify-between">
+            <SidebarLabel>Spaces</SidebarLabel>
+            <div class="flex items-center">
+              <Dropdown :options="spaceSortOptions" align="end">
+                <template #trigger="{ open }">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    icon="lucide-arrow-up-down text-ink-gray-5"
+                    label="Sort spaces"
+                    tooltip="Sort spaces"
+                    :active="open || hasCustomSpaceSidebarOptions"
+                  />
+                </template>
+              </Dropdown>
+              <Button
+                variant="ghost"
+                size="sm"
+                icon="lucide-plus text-ink-gray-5"
+                label="New space"
+                @click="openNewSpaceDialog"
+              />
             </div>
+          </div>
 
-            <nav class="mt-0.5 space-y-0.5">
-              <div
-                v-for="space in spacesList"
-                :key="space.name"
-                class="group/space flex h-7 items-center rounded transition"
-                :class="
-                  isActiveSpace(space.name)
-                    ? 'bg-surface-elevation-3 text-ink-gray-8 shadow-sm'
-                    : 'text-ink-gray-6 hover:bg-surface-gray-2'
-                "
-              >
-                <AppLink
-                  :to="{ name: 'Space', params: { communityId: space.team, spaceId: space.name } }"
-                  class="flex h-full min-w-0 flex-1 items-center pl-2"
-                  activeClass=""
-                  inactiveClass=""
-                >
-                  <span class="flex w-full min-w-0 items-center">
-                    <SpaceIcon :icon="space.icon" class="size-4" />
-                    <span class="ml-2 flex-1 truncate text-sm">{{ space.title }}</span>
-                    <LucideLock
-                      v-if="space.is_private"
-                      class="ml-1 size-3 shrink-0 text-ink-gray-5"
-                    />
-                  </span>
-                </AppLink>
+          <nav class="mt-0.5 space-y-0.5">
+            <SidebarItem
+              v-for="space in spacesList"
+              :key="space.name"
+              :to="{ name: 'Space', params: { communityId: space.team, spaceId: space.name } }"
+              :active="isActiveSpace(space.name)"
+            >
+              <template #prefix>
+                <SpaceIcon :icon="space.icon" class="size-4" />
+              </template>
+
+              <span class="flex-1 inline-flex items-center gap-1 truncate text-sm">
+                <LucideLock v-if="space.is_private" class="size-3 shrink-0 text-ink-gray-5" />
+                {{ space.title }}
+              </span>
+
+              <template #suffix>
+                <!--
+                    Count and options menu share one cell: the count fades out on
+                    row hover/focus while the "…" menu fades in. The group is
+                    SidebarItem's root (`group/sidebar-item`).
+                  -->
                 <div class="relative mr-1 flex h-7 w-7 shrink-0 items-center justify-end">
                   <span
                     v-if="getSpaceUnreadCount(space.name) > 0"
-                    class="absolute right-1 text-xs text-ink-gray-5 transition-opacity group-hover/space:opacity-0 group-focus-within/space:opacity-0"
+                    class="absolute right-1 text-xs text-ink-gray-5 transition-opacity group-hover/sidebar-item:opacity-0 group-focus-within/sidebar-item:opacity-0"
                   >
                     {{ getSpaceUnreadCount(space.name) }}
                   </span>
@@ -73,36 +73,35 @@
                         size="xs"
                         icon="lucide-more-horizontal text-ink-gray-5"
                         :label="`${space.title} options`"
-                        class="absolute right-0 opacity-0 group-hover/space:opacity-100 group-focus-within/space:opacity-100 -mr-0.5"
+                        class="absolute right-0 -mr-0.5 opacity-0 group-hover/sidebar-item:opacity-100 group-focus-within/sidebar-item:opacity-100"
                         :class="open ? 'opacity-100' : ''"
                       />
                     </template>
                   </Dropdown>
                 </div>
-              </div>
+              </template>
+            </SidebarItem>
 
-              <div
-                v-if="spacesList.length === 0"
-                class="mt-1 px-2 text-xs leading-relaxed text-ink-gray-5"
+            <div
+              v-if="spacesList.length === 0"
+              class="mt-1 px-2 text-xs leading-relaxed text-ink-gray-5"
+            >
+              {{ communitySpaces.emptyMessage }}
+              <Button
+                v-if="communitySpaces.archived.length === 0 && !communitySpaces.hasHiddenInactive"
+                size="sm"
+                icon-left="lucide-plus"
+                class="mt-2"
+                @click="openNewSpaceDialog"
               >
-                {{ communitySpaces.emptyMessage }}
-                <Button
-                  v-if="communitySpaces.archived.length === 0 && !communitySpaces.hasHiddenInactive"
-                  size="sm"
-                  icon-left="lucide-plus"
-                  class="mt-2"
-                  @click="openNewSpaceDialog"
-                >
-                  Create a space
-                </Button>
-              </div>
-            </nav>
-          </div>
-        </ScrollAreaViewport>
-        <ScrollBar />
-      </ScrollAreaRoot>
+                Create a space
+              </Button>
+            </div>
+          </nav>
+        </div>
+      </ScrollArea>
     </template>
-  </div>
+  </Sidebar>
 
   <NewSpaceDialog
     v-model="showNewSpaceDialog"
@@ -113,8 +112,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useRoute } from 'vue-router'
-import { ScrollAreaRoot, ScrollAreaViewport } from 'reka-ui'
-import { Button, Dropdown } from 'frappe-ui'
+import { Button, Dropdown, Sidebar, SidebarItem, SidebarLabel, ScrollArea } from 'frappe-ui'
 import type { DropdownOptions } from 'frappe-ui'
 import { communityState } from '@/data/communityState'
 import { communitySpaces } from '@/data/communitySpaces'
@@ -125,11 +123,9 @@ import {
   setSpaceSidebarSort,
   type SpaceSidebarSort,
 } from '@/data/sidebarPreferences'
-import { getSpaceUnreadCount, markAllAsRead, spaces, type Space } from '@/data/spaces'
-import AppLink from './AppLink.vue'
+import { getSpaceUnreadCount, markAllAsRead, type Space } from '@/data/spaces'
 import AppDropdown from './AppDropdown.vue'
 import NewSpaceDialog from './NewSpaceDialog.vue'
-import ScrollBar from './ScrollBar.vue'
 import SpaceIcon from './SpaceIcon.vue'
 import LucideLock from '~icons/lucide/lock'
 
@@ -165,11 +161,7 @@ const spaceSortOptions = computed<DropdownOptions>(() => [
 
 const showNewSpaceDialog = ref(false)
 const spaceSortValues: SpaceSidebarSort[] = ['Recent activity', 'Alphabetical']
-const communitySpaceList = computed(() => {
-  return (spaces.data || []).filter((space) => {
-    return !space.archived_at && space.team === communityState.id
-  })
-})
+
 const activeSpaceId = computed(() => {
   const routeName = route.name?.toString() || ''
   if (routeName.startsWith('Space') || routeName === 'Discussion') {

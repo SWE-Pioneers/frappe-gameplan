@@ -1,31 +1,23 @@
 <template>
   <div class="relative flex h-full flex-col" v-if="users.isFinished">
-    <div class="h-full flex-1 standalone:border-t">
-      <div class="flex h-full">
+    <DesktopShell class="gameplan-desktop-shell h-full flex-1 standalone:border-t">
+      <template #rail>
         <AppRail :show-border="onCommunityRoute" :show-community-active-state="onCommunityRoute" />
+      </template>
+      <template #sidebar>
         <AppSidebar v-if="onCommunityRoute" />
-        <div class="flex min-w-0 flex-1 py-1 pr-1 dark:p-0">
-          <div
-            class="flex min-w-0 flex-1 overflow-hidden rounded-lg bg-surface-base shadow-sm dark:rounded-none dark:border-l dark:shadow-none"
-          >
-            <div class="flex flex-1 min-w-0 flex-col">
-              <div id="pageHeaderTarget" />
-              <ScrollContainer>
-                <ReadOnlyBanner v-if="readOnlyMode" class="mb-3" />
-                <slot />
-              </ScrollContainer>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+      </template>
+
+      <ReadOnlyBanner v-if="readOnlyMode" class="mb-3" />
+      <slot />
+    </DesktopShell>
     <CommandPalette />
   </div>
 </template>
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import ScrollContainer from './ScrollContainer.vue'
+import { DesktopShell } from 'frappe-ui'
 import AppRail from './AppRail'
 import AppSidebar from './AppSidebar.vue'
 import CommandPalette from './CommandPalette/CommandPalette.vue'
@@ -51,3 +43,9 @@ const onCommunityRoute = computed(() => {
   return effectiveRoute.value.matched.some((record) => record.meta?.communityScope)
 })
 </script>
+
+<style scoped>
+.gameplan-desktop-shell :deep([data-slot='desktop-shell-content']) {
+  @apply my-1 mr-1 rounded-lg bg-surface-base shadow-sm dark:m-0 dark:rounded-none dark:border-l dark:shadow-none;
+}
+</style>

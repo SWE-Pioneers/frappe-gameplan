@@ -108,7 +108,7 @@ import CommentEditor from '@/components/editor/CommentEditor.vue'
 import Comment from './Comment.vue'
 import Activity from './Activity.vue'
 import UserAvatar from './UserAvatar.vue'
-import { getScrollContainer } from '@/utils/scrollContainer'
+import { getScrollContainer } from 'frappe-ui'
 import { needsMobileCommentGap } from '@/utils/commentTimeline'
 import { dialog } from 'frappe-ui'
 import { useSocket, type NewActivityEvent } from '@/socket'
@@ -345,6 +345,7 @@ async function scrollToItem(item) {
 
 function scrollToElement($el: HTMLElement) {
   const scrollContainer = getScrollContainer()
+  if (!scrollContainer) return
   const headerHeight = 64
   const top = $el.offsetTop - scrollContainer.scrollTop - headerHeight
   scrollContainer.scrollBy({ top, left: 0, behavior: 'smooth' })
@@ -352,6 +353,7 @@ function scrollToElement($el: HTMLElement) {
 
 function scrollToEnd() {
   const scrollContainer = getScrollContainer()
+  if (!scrollContainer) return
   scrollContainer.scrollTop = scrollContainer.scrollHeight
 }
 

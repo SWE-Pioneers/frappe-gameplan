@@ -11,14 +11,6 @@
       </div>
       <slot name="action" />
     </div>
-
-    <!-- Column header, aligned with SpaceRow's grid (guest column is conditional). -->
-    <div v-if="communitySpaces.length" :class="headerClass">
-      <div>Space</div>
-      <div>Content</div>
-      <div v-if="hasGuests">Guests</div>
-      <div />
-    </div>
   </div>
 </template>
 
@@ -33,7 +25,7 @@ const props = defineProps<{ communityId: string }>()
 const search = defineModel<string>('search', { default: '' })
 const visibilityFilter = defineModel<VisibilityFilter>('visibilityFilter', { default: 'All' })
 
-const { communitySpaces, hasGuests } = useCommunitySpaceData(() => props.communityId)
+const { communitySpaces } = useCommunitySpaceData(() => props.communityId)
 
 const activeSpaces = computed(() => communitySpaces.value.filter((space) => !space.archived_at))
 const archivedCount = computed(() => communitySpaces.value.length - activeSpaces.value.length)
@@ -54,12 +46,5 @@ const visibilityOptions = computed(() => {
     options.push({ label: `Archived (${archivedCount.value})`, value: 'Archived' })
   }
   return options
-})
-
-const headerClass = computed(() => {
-  const columns = hasGuests.value
-    ? 'grid-cols-[minmax(8rem,1fr)_15.25rem_5rem_1.5rem]'
-    : 'grid-cols-[minmax(8rem,1fr)_15.25rem_1.5rem]'
-  return `mt-3 hidden ${columns} gap-12 items-center border-b h-8 text-sm text-ink-gray-5 md:grid`
 })
 </script>

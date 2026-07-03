@@ -8,13 +8,13 @@
   >
     <template #editor="{ editor, editorClass }">
       <DiscussionHeader />
-      <Teleport to="#pageHeaderTarget">
-        <div class="hidden h-10 items-center border-b bg-surface-base px-3 sm:flex sm:px-5">
-          <div class="w-full overflow-x-auto">
-            <EditorFixedMenu :editor="editor" :items="gameplanToolbar" />
-          </div>
+      <PageHeaderBase
+        class="hidden h-10 items-center border-b bg-surface-base px-3 sm:flex sm:px-5"
+      >
+        <div class="w-full overflow-x-auto">
+          <EditorFixedMenu :editor="editor" :items="gameplanToolbar" />
         </div>
-      </Teleport>
+      </PageHeaderBase>
 
       <div class="discussion-container isolate pt-4">
         <DiscussionSpaceSelector size="md" class="mb-2 w-full sm:hidden" />
@@ -40,6 +40,7 @@
 </template>
 
 <script setup lang="ts">
+import { PageHeaderBase } from 'frappe-ui'
 import { EditorFixedMenu } from 'frappe-ui/editor'
 import { gameplanToolbar, mobileDiscussionToolbar } from '@/components/editor/toolbars'
 import DiscussionEditor from '@/components/editor/DiscussionEditor.vue'

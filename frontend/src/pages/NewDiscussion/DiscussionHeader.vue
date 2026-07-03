@@ -1,7 +1,7 @@
 <template>
-  <MobileHeader class="sm:hidden" :title="mobileTitle">
+  <PageHeaderMobile class="sm:hidden" :title="mobileTitle">
     <template #left>
-      <MobileBackButton :to="{ name: 'Drafts' }" />
+      <PageHeaderBackButton :to="{ name: 'Drafts' }" />
     </template>
     <template #right>
       <div class="flex items-center gap-1">
@@ -28,7 +28,7 @@
         </Tooltip>
       </div>
     </template>
-  </MobileHeader>
+  </PageHeaderMobile>
 
   <PageHeader class="hidden sm:flex">
     <Breadcrumbs
@@ -71,10 +71,14 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
-import { Breadcrumbs, Button, Tooltip } from 'frappe-ui'
-import MobileBackButton from '@/components/MobileBackButton.vue'
-import MobileHeader from '@/components/MobileHeader.vue'
-import PageHeader from '@/components/PageHeader.vue'
+import {
+  PageHeaderBackButton,
+  PageHeaderMobile,
+  PageHeader,
+  Breadcrumbs,
+  Button,
+  Tooltip,
+} from 'frappe-ui'
 import { useNewDiscussionContext } from './useNewDiscussion'
 import DiscussionSpaceSelector from './DiscussionSpaceSelector.vue'
 

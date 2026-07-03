@@ -23,16 +23,20 @@
     </template>
   </ConfigureEmptyState>
 
-  <ConfigureList
+  <List
     v-else-if="filteredCommunities.length"
-    header-class="hidden grid-cols-[minmax(12rem,6fr)_minmax(6rem,1.2fr)_minmax(6rem,1.2fr)_1.5rem] gap-12 items-center h-7 text-sm text-ink-gray-6 md:grid"
+    :columns="['minmax(12rem,6fr)', 'minmax(6rem,1.2fr)', 'minmax(6rem,1.2fr)', '1.5rem']"
+    class="list-gap-12 max-md:list-cols-[minmax(0,1fr)]"
   >
-    <template v-if="showControls" #header>
-      <div>Community</div>
-      <div class="px-1.5">Spaces</div>
-      <div class="px-1.5">Members</div>
-      <div />
-    </template>
+    <!-- Sticky at the settings scroll-viewport top — it rests exactly where it
+         pins, so it never visibly moves. px-1.5 aligns the labels with the
+         ghost-button text in the rows below. -->
+    <ListHeader class="sticky top-0 z-10 bg-surface-elevation-1 max-md:hidden">
+      <ListHeaderCell>Community</ListHeaderCell>
+      <ListHeaderCell class="px-1.5">Spaces</ListHeaderCell>
+      <ListHeaderCell class="px-1.5">Members</ListHeaderCell>
+      <ListHeaderCell />
+    </ListHeader>
     <CommunityRow
       v-for="community in filteredCommunities"
       :key="community.name"
@@ -42,7 +46,7 @@
       @view-members="emit('view-members', community.name)"
       @merged="emit('community-merged', $event)"
     />
-  </ConfigureList>
+  </List>
 
   <ConfigureEmptyState
     v-else
@@ -60,12 +64,12 @@
 <script setup lang="ts">
 import { computed, watch } from 'vue'
 import { Button } from 'frappe-ui'
+import { List, ListHeader, ListHeaderCell } from 'frappe-ui/list'
 import { communities, type Community } from '@/data/communities'
 import { spaces } from '@/data/spaces'
 import { useSessionUser } from '@/data/users'
 import { getManageableCommunities, isGlobalAdmin } from '@/utils/permissions'
 import ConfigureEmptyState from './ConfigureEmptyState.vue'
-import ConfigureList from './ConfigureList.vue'
 import CommunityRow from './CommunityRow.vue'
 import CommunitiesListFilters from './CommunitiesListFilters.vue'
 

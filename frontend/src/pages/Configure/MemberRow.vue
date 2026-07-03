@@ -1,39 +1,47 @@
 <template>
-  <div :class="rowClass">
+  <ListRow class="h-10">
+    <!-- The link spans only the info cells (display: contents keeps them grid
+         children); the options cell stays outside so its menu isn't a nested
+         interactive element inside an anchor. -->
     <RouterLink :to="profileRoute" class="contents">
-      <UserAvatar :user="member.user" size="sm" class="shrink-0" />
+      <ListCell>
+        <UserAvatar :user="member.user" size="sm" class="shrink-0" />
+      </ListCell>
 
-      <div class="min-w-0">
-        <div class="truncate text-base-medium text-ink-gray-7">
-          {{ user.full_name }}
+      <ListCell>
+        <div class="min-w-0">
+          <div class="truncate text-base-medium text-ink-gray-7">
+            {{ user.full_name }}
+          </div>
+          <div class="mt-1 flex flex-wrap gap-x-2 gap-y-1 text-base text-ink-gray-5 md:hidden">
+            <span>{{ user.email }}</span>
+            <span>{{ roleLabel }}</span>
+          </div>
         </div>
-        <div class="mt-1 flex flex-wrap gap-x-2 gap-y-1 text-base text-ink-gray-5 md:hidden">
-          <span>{{ user.email }}</span>
-          <span>{{ roleLabel }}</span>
-        </div>
-      </div>
+      </ListCell>
 
-      <div class="hidden truncate text-base text-ink-gray-5 md:block">
-        {{ user.email }}
-      </div>
-      <div class="hidden text-base text-ink-gray-5 md:block">
+      <ListCell class="max-md:hidden">
+        <div class="w-full truncate text-base text-ink-gray-5">{{ user.email }}</div>
+      </ListCell>
+      <ListCell class="text-base text-ink-gray-5 max-md:hidden">
         {{ roleLabel }}
-      </div>
+      </ListCell>
     </RouterLink>
 
-    <div class="hidden justify-end md:flex">
+    <ListCell class="justify-end max-md:hidden">
       <MemberOptions
         v-if="canManage"
         :community="community"
         :member="member"
         :can-manage="canManage"
       />
-    </div>
-  </div>
+    </ListCell>
+  </ListRow>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { ListCell, ListRow } from 'frappe-ui/list'
 import UserAvatar from '@/components/UserAvatar.vue'
 import { useUser } from '@/data/users'
 import type { Community, CommunityMember } from '@/data/communities'
@@ -44,11 +52,6 @@ const props = defineProps<{
   member: CommunityMember
   canManage: boolean
 }>()
-
-const rowClass = [
-  'grid grid-cols-[1.25rem_minmax(0,1fr)] items-center gap-2 h-10 transition-colors',
-  'md:grid-cols-[1.25rem_minmax(12rem,1fr)_minmax(12rem,1fr)_8rem_1.5rem]',
-]
 
 const user = computed(() => useUser(props.member.user))
 const roleLabel = computed(() => (props.member.is_admin ? 'Community Admin' : 'Member'))

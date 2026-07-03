@@ -68,7 +68,16 @@ export default defineConfig({
     //      throws `RangeError: Duplicate use of selection JSON ID`, which aborts
     //      router navigation to any editor route (composer, discussion, page).
     // Dedupe the whole prosemirror family so exactly one copy of each loads.
+    // vue/reka-ui/@vueuse/core exist twice for the same reason (the checkout's
+    // own node_modules); two vue copies split the provide/inject and reactivity
+    // worlds in production builds — reka-ui components throw missing-injection
+    // errors and useFetch's hooks receive foreign-copy contexts. Dev masks all
+    // of this because the dev server resolves through the import graph lazily.
     dedupe: [
+      'vue',
+      'vue-router',
+      '@vueuse/core',
+      'reka-ui',
       'prosemirror-changeset',
       'prosemirror-commands',
       'prosemirror-dropcursor',

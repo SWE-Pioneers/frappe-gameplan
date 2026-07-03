@@ -1,6 +1,6 @@
 <template>
-  <div :class="rowClass">
-    <div class="flex min-w-0 items-center gap-2">
+  <ListRow class="h-10">
+    <ListCell class="gap-2">
       <CommunityImageUploader :community="community" class="shrink-0" />
 
       <div class="min-w-0">
@@ -28,9 +28,9 @@
           </span>
         </div>
       </div>
-    </div>
+    </ListCell>
 
-    <div class="hidden md:block">
+    <ListCell class="max-md:hidden">
       <Button
         size="xs"
         variant="ghost"
@@ -38,8 +38,8 @@
         icon-right="lucide-arrow-up-right text-ink-gray-5"
         @click="emit('view-spaces', community.name)"
       />
-    </div>
-    <div class="hidden md:block">
+    </ListCell>
+    <ListCell class="max-md:hidden">
       <Button
         size="xs"
         variant="ghost"
@@ -47,21 +47,22 @@
         icon-right="lucide-arrow-up-right text-ink-gray-5"
         @click="emit('view-members', community.name)"
       />
-    </div>
-    <div class="hidden justify-end md:flex">
+    </ListCell>
+    <ListCell class="justify-end max-md:hidden">
       <CommunityOptions
         :community="community"
         @view-spaces="emit('view-spaces', community.name)"
         @view-members="emit('view-members', community.name)"
         @merged="emit('merged', $event)"
       />
-    </div>
-  </div>
+    </ListCell>
+  </ListRow>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
 import { Button } from 'frappe-ui'
+import { ListCell, ListRow } from 'frappe-ui/list'
 import type { Community } from '@/data/communities'
 import { visibilityIcon, visibilityLabel } from '@/utils/visibility'
 import CommunityImageUploader from './CommunityImageUploader.vue'
@@ -77,11 +78,6 @@ const emit = defineEmits<{
   (event: 'view-members', communityId: string): void
   (event: 'merged', communityId: string): void
 }>()
-
-const rowClass = [
-  'grid grid-cols-[minmax(0,1fr)] items-center h-10',
-  'md:grid-cols-[minmax(12rem,6fr)_minmax(6rem,1.2fr)_minmax(6rem,1.2fr)_1.5rem] md:gap-12',
-]
 
 const spacesLabel = computed(() => formatCount(props.spacesCount, 'space'))
 const membersLabel = computed(() => formatCount(props.community.members?.length || 0, 'member'))

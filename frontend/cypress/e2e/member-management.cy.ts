@@ -77,7 +77,9 @@ describe('Member management', () => {
     cy.scope('dialog').contains('button', 'Users').click()
     cy.scope('dialog').contains('button', 'Invite').click()
 
-    cy.scope('dialog').find('textarea').type('newteammate@example.com')
+    // :visible — the Profile tab's Bio textarea stays mounted (hidden) in the
+    // Settings dialog after switching tabs (unmount-on-hide=false).
+    cy.scope('dialog').find('textarea:visible').type('newteammate@example.com')
     cy.button('Send invitation').click()
     cy.wait('@invite').its('response.statusCode').should('eq', 200)
 

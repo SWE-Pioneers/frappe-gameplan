@@ -50,8 +50,7 @@
       :filters="() => ({ project: spaceId })"
       :cacheKey="`SpaceDiscussions-${spaceId}`"
       :selectable="isBulkMoveMode"
-      :selectedDiscussions="selectedDiscussions"
-      @toggle-selection="toggleSelection"
+      v-model:selectedDiscussions="selectedDiscussions"
     />
     <Dialog
       title="Move discussions to another space"
@@ -200,14 +199,6 @@ const bulkMoveDiscussions = useCall<
   method: 'POST',
   immediate: false,
 })
-
-function toggleSelection(name: string) {
-  if (selectedDiscussions.value.includes(name)) {
-    selectedDiscussions.value = selectedDiscussions.value.filter((value) => value !== name)
-  } else {
-    selectedDiscussions.value.push(name)
-  }
-}
 
 function cancelBulkMove() {
   isBulkMoveMode.value = false

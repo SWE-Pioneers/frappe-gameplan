@@ -1,10 +1,10 @@
 <template>
-  <MobileHeader class="sm:hidden" title="Drafts">
+  <PageHeaderMobile class="sm:hidden" title="Drafts">
     <template #left>
       <Button v-if="isBulkDeleteMode" variant="ghost" size="md" @click="cancelBulkDelete">
         Cancel
       </Button>
-      <MobileBackButton v-else :to="{ name: 'More' }" />
+      <PageHeaderBackButton v-else :to="{ name: 'More' }" />
     </template>
     <template #right>
       <Button
@@ -27,7 +27,7 @@
         Delete{{ selectedDrafts.length ? ` ${selectedDrafts.length}` : '' }}
       </Button>
     </template>
-  </MobileHeader>
+  </PageHeaderMobile>
   <PageHeader class="hidden sm:flex">
     <Breadcrumbs class="h-7" :items="[{ label: 'Drafts', route: { name: 'Drafts' } }]" />
     <div class="flex items-center gap-2">
@@ -61,39 +61,24 @@
         No drafts
       </EmptyStateBox>
       <div class="-mx-3" v-else>
-        <template v-for="(draft, index) in drafts.data" :key="draft.name">
-          <RouterLink :to="draftRoute(draft)" custom v-slot="{ href, navigate }">
-            <a
-              :href="href"
-              class="flex items-center py-2 px-3 group relative h-15 rounded-[10px] transition hover:bg-surface-gray-2 active:bg-surface-gray-2 cursor-pointer"
-              @click="handleDraftRowClick($event, navigate, draft.name)"
-            >
-              <div
-                class="flex shrink-0 items-center overflow-hidden transition-[width] duration-200 ease-out"
-                :style="{ width: isBulkDeleteMode ? '32px' : '0px' }"
-              >
-                <Transition
-                  enter-active-class="transition-transform duration-75 ease-out"
-                  leave-active-class="transition-transform duration-75 ease-out"
-                  enter-from-class="scale-0"
-                  leave-to-class="scale-0"
-                >
-                  <div
-                    v-if="isBulkDeleteMode"
-                    class="flex items-center"
-                    role="checkbox"
-                    :aria-checked="selectedDrafts.includes(draft.name)"
-                    tabindex="0"
-                    @click.stop="toggleSelection(draft.name)"
-                    @keydown.enter.prevent="toggleSelection(draft.name)"
-                    @keydown.space.prevent="toggleSelection(draft.name)"
-                  >
-                    <Checkbox :modelValue="selectedDrafts.includes(draft.name)" />
-                  </div>
-                </Transition>
-              </div>
+        <List
+          :selectable="isBulkDeleteMode"
+          v-model:selection="selectedDrafts"
+          divider="inset"
+          class="list-gap-4"
+        >
+          <ListRow
+            v-for="draft in drafts.data"
+            :key="draft.name"
+            :to="draftRoute(draft)"
+            :value="draft.name"
+            class="h-15"
+          >
+            <ListCell>
               <UserAvatarWithHover :user="draft.owner" size="2xl" />
-              <div class="ml-4 flex-1 min-w-0">
+            </ListCell>
+            <ListCell>
+              <div class="min-w-0 flex-1">
                 <div class="flex items-center min-w-0 gap-1.5">
                   <Tooltip v-if="draft.kind === 'comment'" text="Reply draft">
                     <span class="lucide-reply h-4 w-4 shrink-0 text-ink-gray-5" />
@@ -122,20 +107,16 @@
                   </div>
                 </div>
               </div>
-              <div class="ml-auto shrink-0">
-                <Tooltip :text="dayjsLocal(draft.modified).format('D MMM YYYY [at] h:mm A')">
-                  <div class="shrink-0 whitespace-nowrap text-sm text-ink-gray-5 text-right">
-                    {{ relativeTimestamp(draft.modified) }}
-                  </div>
-                </Tooltip>
-              </div>
-            </a>
-          </RouterLink>
-          <div
-            class="mx-3 h-px border-t border-outline-elevation-2 transition-opacity group-hover:opacity-0"
-            v-if="index < (drafts.data?.length || 0) - 1"
-          ></div>
-        </template>
+            </ListCell>
+            <ListCell class="justify-end">
+              <Tooltip :text="dayjsLocal(draft.modified).format('D MMM YYYY [at] h:mm A')">
+                <div class="shrink-0 whitespace-nowrap text-sm text-ink-gray-5 text-right">
+                  {{ relativeTimestamp(draft.modified) }}
+                </div>
+              </Tooltip>
+            </ListCell>
+          </ListRow>
+        </List>
       </div>
     </div>
   </div>
@@ -156,20 +137,20 @@
 </template>
 <script setup lang="ts">
 import {
+  PageHeaderBackButton,
+  PageHeaderMobile,
+  PageHeader,
   Tooltip,
   dayjsLocal,
   Breadcrumbs,
   Button,
-  Checkbox,
   Dialog,
   useCall,
   toast,
 } from 'frappe-ui'
+import { List, ListRow, ListCell } from 'frappe-ui/list'
 import UserAvatarWithHover from '@/components/UserAvatarWithHover.vue'
 import { relativeTimestamp } from '@/utils'
-import MobileBackButton from '@/components/MobileBackButton.vue'
-import MobileHeader from '@/components/MobileHeader.vue'
-import PageHeader from '@/components/PageHeader.vue'
 import { onMounted, ref } from 'vue'
 import type { RouteLocationRaw } from 'vue-router'
 import { recoverOrphanedDrafts } from '@/data/useDraftSync'
@@ -242,30 +223,9 @@ function draftRoute(draft: DraftRow): RouteLocationRaw {
   }
 }
 
-function toggleSelection(name: string) {
-  if (selectedDrafts.value.includes(name)) {
-    selectedDrafts.value = selectedDrafts.value.filter((n) => n !== name)
-  } else {
-    selectedDrafts.value.push(name)
-  }
-}
-
 function cancelBulkDelete() {
   isBulkDeleteMode.value = false
   selectedDrafts.value = []
-}
-
-function handleDraftRowClick(
-  event: MouseEvent,
-  navigate: (event?: MouseEvent) => void,
-  draftName: string,
-) {
-  if (isBulkDeleteMode.value) {
-    event.preventDefault()
-    toggleSelection(draftName)
-    return
-  }
-  navigate(event)
 }
 
 let deleteDraftsCall = useCall<DeleteDraftsResponse, { names: string[] }>({

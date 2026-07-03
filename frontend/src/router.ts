@@ -14,7 +14,7 @@ import { spaces, getSpace } from './data/spaces'
 import type { Space } from './data/spaces'
 import { communityState } from './data/communityState'
 import { settingsBackgroundPath } from './components/Settings'
-import { getScrollContainer, scrollTo } from './utils/scrollContainer'
+import { getScrollContainer, scrollTo } from 'frappe-ui'
 
 declare const __FRONTEND_ROUTE__: string
 

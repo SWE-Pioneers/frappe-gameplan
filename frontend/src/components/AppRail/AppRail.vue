@@ -1,152 +1,119 @@
 <template>
-  <div
-    class="flex h-full w-[50px] shrink-0 flex-col items-center bg-surface-sidebar px-[11px] pb-3 pt-2.5"
-    :class="showBorder ? 'border-r' : ''"
-  >
-    <TooltipProvider :delay-duration="0">
-      <div class="flex shrink-0 items-center justify-center mb-3">
-        <button
-          type="button"
-          class="flex size-7 items-center justify-center rounded-[7px] transition"
-          :class="isRoute('Home') ? 'bg-surface-base shadow-sm' : 'hover:opacity-90'"
-          aria-label="Home"
-          @click="goHome"
-        >
-          <GameplanLogo class="size-7 rounded-[7px]" />
-        </button>
-      </div>
-
-      <div
-        v-if="activeCommunities.length"
-        class="flex min-h-0 w-full flex-1 flex-col items-center border-t pt-3"
+  <Rail :class="showBorder ? 'border-r' : ''">
+    <!-- Home is a bespoke button, not a RailItem: the logo fills the whole cell,
+         it has no tooltip, and its active/hover treatment (surface-base fill /
+         opacity dim) differs from the icon shortcuts. -->
+    <div class="mb-3 flex shrink-0 items-center justify-center">
+      <button
+        type="button"
+        class="flex size-7 items-center justify-center rounded-[7px] transition focus-visible:ring-0 focus-visible:focus-ring"
+        :class="isRoute('Home') ? 'bg-surface-base shadow-sm' : 'hover:opacity-90'"
+        aria-label="Home"
+        @click="goHome"
       >
-        <div class="flex min-h-0 w-[50px] flex-1 flex-col items-center">
-          <div class="relative min-h-0 w-[50px] flex-1">
-            <div
-              v-if="showTopGradient"
-              class="pointer-events-none absolute left-0 top-0 z-10 h-4 w-[50px] bg-gradient-to-b from-surface-sidebar to-transparent"
-            />
-            <div
-              v-if="showBottomGradient"
-              class="pointer-events-none absolute bottom-0 left-0 z-10 h-4 w-[50px] bg-gradient-to-t from-surface-sidebar to-transparent"
-            />
+        <GameplanLogo class="size-7 rounded-[7px]" />
+      </button>
+    </div>
 
-            <div
-              ref="communityScrollEl"
-              class="h-full w-[50px] overflow-x-hidden overflow-y-auto pb-3 pt-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-            >
-              <div class="flex w-[50px] flex-col items-center gap-3">
-                <TooltipRoot v-for="community in activeCommunities" :key="community.name">
-                  <TooltipTrigger as-child>
-                    <button
-                      type="button"
-                      class="relative flex size-7 shrink-0 items-center justify-center text-base rounded-[7px]"
-                      :aria-label="communityAriaLabel(community)"
-                      :class="
-                        isActiveCommunity(community.name)
-                          ? 'bg-surface-gray-4'
-                          : 'bg-surface-gray-3'
-                      "
-                      @click="goToCommunity(community)"
-                    >
-                      <span
-                        v-if="isActiveCommunity(community.name)"
-                        class="absolute -left-[11px] top-1/2 h-7 w-1 -translate-y-1/2 rounded-r bg-surface-gray-8"
-                      />
-                      <CommunityImage :community="community" class="size-7 transition" />
-                      <UnreadBadge
-                        :count="getCommunityUnreadCount(community.name)"
-                        :style="currentSidebarBadgeStyle"
-                      />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipBubble side="right">
-                    <template #content>
-                      <div class="leading-relaxed">
-                        <div class="text-base">{{ community.title }}</div>
-                        <div
-                          v-if="showTooltipUnreadCount(getCommunityUnreadCount(community.name))"
-                          class="text-p-sm text-ink-gray-5"
-                        >
-                          {{ tooltipUnreadCount(getCommunityUnreadCount(community.name)) }}
-                        </div>
-                      </div>
-                    </template>
-                  </TooltipBubble>
-                </TooltipRoot>
-              </div>
+    <!-- Community list: a self-scrolling middle region that fades content under
+         whichever edge has more to scroll. `flex-1` pushes the shortcuts below
+         it to the bottom of the rail. The 50px columns bleed the list and its
+         gradients edge-to-edge into the rail's gutters. -->
+    <div
+      v-if="activeCommunities.length"
+      class="flex min-h-0 w-full flex-1 flex-col items-center border-t pt-3"
+    >
+      <div class="flex min-h-0 w-[50px] flex-1 flex-col items-center">
+        <div class="relative min-h-0 w-[50px] flex-1">
+          <div
+            v-show="showTopGradient"
+            class="pointer-events-none absolute left-0 top-0 z-10 h-4 w-[50px] bg-gradient-to-b from-surface-sidebar to-transparent"
+          />
+          <div
+            v-show="showBottomGradient"
+            class="pointer-events-none absolute bottom-0 left-0 z-10 h-4 w-[50px] bg-gradient-to-t from-surface-sidebar to-transparent"
+          />
+          <div
+            ref="communityScrollEl"
+            class="h-full w-[50px] overflow-y-auto overflow-x-hidden pb-3 pt-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          >
+            <div class="flex w-[50px] flex-col items-center gap-3">
+              <RailItem
+                v-for="community in activeCommunities"
+                :key="community.name"
+                :label="community.title"
+                :active="isActiveCommunity(community.name)"
+                :badge="getCommunityUnreadCount(community.name)"
+                :badge-style="badgeStyle"
+                @click="goToCommunity(community)"
+              >
+                <CommunityImage :community="community" class="size-7 transition" />
+              </RailItem>
             </div>
           </div>
-
-          <TooltipRoot>
-            <TooltipTrigger as-child>
-              <Button
-                variant="ghost"
-                size="sm"
-                icon="lucide-settings-2"
-                label="Customize sidebar"
-                class="mt-3"
-                @click="showCustomizeSidebar = true"
-              />
-            </TooltipTrigger>
-            <TooltipBubble side="right">
-              <template #content>
-                <div class="leading-relaxed">Customize sidebar</div>
-              </template>
-            </TooltipBubble>
-          </TooltipRoot>
         </div>
-      </div>
 
-      <div class="mt-0.5 flex w-full flex-col items-center gap-0.5">
-        <RailIcon
-          v-for="item in mainShortcuts"
-          :key="item.label"
-          :label="item.label"
-          :icon="item.icon"
-          :is-active="item.isActive"
-          :unread-count="item.unreadCount"
-          :badge-style="currentSidebarBadgeStyle"
-          @click="goTo(item)"
+        <RailItem
+          label="Customize sidebar"
+          variant="ghost"
+          icon="lucide-settings-2"
+          class="mt-3"
+          @click="showCustomizeSidebar = true"
         />
       </div>
+    </div>
 
-      <div v-if="!activeCommunities.length" class="flex-1" />
-      <div class="mb-3 mt-3 flex w-full flex-col items-center gap-0.5 border-t py-3">
-        <RailIcon
-          v-for="item in personalShortcuts"
-          :key="item.label"
-          :label="item.label"
-          :icon="item.icon"
-          :is-active="item.isActive"
-          :unread-count="item.unreadCount"
-          :badge-style="currentSidebarBadgeStyle"
-          @click="goTo(item)"
-        />
-      </div>
-      <UserDropdown>
-        <template #trigger="{ open }">
-          <button
-            type="button"
-            class="flex size-7 items-center justify-center rounded-full transition focus-visible:ring-0 focus-visible:focus-ring"
-            :class="open ? '' : 'hover:opacity-90'"
-          >
-            <UserAvatar v-if="sessionUser.name" :user="sessionUser.name" size="md" class="size-7" />
-          </button>
-        </template>
-      </UserDropdown>
-    </TooltipProvider>
+    <!-- With no communities the scroll region collapses; this spacer keeps the
+         shortcuts pinned to the bottom of the rail. -->
+    <div v-else class="flex-1" />
 
-    <CustomizeSidebarDialog v-model="showCustomizeSidebar" />
-  </div>
+    <div class="mt-0.5 flex w-full flex-col items-center gap-0.5">
+      <RailItem
+        v-for="item in mainShortcuts"
+        :key="item.label"
+        :label="item.label"
+        :icon="item.icon"
+        variant="ghost"
+        :active="item.isActive"
+        @click="goTo(item)"
+      />
+    </div>
+
+    <div class="mb-3 mt-3 flex w-full flex-col items-center gap-0.5 border-t py-3">
+      <RailItem
+        v-for="item in personalShortcuts"
+        :key="item.label"
+        :label="item.label"
+        :icon="item.icon"
+        variant="ghost"
+        :active="item.isActive"
+        :badge="item.unreadCount"
+        :badge-style="badgeStyle"
+        @click="goTo(item)"
+      />
+    </div>
+
+    <UserDropdown>
+      <template #trigger="{ open }">
+        <button
+          type="button"
+          class="flex size-7 items-center justify-center rounded-full transition focus-visible:ring-0 focus-visible:focus-ring"
+          :class="open ? '' : 'hover:opacity-90'"
+        >
+          <UserAvatar v-if="sessionUser.name" :user="sessionUser.name" size="md" class="size-7" />
+        </button>
+      </template>
+    </UserDropdown>
+  </Rail>
+
+  <CustomizeSidebarDialog v-model="showCustomizeSidebar" />
 </template>
 
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, useTemplateRef, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { TooltipProvider, TooltipRoot, TooltipTrigger } from 'reka-ui'
 import { useEventListener, useResizeObserver } from '@vueuse/core'
-import { Button, TooltipBubble } from 'frappe-ui'
+import { Rail, RailItem } from 'frappe-ui'
 import type { RouteLocationRaw } from 'vue-router'
 import { communityState } from '@/data/communityState'
 import { activeCommunities } from '@/data/communities'
@@ -154,19 +121,16 @@ import type { Community } from '@/data/communities'
 import { unreadNotifications } from '@/data/notifications'
 import { currentSidebarBadgeStyle } from '@/data/sidebarPreferences'
 import { getSpaceUnreadCount, spaces } from '@/data/spaces'
-import { isGameplanAdmin, useSessionUser } from '@/data/users'
+import { useSessionUser } from '@/data/users'
 import { useCanManageCommunities } from '@/composables/useCanManageCommunities'
 import { showCommunitiesSettings } from '@/components/Settings'
-import { unreadAriaLabel } from '@/utils/formatters'
 import CommunityImage from '../CommunityImage.vue'
 import GameplanLogo from '../GameplanLogo.vue'
 import CustomizeSidebarDialog from './CustomizeSidebarDialog.vue'
-import RailIcon from './RailIcon.vue'
-import UnreadBadge from './UnreadBadge.vue'
 import UserAvatar from '../UserAvatar.vue'
 import UserDropdown from '../UserDropdown.vue'
 
-interface RailItem {
+interface RailShortcut {
   label: string
   icon: string
   isActive: boolean
@@ -179,6 +143,8 @@ const route = useRoute()
 const router = useRouter()
 const sessionUser = useSessionUser()
 const showCustomizeSidebar = ref(false)
+const canManageCommunities = useCanManageCommunities()
+
 const communityScrollEl = useTemplateRef<HTMLElement>('communityScrollEl')
 const showTopGradient = ref(false)
 const showBottomGradient = ref(false)
@@ -188,18 +154,10 @@ const props = defineProps<{
   showCommunityActiveState: boolean
 }>()
 
-const isAdmin = computed(() => isGameplanAdmin(sessionUser))
-
-onMounted(() => {
-  nextTick(updateCommunityScrollState)
-})
-
-useEventListener(() => communityScrollEl.value, 'scroll', updateCommunityScrollState, {
-  passive: true,
-})
-useResizeObserver(() => communityScrollEl.value, updateCommunityScrollState)
-
-watch(activeCommunities, () => nextTick(updateCommunityScrollState), { flush: 'post' })
+// The library takes a neutral badge style; map Gameplan's preference onto it.
+const badgeStyle = computed<'count' | 'dot'>(() =>
+  currentSidebarBadgeStyle.value === 'Dot' ? 'dot' : 'count',
+)
 
 const homeRoute = computed<RouteLocationRaw>(() => {
   if (communityState.id) {
@@ -208,21 +166,20 @@ const homeRoute = computed<RouteLocationRaw>(() => {
   return { name: 'Home' }
 })
 
-const adminShortcuts = computed<RailItem[]>(() => {
+const adminShortcuts = computed<RailShortcut[]>(() => {
   if (!canManageCommunities.value) return []
 
   return [
     {
       label: 'Configure communities',
       icon: 'lucide-building-2',
+      isActive: false,
       onClick: () => showCommunitiesSettings(),
     },
   ]
 })
 
-const canManageCommunities = useCanManageCommunities()
-
-const mainShortcuts = computed<RailItem[]>(() => [
+const mainShortcuts = computed<RailShortcut[]>(() => [
   {
     label: 'Search',
     icon: 'lucide-search',
@@ -245,7 +202,7 @@ const mainShortcuts = computed<RailItem[]>(() => [
   ...adminShortcuts.value,
 ])
 
-const personalShortcuts = computed<RailItem[]>(() => [
+const personalShortcuts = computed<RailShortcut[]>(() => [
   {
     label: 'Notifications',
     icon: 'lucide-bell',
@@ -261,7 +218,7 @@ const personalShortcuts = computed<RailItem[]>(() => [
   },
 ])
 
-function goTo(item: RailItem) {
+function goTo(item: RailShortcut) {
   if (item.onClick) {
     item.onClick()
     return
@@ -281,20 +238,6 @@ function isActiveCommunity(communityName: string) {
   return props.showCommunityActiveState && communityName === communityState.id
 }
 
-function updateCommunityScrollState() {
-  const el = communityScrollEl.value
-  if (!el) {
-    showTopGradient.value = false
-    showBottomGradient.value = false
-    return
-  }
-
-  const maxScrollTop = el.scrollHeight - el.clientHeight
-  const hasOverflow = maxScrollTop > 1
-  showTopGradient.value = hasOverflow && el.scrollTop > 1
-  showBottomGradient.value = hasOverflow && el.scrollTop < maxScrollTop - 1
-}
-
 // Sum unread counts per community once per spaces/unread change, instead of
 // re-scanning every space for each community on every render.
 const unreadByCommunity = computed(() => {
@@ -310,18 +253,6 @@ function getCommunityUnreadCount(communityId: string) {
   return unreadByCommunity.value[communityId] ?? 0
 }
 
-function communityAriaLabel(community: Community) {
-  return unreadAriaLabel(community.title, getCommunityUnreadCount(community.name))
-}
-
-function showTooltipUnreadCount(unreadCount: number) {
-  return currentSidebarBadgeStyle.value === 'Dot' && unreadCount > 0
-}
-
-function tooltipUnreadCount(unreadCount: number) {
-  return `${unreadCount} unread`
-}
-
 function goHome() {
   router.push(homeRoute.value)
 }
@@ -329,4 +260,24 @@ function goHome() {
 function isRoute(...names: string[]) {
   return names.includes(route.name?.toString() || '')
 }
+
+// Fade the community list under whichever edge still has content to scroll.
+function updateCommunityScrollState() {
+  const el = communityScrollEl.value
+  if (!el) {
+    showTopGradient.value = false
+    showBottomGradient.value = false
+    return
+  }
+
+  const maxScrollTop = el.scrollHeight - el.clientHeight
+  const hasOverflow = maxScrollTop > 1
+  showTopGradient.value = hasOverflow && el.scrollTop > 1
+  showBottomGradient.value = hasOverflow && el.scrollTop < maxScrollTop - 1
+}
+
+onMounted(() => nextTick(updateCommunityScrollState))
+useEventListener(communityScrollEl, 'scroll', updateCommunityScrollState, { passive: true })
+useResizeObserver(communityScrollEl, updateCommunityScrollState)
+watch(activeCommunities, () => nextTick(updateCommunityScrollState), { flush: 'post' })
 </script>

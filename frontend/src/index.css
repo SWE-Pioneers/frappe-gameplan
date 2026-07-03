@@ -1,12 +1,9 @@
 @import 'frappe-ui/style.css';
-/* The editor's CSS ships only as a bindingless side-effect import inside
-   `frappe-ui/editor` (`import './style.css'`). Vite 8's Rolldown engine ignores
-   `sideEffects` globs that end in a file extension (only trailing-`**` directory
-   globs are honored), so it tree-shakes that statement out of the production build
-   and the editor loses its table/taskList/cell-selection styles. Dev is unaffected
-   (no tree-shaking). Import the editor stylesheet explicitly so it's a real, non-
-   elidable dependency — this is the bundler-agnostic supported entry point. */
+/* Editor and list CSS ship as bindingless side-effect imports inside
+   `frappe-ui/editor` / `frappe-ui/list`, which Rolldown tree-shakes out of
+   production builds (dev is unaffected) — so import them explicitly here. */
 @import 'frappe-ui/editor-style.css';
+@import 'frappe-ui/list-style.css';
 
 /*
   Inter OpenType features:
@@ -57,6 +54,29 @@ html {
   100% {
     background-color: transparent;
   }
+}
+
+/*
+  Cursor preference (Settings → Preferences → Cursor, utils/useCursorStyle.ts).
+  With data-cursor="normal", clickable elements keep the default arrow — like a
+  native app — and only raw external links show the pointer.
+
+  The [class*='cursor-'] guard leaves other cursor utilities (cursor-grab,
+  cursor-col-resize, cursor-text, …) alone; .cursor-pointer is re-included since
+  it's exactly what this preference overrides. :where() keeps specificity low.
+*/
+html[data-cursor='normal']
+  :where(a, button, [role='button'], summary, .cursor-pointer):where(
+    :not([class*='cursor-']),
+    .cursor-pointer
+  ) {
+  cursor: default;
+}
+
+/* Internal navigation uses relative hrefs (vue-router), so absolute http(s)
+   hrefs are raw external links — the one place the pointer stays */
+html[data-cursor='normal'] a:where([href^='http://'], [href^='https://']) {
+  cursor: pointer;
 }
 
 /* disable webkit tap highlight color */

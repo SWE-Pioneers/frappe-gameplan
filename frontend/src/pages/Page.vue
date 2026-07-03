@@ -1,13 +1,13 @@
 <template>
   <div>
-    <MobileHeader class="sm:hidden" :title="pageTitle">
+    <PageHeaderMobile class="sm:hidden" :title="pageTitle">
       <template #left>
-        <MobileBackButton :to="backRoute" :label="isSpacePage ? 'Pages' : 'My Pages'" />
+        <PageHeaderBackButton :to="backRoute" :label="isSpacePage ? 'Pages' : 'My Pages'" />
       </template>
       <template v-if="page.doc && canEditPage" #right>
         <DropdownMoreOptions align="end" :options="pageActions" />
       </template>
-    </MobileHeader>
+    </PageHeaderMobile>
     <PageHeader class="hidden sm:flex">
       <SpaceBreadcrumbs
         v-if="space"
@@ -91,15 +91,22 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount, useTemplateRef } from 'vue'
 import { useRoute, useRouter, type RouteLocationRaw } from 'vue-router'
-import { Breadcrumbs, usePageMeta, debounce, dayjsLocal, useDoc, dialog } from 'frappe-ui'
+import {
+  PageHeader,
+  PageHeaderBackButton,
+  PageHeaderMobile,
+  Breadcrumbs,
+  usePageMeta,
+  debounce,
+  dayjsLocal,
+  useDoc,
+  dialog,
+} from 'frappe-ui'
 import PageEditor from '@/components/editor/PageEditor.vue'
-import PageHeader from '@/components/PageHeader.vue'
 import { useSpace } from '@/data/spaces'
 import { GPPage } from '@/types/doctypes'
 import SpaceBreadcrumbs from '@/components/SpaceBreadcrumbs.vue'
 import DropdownMoreOptions from '@/components/DropdownMoreOptions.vue'
-import MobileBackButton from '@/components/MobileBackButton.vue'
-import MobileHeader from '@/components/MobileHeader.vue'
 import { readOnlyMode } from '@/data/readOnlyMode'
 import { relativeTimestamp } from '@/utils'
 import { useSessionUser } from '@/data/users'

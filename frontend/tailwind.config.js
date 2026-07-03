@@ -1,5 +1,6 @@
 import frappeUIPreset from 'frappe-ui/tailwind'
 import containerQueries from '@tailwindcss/container-queries'
+import plugin from 'tailwindcss/plugin'
 
 export default {
   presets: [frappeUIPreset],
@@ -28,12 +29,14 @@ export default {
       maxWidth: {
         'main-content': '768px',
       },
-      screens: {
-        standalone: {
-          raw: '(display-mode: standalone)',
-        },
-      },
     },
   },
-  plugins: [containerQueries],
+  plugins: [
+    containerQueries,
+    // `standalone` (PWA display mode) as a plugin variant, not a raw screen —
+    // any non-min-width entry in `screens` disables Tailwind's max-* variants.
+    plugin(({ addVariant }) => {
+      addVariant('standalone', '@media (display-mode: standalone)')
+    }),
+  ],
 }

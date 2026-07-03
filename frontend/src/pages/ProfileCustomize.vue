@@ -92,8 +92,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useEventListener } from '@vueuse/core'
-import { Breadcrumbs, Button, toast, usePageMeta } from 'frappe-ui'
-import PageHeader from '@/components/PageHeader.vue'
+import { PageHeader, Breadcrumbs, Button, toast, usePageMeta } from 'frappe-ui'
 import ProfileBentoEditorPanel from '@/components/ProfileBento/ProfileBentoEditorPanel.vue'
 import ProfileBentoGrid from '@/components/ProfileBento/ProfileBentoGrid.vue'
 import { createServerProfileBentoSource } from '@/components/ProfileBento/profileBentoSource'

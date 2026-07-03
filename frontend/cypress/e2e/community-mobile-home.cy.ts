@@ -55,12 +55,12 @@ describe('Mobile community home', () => {
     cy.scope('dialog').button('Brand').click()
     cy.url().should('include', `/community/${first}/space/${firstSpace}`)
 
-    cy.iconButton('Search').click()
+    cy.contains('[data-slot="mobile-nav-item"]', 'Search').click()
     cy.url().should('include', '/search')
     cy.contains('button', 'All discussions').should('not.exist')
     cy.contains('button', 'Brand').should('not.exist')
 
-    cy.iconButton('You').click()
+    cy.contains('[data-slot="mobile-nav-item"]', 'You').click()
     cy.url().should('include', '/more')
     cy.contains('View profile').should('be.visible')
     cy.contains('button', 'Bookmarks').should('be.visible')

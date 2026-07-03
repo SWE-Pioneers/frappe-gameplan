@@ -1,13 +1,13 @@
 <template>
   <div>
-    <MobileHeader class="sm:hidden" title="Pages">
+    <PageHeaderMobile class="sm:hidden" title="Pages">
       <template #left>
-        <MobileBackButton :to="{ name: 'More' }" />
+        <PageHeaderBackButton :to="{ name: 'More' }" />
       </template>
       <template #right>
         <Select :options="sortOptions" v-model="orderBy" />
       </template>
-    </MobileHeader>
+    </PageHeaderMobile>
     <PageHeader class="hidden sm:flex">
       <Breadcrumbs class="h-7" :items="[{ label: 'My Pages', route: { name: 'MyPages' } }]" />
       <div class="flex items-center space-x-2">
@@ -30,10 +30,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { Select, Breadcrumbs } from 'frappe-ui'
-import MobileBackButton from '@/components/MobileBackButton.vue'
-import MobileHeader from '@/components/MobileHeader.vue'
-import PageHeader from '@/components/PageHeader.vue'
+import { PageHeaderBackButton, PageHeaderMobile, PageHeader, Select, Breadcrumbs } from 'frappe-ui'
 import { useNewDoc } from 'frappe-ui'
 import { useSessionUser } from '@/data/users'
 import PageGrid from './PageGrid.vue'
