@@ -1,6 +1,6 @@
 <template>
   <div class="relative flex h-full flex-col" v-if="users.isFinished">
-    <DesktopShell class="h-full flex-1 standalone:border-t" :card-class="cardClass">
+    <DesktopShell class="gameplan-desktop-shell h-full flex-1 standalone:border-t">
       <template #rail>
         <AppRail :show-border="onCommunityRoute" :show-community-active-state="onCommunityRoute" />
       </template>
@@ -30,12 +30,6 @@ import { getHomeRoute } from '@/router'
 const route = useRoute()
 const router = useRouter()
 
-// The Gameplan "card" look layered over DesktopShell's structural content column:
-// a floating panel with a gutter (margin) on top/bottom/right, flush-left against the
-// sidebar. Dark mode drops the float for a full-bleed panel with a left divider.
-const cardClass =
-  'my-1 mr-1 rounded-lg bg-surface-base shadow-sm dark:m-0 dark:rounded-none dark:border-l dark:shadow-none'
-
 // While the settings dialog is open the URL is /settings/*, but the page it was
 // opened over stays rendered behind the overlay (see App.vue's displayedRoute).
 // Drive the layout off that background page so the sidebar and rail state don't
@@ -49,3 +43,9 @@ const onCommunityRoute = computed(() => {
   return effectiveRoute.value.matched.some((record) => record.meta?.communityScope)
 })
 </script>
+
+<style scoped>
+.gameplan-desktop-shell :deep([data-slot='desktop-shell-content']) {
+  @apply my-1 mr-1 rounded-lg bg-surface-base shadow-sm dark:m-0 dark:rounded-none dark:border-l dark:shadow-none;
+}
+</style>
