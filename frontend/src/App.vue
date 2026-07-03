@@ -1,6 +1,6 @@
 <template>
   <FrappeUIProvider>
-    <div class="relative h-full overflow-hidden">
+    <div class="relative isolate h-full overflow-hidden">
       <router-view v-if="['Onboarding', 'Login'].includes($route.name)" />
       <Layout v-else-if="$session.isLoggedIn">
         <!-- While on a /settings/* URL, keep rendering the page the dialog was
