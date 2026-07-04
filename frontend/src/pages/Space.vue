@@ -68,6 +68,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import {
+  BottomSheet,
   PageHeaderBackButton,
   PageHeaderMobile,
   PageHeaderMobileTitle,
@@ -78,7 +79,6 @@ import {
 import SpaceHeaderActionsTarget from '@/components/SpaceHeaderActionsTarget.vue'
 import { useSpace, spaces as spaceList } from '@/data/spaces'
 import { GPProject } from '@/types/doctypes'
-import BottomSheet from '@/components/BottomSheet.vue'
 import CommunityMenu from '@/components/CommunityMenu.vue'
 import EmptyStateBox from '@/components/EmptyStateBox.vue'
 import SpaceBreadcrumbs from '@/components/SpaceBreadcrumbs.vue'

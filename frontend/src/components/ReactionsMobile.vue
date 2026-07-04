@@ -92,7 +92,7 @@
 import { ref } from 'vue'
 import { AnimatePresence, Motion } from 'motion-v'
 import ReactionFaceIcon from './ReactionFaceIcon.vue'
-import BottomSheet from './BottomSheet.vue'
+import { BottomSheet } from 'frappe-ui'
 import { isImageEmoji } from '@/utils/emoji'
 const props = defineProps<{
   reactionsCount: Record<string, { count: number; userReacted: boolean }>
