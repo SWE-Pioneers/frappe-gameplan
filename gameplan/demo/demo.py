@@ -48,7 +48,9 @@ def generate(fixture_path: str | None = None, force: bool = False):
 		print(f"Demo fixture not found at {events_path} — nothing to generate.")
 		return
 
-	clear(force=force)
+	if not clear(force=force):
+		# Guard refused (real data present) — never replay on top of it.
+		return
 
 	search_was_disabled = frappe.conf.get("disable_gameplan_search")
 	mute_emails_before = frappe.flags.mute_emails
@@ -66,15 +68,16 @@ def generate(fixture_path: str | None = None, force: bool = False):
 	print(f"Demo data generated: {dict(seeder.counts)}")
 
 
-def clear(force: bool = False):
+def clear(force: bool = False) -> bool:
 	"""Delete all Gameplan data and the demo users, files and folder.
 
 	Unless ``force`` is set, aborts if the site looks like it holds real data
-	(a discussion authored by a non-demo user).
+	(any top-level content authored by a non-demo user). Returns ``True`` if the
+	site was cleared, ``False`` if the guard refused.
 	"""
 	if not force and _has_real_data():
 		print("Refusing to clear: non-demo Gameplan data detected. Pass force=True to override.")
-		return
+		return False
 
 	# Raw deletes (no FKs between Frappe tables), so table order does not matter.
 	for doctype in _gameplan_doctypes():
@@ -86,14 +89,20 @@ def clear(force: bool = False):
 	_delete_demo_files()
 	_reset_sequences()
 	frappe.db.commit()
+	return True
 
 
 def generate_data_daily():
-	"""Scheduler entry point: regenerate demo data on sites that opt in."""
+	"""Scheduler entry point: regenerate demo data on sites that opt in.
+
+	Runs with the real-data guard active (no ``force``): if the flag is ever set
+	on a site that holds real Gameplan content, the nightly job refuses to clear
+	rather than destroying it.
+	"""
 	if not demo_data_enabled():
 		return
 
-	generate(force=True)
+	generate()
 
 
 def demo_data_enabled() -> bool:
@@ -131,12 +140,26 @@ def _demo_user_emails() -> list[str]:
 	return frappe.get_all("User", filters={"email": ["like", f"%{DEMO_EMAIL_DOMAIN}"]}, pluck="email")
 
 
+# Top-level, user-authored content. In the fixture every one of these is created
+# as a demo user, so on a demo site they are all demo-owned; a row owned by any
+# other account means the site holds real data that clear() must not destroy.
+_GUARDED_DOCTYPES = [
+	"GP Team",
+	"GP Project",
+	"GP Discussion",
+	"GP Comment",
+	"GP Poll",
+	"GP Task",
+	"GP Page",
+]
+
+
 def _has_real_data() -> bool:
-	rows = frappe.db.sql(
-		"SELECT 1 FROM `tabGP Discussion` WHERE owner NOT LIKE %s LIMIT 1",
-		f"%{DEMO_EMAIL_DOMAIN}",
-	)
-	return bool(rows)
+	non_demo_owner = ["not like", f"%{DEMO_EMAIL_DOMAIN}"]
+	for doctype in _GUARDED_DOCTYPES:
+		if frappe.get_all(doctype, filters={"owner": non_demo_owner}, limit=1):
+			return True
+	return False
 
 
 def _delete_demo_files():
