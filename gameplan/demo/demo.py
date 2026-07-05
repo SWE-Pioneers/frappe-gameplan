@@ -140,22 +140,28 @@ def _demo_user_emails() -> list[str]:
 	return frappe.get_all("User", filters={"email": ["like", f"%{DEMO_EMAIL_DOMAIN}"]}, pluck="email")
 
 
+# GP User Profile is created by the User `after_insert` hook, so it is always
+# owned by Administrator — for demo and real users alike. Administrator ownership
+# there is therefore not a real-data signal. Every other Gameplan doctype is only
+# ever seeded as a demo user, so an Administrator-owned row elsewhere means real
+# content (an admin session or an import job) that clear() must not destroy.
+_ADMIN_OWNED_FRAMEWORK_DOCTYPES = {"GP User Profile"}
+
+
 def _has_real_data() -> bool:
 	"""True if any Gameplan row is owned by a real (non-demo) account.
 
 	``clear()`` truncates every doctype in :func:`_gameplan_doctypes`, so the
 	guard spans exactly that set — a hand-picked subset would silently drift out
-	of sync with what gets deleted. Demo rows are owned either by a demo user
-	(authored content and its side effects) or by Administrator (framework-created
-	rows such as GP User Profile, seeded while impersonating no one); an owner that
-	is neither is real, human data we must not destroy.
+	of sync with what gets deleted. A row is "real" when its owner is neither a
+	demo user nor (for the framework-created profile rows) Administrator.
 	"""
-	non_demo_owner = [
-		["owner", "not like", f"%{DEMO_EMAIL_DOMAIN}"],
-		["owner", "!=", "Administrator"],
-	]
+	demo_owner = f"%{DEMO_EMAIL_DOMAIN}"
 	for doctype in _gameplan_doctypes():
-		if frappe.get_all(doctype, filters=non_demo_owner, limit=1):
+		filters = [["owner", "not like", demo_owner]]
+		if doctype in _ADMIN_OWNED_FRAMEWORK_DOCTYPES:
+			filters.append(["owner", "!=", "Administrator"])
+		if frappe.get_all(doctype, filters=filters, limit=1):
 			return True
 	return False
 
