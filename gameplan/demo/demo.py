@@ -72,8 +72,8 @@ def clear(force: bool = False) -> bool:
 	"""Delete all Gameplan data and the demo users, files and folder.
 
 	Unless ``force`` is set, aborts if the site looks like it holds real data
-	(any top-level content authored by a non-demo user). Returns ``True`` if the
-	site was cleared, ``False`` if the guard refused.
+	(any Gameplan row owned by a non-demo account). Returns ``True`` if the site
+	was cleared, ``False`` if the guard refused.
 	"""
 	if not force and _has_real_data():
 		print("Refusing to clear: non-demo Gameplan data detected. Pass force=True to override.")
@@ -140,24 +140,22 @@ def _demo_user_emails() -> list[str]:
 	return frappe.get_all("User", filters={"email": ["like", f"%{DEMO_EMAIL_DOMAIN}"]}, pluck="email")
 
 
-# Top-level, user-authored content. In the fixture every one of these is created
-# as a demo user, so on a demo site they are all demo-owned; a row owned by any
-# other account means the site holds real data that clear() must not destroy.
-_GUARDED_DOCTYPES = [
-	"GP Team",
-	"GP Project",
-	"GP Discussion",
-	"GP Comment",
-	"GP Poll",
-	"GP Task",
-	"GP Page",
-]
-
-
 def _has_real_data() -> bool:
-	non_demo_owner = ["not like", f"%{DEMO_EMAIL_DOMAIN}"]
-	for doctype in _GUARDED_DOCTYPES:
-		if frappe.get_all(doctype, filters={"owner": non_demo_owner}, limit=1):
+	"""True if any Gameplan row is owned by a real (non-demo) account.
+
+	``clear()`` truncates every doctype in :func:`_gameplan_doctypes`, so the
+	guard spans exactly that set — a hand-picked subset would silently drift out
+	of sync with what gets deleted. Demo rows are owned either by a demo user
+	(authored content and its side effects) or by Administrator (framework-created
+	rows such as GP User Profile, seeded while impersonating no one); an owner that
+	is neither is real, human data we must not destroy.
+	"""
+	non_demo_owner = [
+		["owner", "not like", f"%{DEMO_EMAIL_DOMAIN}"],
+		["owner", "!=", "Administrator"],
+	]
+	for doctype in _gameplan_doctypes():
+		if frappe.get_all(doctype, filters=non_demo_owner, limit=1):
 			return True
 	return False
 
