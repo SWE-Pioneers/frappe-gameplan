@@ -32,7 +32,7 @@
         </Motion>
       </div>
     </div>
-    <BottomSheet title="Reactions" v-model="show">
+    <BottomSheet title="Reactions" v-model:open="show">
       <div class="border-b px-4 pb-4">
         <div class="grid grid-cols-5 items-center justify-center gap-2">
           <Motion

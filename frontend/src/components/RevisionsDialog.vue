@@ -55,7 +55,7 @@
     </div>
   </Dialog>
 
-  <BottomSheet :title v-else v-model="sheetVisible" @after-leave="handleSheetCloseComplete">
+  <BottomSheet v-else v-model:open="sheetVisible" :title @after-leave="handleSheetCloseComplete">
     <div v-if="orderedRevisions.length" class="flex flex-col">
       <div class="sticky top-0 z-10 bg-surface-base pb-3 pt-1">
         <div class="flex items-center justify-center gap-1">

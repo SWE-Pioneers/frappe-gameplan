@@ -13,7 +13,7 @@
     </button>
   </PageHeaderMobile>
 
-  <BottomSheet v-model="menuOpen" :title="community?.title || 'Community'">
+  <BottomSheet v-model:open="menuOpen" :title="community?.title || 'Community'">
     <CommunityMenu
       class="pb-6"
       :communityId="communityId"
