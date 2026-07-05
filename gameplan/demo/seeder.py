@@ -40,7 +40,7 @@ class Seeder:
 		# The anchor is "day 0" in site time; every relative timestamp hangs off it.
 		# The fixture's timeline runs until 09:00 on day 0, so anchoring to today
 		# before ~10:00 (e.g. the nightly reseed) would put the freshest posts in
-		# the future ("in an hour") — slide back a day in that case.
+		# the future ("in an hour"), slide back a day in that case.
 		self.anchor = getdate() if now_datetime().hour >= 10 else add_days(getdate(), -1)
 		# Symbolic id -> (doctype, name) for cross-referencing events.
 		self.refs: dict[str, tuple[str, str]] = {}
@@ -351,7 +351,7 @@ class Seeder:
 		discussion = self._ref_name(event["on"])
 		doc = frappe.get_doc("GP Discussion", discussion)
 		# track_visit upserts the visit row, marks unread records read, clears
-		# notifications — all as the actor at wall clock; then we backdate the row.
+		# notifications, all as the actor at wall clock; then we backdate the row.
 		doc.track_visit()
 		visit = frappe.db.get_value("GP Discussion Visit", {"discussion": discussion, "user": actor}, "name")
 		if visit:
@@ -395,7 +395,7 @@ class Seeder:
 	def _finalize_maya_read_state(self):
 		"""Mark Maya's older notifications read so logging in as her feels lived-in.
 
-		Everything before her last visit is something she has already seen — except
+		Everything before her last visit is something she has already seen, except
 		the newest few, which stay unread so her notification inbox isn't empty
 		(being online doesn't mean you've opened the bell).
 		"""
@@ -501,7 +501,7 @@ class Seeder:
 
 	@staticmethod
 	def _touch(doctype: str, name: str, ts: datetime | None):
-		"""Backdate only `modified` — for events that update a pre-existing doc."""
+		"""Backdate only `modified`, for events that update a pre-existing doc."""
 		if ts is None:
 			return
 		frappe.db.set_value(doctype, name, {"modified": ts}, update_modified=False)
