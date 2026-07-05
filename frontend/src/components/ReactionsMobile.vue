@@ -32,7 +32,7 @@
         </Motion>
       </div>
     </div>
-    <BottomSheet title="Reactions" v-model="show">
+    <BottomSheet title="Reactions" v-model:open="show">
       <div class="border-b px-4 pb-4">
         <div class="grid grid-cols-5 items-center justify-center gap-2">
           <Motion
@@ -92,7 +92,7 @@
 import { ref } from 'vue'
 import { AnimatePresence, Motion } from 'motion-v'
 import ReactionFaceIcon from './ReactionFaceIcon.vue'
-import BottomSheet from './BottomSheet.vue'
+import { BottomSheet } from 'frappe-ui'
 import { isImageEmoji } from '@/utils/emoji'
 const props = defineProps<{
   reactionsCount: Record<string, { count: number; userReacted: boolean }>

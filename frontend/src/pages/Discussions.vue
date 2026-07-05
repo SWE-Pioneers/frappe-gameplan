@@ -13,7 +13,7 @@
     </button>
   </PageHeaderMobile>
 
-  <BottomSheet v-model="menuOpen" :title="community?.title || 'Community'">
+  <BottomSheet v-model:open="menuOpen" :title="community?.title || 'Community'">
     <CommunityMenu
       class="pb-6"
       :communityId="communityId"
@@ -108,6 +108,7 @@
 <script setup lang="ts">
 import { computed, ref, useTemplateRef, watch } from 'vue'
 import {
+  BottomSheet,
   PageHeader,
   PageHeaderBackButton,
   PageHeaderMobile,
@@ -123,7 +124,6 @@ import {
 } from 'frappe-ui'
 import type { DropdownOptions, OrderBy } from 'frappe-ui'
 import { useRouter } from 'vue-router'
-import BottomSheet from '@/components/BottomSheet.vue'
 import CommunityMenu from '@/components/CommunityMenu.vue'
 import DiscussionList from '@/components/DiscussionList.vue'
 import LastPostReminder from '@/components/LastPostReminder.vue'
