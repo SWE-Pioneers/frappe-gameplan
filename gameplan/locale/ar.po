@@ -1177,3 +1177,155 @@ msgstr "{0} رد"
 #. ai-translated; needs-native-review
 msgid "{0} unread posts"
 msgstr "{0} منشور غير مقروء"
+
+#. ai-translated; needs-native-review
+msgid "Admin"
+msgstr "مسؤول"
+
+#. ai-translated; needs-native-review
+msgid "Are you sure you want to change {0}'s role to {1}?"
+msgstr "هل أنت متأكد من تغيير دور {0} إلى {1}؟"
+
+#. ai-translated; needs-native-review
+msgid "Are you sure you want to delete this invitation?"
+msgstr "هل أنت متأكد من حذف هذه الدعوة؟"
+
+#. ai-translated; needs-native-review
+msgid "Are you sure you want to remove this guest user?"
+msgstr "هل أنت متأكد من إزالة هذا المستخدم الضيف؟"
+
+#. ai-translated; needs-native-review
+msgid "Are you sure you want to remove {0} ({1})?"
+msgstr "هل أنت متأكد من إزالة {0} ({1})؟"
+
+msgid "Can browse and participate in invited teams or projects."
+msgstr ""
+
+msgid "Can create new teams and projects, invite admins and members, browse and create discussions."
+msgstr ""
+
+msgid "Can create projects, invite members, browse and create discussions."
+msgstr ""
+
+#. ai-translated; needs-native-review
+msgid "Change Role"
+msgstr "تغيير الدور"
+
+#. ai-translated; needs-native-review
+msgid "Create project"
+msgstr "إنشاء مشروع"
+
+#. ai-translated; needs-native-review
+msgid "Delete Invitation"
+msgstr "حذف الدعوة"
+
+#. ai-translated; needs-native-review
+msgid "Delete invitation"
+msgstr "حذف الدعوة"
+
+#. ai-translated; needs-native-review
+msgid "Invite Guest to Projects"
+msgstr "دعوة ضيف إلى المشاريع"
+
+#. ai-translated; needs-native-review
+msgid "Invite People"
+msgstr "دعوة أشخاص"
+
+#. ai-translated; needs-native-review
+msgid "Invite by email"
+msgstr "دعوة عبر البريد الإلكتروني"
+
+#. ai-translated; needs-native-review
+msgid "Member"
+msgstr "عضو"
+
+#. ai-translated; needs-native-review
+msgid "No archived teams"
+msgstr "لا توجد فرق مؤرشفة"
+
+#. ai-translated; needs-native-review
+msgid "No results"
+msgstr "لا توجد نتائج"
+
+#. ai-translated; needs-native-review
+msgid "No user found."
+msgstr "لم يتم العثور على مستخدم."
+
+#. ai-translated; needs-native-review
+msgid "Pending"
+msgstr "قيد الانتظار"
+
+#. ai-translated; needs-native-review
+msgid "Pending Invites"
+msgstr "الدعوات المعلّقة"
+
+#. ai-translated; needs-native-review
+msgid "Project is required to move this discussion"
+msgstr "المشروع مطلوب لنقل هذا النقاش"
+
+#. ai-translated; needs-native-review
+msgid "Random"
+msgstr "عشوائي"
+
+#. ai-translated; needs-native-review
+msgid "Remove Guest User"
+msgstr "إزالة المستخدم الضيف"
+
+#. ai-translated; needs-native-review
+msgid "Remove User"
+msgstr "إزالة المستخدم"
+
+#. ai-translated; needs-native-review
+msgid "Remove invite"
+msgstr "إزالة الدعوة"
+
+#. ai-translated; needs-native-review
+msgid "Remove user"
+msgstr "إزالة المستخدم"
+
+#. ai-translated; needs-native-review
+msgid "Role"
+msgstr "الدور"
+
+#. ai-translated; needs-native-review
+msgid "Search by keyword"
+msgstr "البحث بكلمة مفتاحية"
+
+#. ai-translated; needs-native-review
+msgid "Search for \"{0}\""
+msgstr "البحث عن \"{0}\""
+
+#. ai-translated; needs-native-review
+msgid "Select projects"
+msgstr "اختر المشاريع"
+
+#. ai-translated; needs-native-review
+msgid "Send invitation"
+msgstr "إرسال الدعوة"
+
+#. ai-translated; needs-native-review
+msgid "Settings"
+msgstr "الإعدادات"
+
+#. ai-translated; needs-native-review
+msgid "Update Password"
+msgstr "تحديث كلمة المرور"
+
+#. ai-translated; needs-native-review
+msgid "discussion"
+msgstr "نقاش"
+
+#. ai-translated; needs-native-review
+msgid "discussions"
+msgstr "نقاشات"
+
+#. ai-translated; needs-native-review
+msgid "task"
+msgstr "مهمة"
+
+#. ai-translated; needs-native-review
+msgid "tasks"
+msgstr "مهام"
+
+msgid "user1@example.com, user2@example.com, ..."
+msgstr ""
