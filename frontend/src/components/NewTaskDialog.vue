@@ -1,10 +1,10 @@
 <template>
   <Dialog
     :options="{
-      title: 'New Task',
+      title: __('New Task'),
       actions: [
         {
-          label: 'Create',
+          label: __('Create'),
           variant: 'solid',
           onClick: onCreateClick,
         },
@@ -16,8 +16,8 @@
   >
     <template #body-content>
       <div class="space-y-4">
-        <FormControl label="Title" v-model="newTask.title" autocomplete="off" />
-        <FormControl label="Description" type="textarea" v-model="newTask.description" />
+        <FormControl :label="__('Title')" v-model="newTask.title" autocomplete="off" />
+        <FormControl :label="__('Description')" type="textarea" v-model="newTask.description" />
         <div class="flex space-x-2">
           <Dropdown
             :options="
@@ -33,9 +33,9 @@
               {{ newTask.status }}
             </Button>
           </Dropdown>
-          <TextInput type="date" placeholder="Set due date" v-model="newTask.due_date" />
+          <TextInput type="date" :placeholder="__('Set due date')" v-model="newTask.due_date" />
           <Autocomplete
-            placeholder="Assign a user"
+            :placeholder="__('Assign a user')"
             :options="assignableUsers"
             v-model="newTask.assigned_to"
           />
@@ -108,7 +108,7 @@ function onCreateClick(close) {
     .submit(newTaskDoc, {
       validate() {
         if (!newTask.value.title) {
-          return 'Task title is required'
+          return __('Task title is required')
         }
       },
       onSuccess: _onSuccess,

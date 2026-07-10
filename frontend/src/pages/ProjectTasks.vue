@@ -1,13 +1,13 @@
 <template>
   <div class="py-6">
     <div class="mb-4.5 flex items-center justify-between">
-      <h2 class="text-xl font-semibold text-ink-gray-9">Tasks</h2>
+      <h2 class="text-xl font-semibold text-ink-gray-9">{{ __('Tasks') }}</h2>
       <div class="flex items-stretch space-x-2">
         <Button variant="solid" @click="showNewTaskDialog">
           <template #prefix>
             <LucidePlus class="h-4 w-4" />
           </template>
-          Add new
+          {{ __('Add new') }}
         </Button>
       </div>
     </div>

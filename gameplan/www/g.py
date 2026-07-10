@@ -3,6 +3,7 @@
 
 
 import frappe
+from frappe.utils.jinja_globals import is_rtl
 from frappe.utils.telemetry import capture
 
 no_cache = 1
@@ -27,6 +28,7 @@ def get_context_for_dev():
 
 
 def get_boot():
+	lang = frappe.local.lang or frappe.db.get_single_value("System Settings", "language") or "en"
 	return frappe._dict(
 		{
 			"frappe_version": frappe.__version__,
@@ -34,6 +36,8 @@ def get_boot():
 			"site_name": frappe.local.site,
 			"read_only_mode": frappe.flags.read_only,
 			"gameplan_frontend_sentry_dsn": frappe.conf.gameplan_frontend_sentry_dsn,
+			"lang": lang,
+			"text_direction": "rtl" if is_rtl(lang) else "ltr",
 		}
 	)
 

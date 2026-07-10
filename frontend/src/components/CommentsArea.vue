@@ -30,7 +30,7 @@
           <span
             class="absolute -top-2 left-1/2 -translate-x-1/2 bg-surface-white px-2 text-sm font-medium text-ink-blue-3"
           >
-            New comments
+            {{ __('New comments') }}
           </span>
         </div>
         <Comment
@@ -71,7 +71,7 @@
         v-show="!showCommentBox"
       >
         <UserAvatar class="mr-3" :user="$user().name" size="sm" />
-        Add a comment
+        {{ __('Add a comment') }}
       </button>
       <div
         v-show="showCommentBox"
@@ -86,7 +86,7 @@
           </span>
           <TabButtons
             class="ml-auto"
-            :buttons="[{ label: 'Comment' }, { label: 'Poll' }]"
+            :buttons="[{ label: __('Comment') }, { label: __('Poll') }]"
             v-model="newCommentType"
           />
         </div>
@@ -105,7 +105,7 @@
             onClick: discardComment,
           }"
           :editable="showCommentBox"
-          placeholder="Add a comment..."
+          :placeholder="__('Add a comment...')"
         />
         <PollEditor
           v-show="newCommentType == 'Poll'"
@@ -323,7 +323,7 @@ export default {
               return data
             })
             this.$toast({
-              title: 'Error adding new comment',
+              title: __('Error adding new comment'),
               text: error.messages.join(', '),
               position: 'bottom-center',
               icon: 'alert-circle',
@@ -359,11 +359,11 @@ export default {
     discardComment() {
       if (!this.editorObject.isEmpty) {
         this.$dialog({
-          title: 'Discard comment',
-          message: 'Are you sure you want to discard your comment?',
+          title: __('Discard comment'),
+          message: __('Are you sure you want to discard your comment?'),
           actions: [
             {
-              label: 'Discard comment',
+              label: __('Discard comment'),
               onClick: (close) => {
                 this.resetCommentState()
                 close
@@ -371,7 +371,7 @@ export default {
               variant: 'solid',
             },
             {
-              label: 'Keep comment',
+              label: __('Keep comment'),
             },
           ],
         })

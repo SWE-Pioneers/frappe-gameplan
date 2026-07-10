@@ -6,7 +6,9 @@
     <div class="min mt-7 min-w-[36rem] rounded-lg bg-surface-white p-9 shadow-md">
       <div v-if="$resources.onboarding.loading" class="flex items-center justify-center">
         <LoadingIndicator class="h-4 w-4 text-ink-gray-5" />
-        <span class="ml-2 text-base text-ink-gray-9"> Setting up your team and project </span>
+        <span class="ml-2 text-base text-ink-gray-9">
+          {{ __('Setting up your team and project') }}
+        </span>
       </div>
       <div v-if="!$resources.onboarding.loading">
         <div class="flex items-baseline justify-between">
@@ -14,7 +16,7 @@
             {{ activeStep.title }}
           </h2>
           <span class="text-sm text-ink-gray-5">
-            Step {{ activeStepIndex + 1 }} of {{ steps.length }}
+            {{ __('Step {0} of {1}', [activeStepIndex + 1, steps.length]) }}
           </span>
         </div>
         <div class="mt-3.5 flex w-full gap-2">
@@ -29,21 +31,23 @@
         </div>
         <ErrorMessage class="mt-2" :message="$resources.onboarding.error" />
         <div class="mt-10 flex items-center justify-between">
-          <Button v-show="activeStepIndex > 0" @click="prevStep"> Previous </Button>
+          <Button v-show="activeStepIndex > 0" @click="prevStep">
+            {{ __('Previous') }}
+          </Button>
           <Button
             class="ml-auto"
             v-show="activeStepIndex < steps.length - 1"
             variant="solid"
             @click="nextStep"
           >
-            Next
+            {{ __('Next') }}
           </Button>
           <Button
             v-show="activeStepIndex === steps.length - 1"
             variant="solid"
             @click="completeSetup"
           >
-            Complete Setup
+            {{ __('Complete Setup') }}
           </Button>
         </div>
       </div>
@@ -71,10 +75,10 @@ export default {
       },
       validate() {
         if (!this.data.team) {
-          return 'Please select a team'
+          return __('Please select a team')
         }
         if (!this.data.project) {
-          return 'Please select a project'
+          return __('Please select a project')
         }
       },
       onSuccess(teamId) {
@@ -99,19 +103,19 @@ export default {
       return [
         {
           name: 'Team',
-          title: 'Which team are you a part of?',
+          title: __('Which team are you a part of?'),
           component: OnboardingStepTeam,
           isCompleted: Boolean(this.data.team),
         },
         {
           name: 'Project',
-          title: 'Which project are you working on?',
+          title: __('Which project are you working on?'),
           component: OnboardingStepProject,
           isCompleted: Boolean(this.data.project),
         },
         {
           name: 'Invite',
-          title: 'Invite people you work with',
+          title: __('Invite people you work with'),
           component: OnboardingStepInvites,
           isCompleted: this.data.emails.filter(Boolean).length > 0,
         },

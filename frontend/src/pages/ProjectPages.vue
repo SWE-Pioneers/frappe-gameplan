@@ -1,20 +1,20 @@
 <template>
   <div class="py-6">
     <div class="flex items-center justify-between">
-      <div class="text-xl font-semibold">Pages</div>
+      <div class="text-xl font-semibold">{{ __('Pages') }}</div>
       <div class="flex items-center space-x-2">
         <Dropdown
           :options="[
             {
-              label: 'Page Title',
+              label: __('Page Title'),
               onClick: () => (orderBy = 'title asc'),
             },
             {
-              label: 'Date Updated',
+              label: __('Date Updated'),
               onClick: () => (orderBy = 'modified desc'),
             },
             {
-              label: 'Date Created',
+              label: __('Date Created'),
               onClick: () => (orderBy = 'creation desc'),
             },
           ]"
@@ -23,13 +23,13 @@
           <Button>
             <div class="flex items-center">
               <ArrowDownUp class="mr-1.5 h-4 w-4 leading-none" :stroke-width="1.5" />
-              <span> Sort </span>
+              <span> {{ __('Sort') }} </span>
             </div>
           </Button>
         </Dropdown>
         <Button variant="solid" @click="$resources.newPage.submit()">
           <template #prefix><LucidePlus class="w-4" /></template>
-          Add new
+          {{ __('Add new') }}
         </Button>
       </div>
     </div>

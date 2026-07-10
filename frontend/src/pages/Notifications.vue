@@ -1,14 +1,14 @@
 <template>
   <header class="sticky top-0 z-10 border-b bg-surface-white px-4 py-2.5 sm:px-5">
     <div class="flex items-center justify-between">
-      <Breadcrumbs :items="[{ label: 'Notifications', route: { name: 'Notifications' } }]" />
+      <Breadcrumbs :items="[{ label: __('Notifications'), route: { name: 'Notifications' } }]" />
       <div class="flex h-7 items-center space-x-2">
         <Button
           @click="$resources.markAllAsRead.submit"
           :loading="$resources.markAllAsRead.loading"
           v-if="activeTab === 'Unread' && $resources.unreadNotifications.data?.length > 0"
         >
-          Mark all as read
+          {{ __('Mark all as read') }}
         </Button>
         <TabButtons
           :buttons="[{ label: 'Unread', active: true }, { label: 'Read' }]"
@@ -58,9 +58,9 @@
             "
             @click="markAsRead(d.name)"
           >
-            {{ d.discussion ? 'View Discussion' : d.task ? 'View Task' : '' }}
+            {{ d.discussion ? __('View Discussion') : d.task ? __('View Task') : '' }}
           </router-link>
-          <Tooltip text="Mark as read">
+          <Tooltip :text="__('Mark as read')">
             <Button v-if="!d.read" variant="ghost" @click="markAsRead(d.name)">
               <template #icon>
                 <LucideX class="w-4" />
@@ -70,7 +70,9 @@
         </div>
       </div>
     </div>
-    <div v-if="!notifications?.length" class="text-base text-ink-gray-5">Nothing to see here</div>
+    <div v-if="!notifications?.length" class="text-base text-ink-gray-5">
+      {{ __('Nothing to see here') }}
+    </div>
   </div>
 </template>
 <script>
@@ -86,7 +88,7 @@ export default {
   },
   pageMeta() {
     return {
-      title: 'Notifications',
+      title: __('Notifications'),
     }
   },
   components: { TabButtons, Tooltip, Link, Breadcrumbs },

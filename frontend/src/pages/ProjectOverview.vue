@@ -4,8 +4,8 @@
       <ProjectOverviewReadme :project="project" />
       <div class="sm:rounded sm:border sm:px-4 sm:py-3">
         <div class="mb-3 flex items-center justify-between">
-          <h2 class="text-xl font-semibold text-ink-gray-8">Discussions</h2>
-          <Button :route="{ name: 'ProjectDiscussions' }">View all</Button>
+          <h2 class="text-xl font-semibold text-ink-gray-8">{{ __('Discussions') }}</h2>
+          <Button :route="{ name: 'ProjectDiscussions' }">{{ __('View all') }}</Button>
         </div>
         <DiscussionList
           :listOptions="{
@@ -18,8 +18,8 @@
       <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
         <div class="sm:rounded sm:border sm:px-4 sm:py-3">
           <div class="mb-3 flex items-center justify-between">
-            <h2 class="text-xl font-semibold text-ink-gray-8">Tasks</h2>
-            <Button :route="{ name: 'ProjectTasks' }">View all</Button>
+            <h2 class="text-xl font-semibold text-ink-gray-8">{{ __('Tasks') }}</h2>
+            <Button :route="{ name: 'ProjectTasks' }">{{ __('View all') }}</Button>
           </div>
           <TaskList
             :listOptions="{
@@ -33,8 +33,8 @@
         </div>
         <div class="sm:rounded sm:border sm:px-4 sm:py-3">
           <div class="mb-3 flex items-center justify-between">
-            <h2 class="text-xl font-semibold text-ink-gray-8">Pages</h2>
-            <Button :route="{ name: 'ProjectPages' }">View all</Button>
+            <h2 class="text-xl font-semibold text-ink-gray-8">{{ __('Pages') }}</h2>
+            <Button :route="{ name: 'ProjectPages' }">{{ __('View all') }}</Button>
           </div>
           <PageList
             :listOptions="{

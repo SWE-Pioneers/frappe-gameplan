@@ -31,14 +31,14 @@
               class="text-ink-gray-5"
               :title="$dayjs(comment.modified)"
             >
-              &nbsp;&middot; Edited
+              &nbsp;&middot; {{ __('Edited') }}
             </span>
             <span v-if="comment.loading" class="italic text-ink-gray-5">
-              &nbsp;&middot; Sending...
+              &nbsp;&middot; {{ __('Sending...') }}
             </span>
             <div v-if="comment.error">
               &nbsp;&middot;
-              <span class="text-ink-red-4"> Error</span>
+              <span class="text-ink-red-4"> {{ __('Error') }}</span>
             </div>
           </div>
         </div>
@@ -49,36 +49,36 @@
           :button="{
             icon: 'more-horizontal',
             variant: 'ghost',
-            label: 'Comment Options',
+            label: __('Comment Options'),
           }"
           :options="[
             {
-              label: 'Edit',
+              label: __('Edit'),
               icon: 'edit',
               onClick: () => (comment.editing = true),
               condition: () => !comment.deleted_at && !readOnlyMode,
             },
             {
-              label: 'Revisions',
+              label: __('Revisions'),
               icon: 'rotate-ccw',
               onClick: () => (showRevisionsDialog = true),
               condition: () => comment.modified > comment.creation,
             },
             {
-              label: 'Copy link',
+              label: __('Copy link'),
               icon: 'link',
               onClick: () => copyLink(comment),
             },
             {
-              label: 'Delete',
+              label: __('Delete'),
               icon: 'trash',
               onClick: () => {
                 $dialog({
-                  title: 'Delete comment',
-                  message: 'Are you sure you want to delete this comment?',
+                  title: __('Delete comment'),
+                  message: __('Are you sure you want to delete this comment?'),
                   actions: [
                     {
-                      label: 'Delete',
+                      label: __('Delete'),
                       variant: 'solid',
                       theme: 'red',
                       onClick: (close) => {
@@ -124,7 +124,7 @@
               },
             }"
           />
-          <span class="text-base italic text-ink-gray-5" v-else> This message is deleted </span>
+          <span class="text-base italic text-ink-gray-5" v-else> {{ __('This message is deleted') }} </span>
           <div class="mt-3" v-if="!comment.deleted_at && !comment.editing && comment.reactions">
             <Reactions
               doctype="GP Comment"

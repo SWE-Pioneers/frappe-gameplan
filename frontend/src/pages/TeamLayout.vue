@@ -7,10 +7,10 @@
     v-else-if="$resources.team.get.error"
   >
     <div class="space-y-2">
-      <div>Invalid team or not permitted to access</div>
+      <div>{{ __('Invalid team or not permitted to access') }}</div>
       <Button :route="{ name: 'Home' }">
         <template #prefix><LucideHome class="w-4" /></template>
-        Home
+        {{ __('Home') }}
       </Button>
     </div>
   </div>

@@ -1,7 +1,7 @@
 <template>
   <FormControl
-    label="Team Name"
-    placeholder="Marketing"
+    :label="__('Team Name')"
+    :placeholder="__('Marketing')"
     @update:modelValue="(team) => $emit('update:modelValue', { ...modelValue, team })"
     v-model="modelValue.team"
   />

@@ -11,7 +11,7 @@
         </span>
         <span class="ml-2 text-sm text-ink-gray-5">{{ group.tasks.length }}</span>
         <span class="ml-auto hidden text-sm text-ink-gray-5 group-hover:inline">
-          {{ isOpen[group.title] ? 'Collapse' : 'Expand' }}
+          {{ isOpen[group.title] ? __('Collapse') : __('Expand') }}
         </span>
       </button>
       <div :class="{ hidden: !(isOpen[group.title] ?? true) }">
@@ -32,7 +32,7 @@
                   class="h-4 w-4 text-ink-gray-5"
                   v-if="tasks.delete.loading && tasks.delete.params.name === d.name"
                 />
-                <Tooltip text="Change status" v-else>
+                <Tooltip :text="__('Change status')" v-else>
                   <Dropdown
                     :options="
                       statusOptions({
@@ -127,7 +127,7 @@
     class="flex flex-col items-center rounded-lg border-2 border-dashed py-8 text-base text-ink-gray-5"
     v-else
   >
-    No tasks
+    {{ __('No tasks') }}
   </div>
 </template>
 <script>

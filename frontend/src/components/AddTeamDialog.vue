@@ -1,21 +1,21 @@
 <template>
-  <Dialog :options="{ title: 'Add Team' }" v-model="showDialog">
+  <Dialog :options="{ title: __('Add Team') }" v-model="showDialog">
     <template #body-content>
       <div class="space-y-4">
         <FormControl
-          label="Team Name"
+          :label="__('Team Name')"
           type="text"
           v-model="newTeam.title"
-          placeholder="Team Name"
+          :placeholder="__('Team Name')"
           @keydown.enter="createTeam($event.target.value)"
           autocomplete="off"
         />
         <FormControl
           type="select"
-          label="Visibility"
+          :label="__('Visibility')"
           :options="[
-            { label: 'Visible to everyone', value: 0 },
-            { label: 'Visible to team members (Private)', value: 1 },
+            { label: __('Visible to everyone'), value: 0 },
+            { label: __('Visible to team members (Private)'), value: 1 },
           ]"
           v-model="newTeam.is_private"
         />
@@ -29,7 +29,7 @@
         @click="createTeam(teamName)"
         :loading="teams.insert.loading"
       >
-        Create Team
+        {{ __('Create Team') }}
       </Button>
     </template>
   </Dialog>

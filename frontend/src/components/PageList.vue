@@ -23,7 +23,7 @@
             </div>
             <span class="px-2 text-ink-gray-5">&middot;</span>
             <span class="text-base text-ink-gray-5">
-              Updated {{ $dayjs(page.modified).fromNow() }}
+              {{ __('Updated {0}', [$dayjs(page.modified).fromNow()]) }}
             </span>
           </div>
         </div>
@@ -35,7 +35,7 @@
     class="flex flex-col items-center rounded-lg border-2 border-dashed py-8 text-base text-ink-gray-5"
     v-else
   >
-    No pages
+    {{ __('No pages') }}
   </div>
 </template>
 <script setup>

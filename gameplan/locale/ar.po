@@ -1,0 +1,1179 @@
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: frappe\n"
+"Language-Team: Arabic\n"
+"Language: ar\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=6; plural=(n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 && n%100<=99 ? 4 : 5);\n"
+
+#. ai-translated; needs-native-review
+msgid "1 Revision"
+msgstr "مراجعة واحدة"
+
+#. ai-translated; needs-native-review
+msgid "1 participant"
+msgstr "مشارك واحد"
+
+#. ai-translated; needs-native-review
+msgid "About"
+msgstr "حول"
+
+#. ai-translated; needs-native-review
+msgid "About {0} results for \"{1}\" ({2} ms)"
+msgstr "نحو {0} نتيجة لـ \"{1}\" ({2} مللي ثانية)"
+
+#. ai-translated; needs-native-review
+msgid "Accept Invitation"
+msgstr "قبول الدعوة"
+
+#. ai-translated; needs-native-review
+msgid "Active"
+msgstr "نشط"
+
+#. ai-translated; needs-native-review
+msgid "Add"
+msgstr "إضافة"
+
+#. ai-translated; needs-native-review
+msgid "Add Members"
+msgstr "إضافة أعضاء"
+
+#. ai-translated; needs-native-review
+msgid "Add Project"
+msgstr "إضافة مشروع"
+
+#. ai-translated; needs-native-review
+msgid "Add Team"
+msgstr "إضافة فريق"
+
+#. ai-translated; needs-native-review
+msgid "Add a comment"
+msgstr "إضافة تعليق"
+
+#. ai-translated; needs-native-review
+msgid "Add a comment..."
+msgstr "إضافة تعليق..."
+
+#. ai-translated; needs-native-review
+msgid "Add a poll"
+msgstr "إضافة استطلاع"
+
+#. ai-translated; needs-native-review
+msgid "Add a reaction"
+msgstr "إضافة تفاعل"
+
+#. ai-translated; needs-native-review
+msgid "Add another email"
+msgstr "إضافة بريد إلكتروني آخر"
+
+#. ai-translated; needs-native-review
+msgid "Add member by name"
+msgstr "إضافة عضو بالاسم"
+
+#. ai-translated; needs-native-review
+msgid "Add members"
+msgstr "إضافة أعضاء"
+
+#. ai-translated; needs-native-review
+msgid "Add new"
+msgstr "إضافة جديد"
+
+#. ai-translated; needs-native-review
+msgid "Add new discussion"
+msgstr "إضافة نقاش جديد"
+
+#. ai-translated; needs-native-review
+msgid "After the poll is stopped, no one will be able to vote on it. Continue?"
+msgstr "بعد إيقاف الاستطلاع، لن يتمكن أحد من التصويت عليه. هل تريد المتابعة؟"
+
+#. ai-translated; needs-native-review
+msgid "All"
+msgstr "الكل"
+
+#. ai-translated; needs-native-review
+msgid "Anonymous"
+msgstr "مجهول"
+
+#. ai-translated; needs-native-review
+msgid "Anonymous poll"
+msgstr "استطلاع مجهول"
+
+#. ai-translated; needs-native-review
+msgid "Archive"
+msgstr "أرشفة"
+
+#. ai-translated; needs-native-review
+msgid "Archive Team"
+msgstr "أرشفة الفريق"
+
+#. ai-translated; needs-native-review
+msgid "Archive project"
+msgstr "أرشفة المشروع"
+
+#. ai-translated; needs-native-review
+msgid "Archive this project"
+msgstr "أرشفة هذا المشروع"
+
+#. ai-translated; needs-native-review
+msgid "Archived"
+msgstr "مؤرشف"
+
+#. ai-translated; needs-native-review
+msgid "Archived Teams"
+msgstr "الفرق المؤرشفة"
+
+#. ai-translated; needs-native-review
+msgid "Are you sure you want to archive the team?"
+msgstr "هل أنت متأكد أنك تريد أرشفة الفريق؟"
+
+#. ai-translated; needs-native-review
+msgid "Are you sure you want to archive this project?"
+msgstr "هل أنت متأكد أنك تريد أرشفة هذا المشروع؟"
+
+#. ai-translated; needs-native-review
+msgid "Are you sure you want to delete this comment?"
+msgstr "هل أنت متأكد أنك تريد حذف هذا التعليق؟"
+
+#. ai-translated; needs-native-review
+msgid "Are you sure you want to delete this page?"
+msgstr "هل أنت متأكد أنك تريد حذف هذه الصفحة؟"
+
+#. ai-translated; needs-native-review
+msgid "Are you sure you want to delete this poll?"
+msgstr "هل أنت متأكد أنك تريد حذف هذا الاستطلاع؟"
+
+#. ai-translated; needs-native-review
+msgid "Are you sure you want to delete this post? This is irreversible!"
+msgstr "هل أنت متأكد أنك تريد حذف هذا المنشور؟ لا يمكن التراجع عن هذا!"
+
+#. ai-translated; needs-native-review
+msgid "Are you sure you want to delete this task?"
+msgstr "هل أنت متأكد أنك تريد حذف هذه المهمة؟"
+
+#. ai-translated; needs-native-review
+msgid "Are you sure you want to discard your comment?"
+msgstr "هل أنت متأكد أنك تريد تجاهل تعليقك؟"
+
+#. ai-translated; needs-native-review
+msgid "Are you sure you want to discard your post?"
+msgstr "هل أنت متأكد أنك تريد تجاهل منشورك؟"
+
+#. ai-translated; needs-native-review
+msgid "Are you sure you want to retract your vote?"
+msgstr "هل أنت متأكد أنك تريد سحب تصويتك؟"
+
+#. ai-translated; needs-native-review
+msgid "Are you sure you want to unarchive this project?"
+msgstr "هل أنت متأكد أنك تريد إلغاء أرشفة هذا المشروع؟"
+
+#. ai-translated; needs-native-review
+msgid "Assign a user"
+msgstr "تعيين مستخدم"
+
+#. ai-translated; needs-native-review
+msgid "Assign this task"
+msgstr "تعيين هذه المهمة"
+
+#. ai-translated; needs-native-review
+msgid "Assigned to me"
+msgstr "المعينة لي"
+
+#. ai-translated; needs-native-review
+msgid "Assignee"
+msgstr "المسؤول"
+
+#. ai-translated; needs-native-review
+msgid "Bio"
+msgstr "نبذة"
+
+#. ai-translated; needs-native-review
+msgid "Bookmark"
+msgstr "إشارة مرجعية"
+
+#. ai-translated; needs-native-review
+msgid "Cancel"
+msgstr "إلغاء"
+
+#. ai-translated; needs-native-review
+msgid "Change Background Color"
+msgstr "تغيير لون الخلفية"
+
+#. ai-translated; needs-native-review
+msgid "Change Image"
+msgstr "تغيير الصورة"
+
+#. ai-translated; needs-native-review
+msgid "Change status"
+msgstr "تغيير الحالة"
+
+#. ai-translated; needs-native-review
+msgid "Click to set cover image"
+msgstr "انقر لتعيين صورة الغلاف"
+
+#. ai-translated; needs-native-review
+msgid "Close"
+msgstr "إغلاق"
+
+#. ai-translated; needs-native-review
+msgid "Close discussion"
+msgstr "إغلاق النقاش"
+
+#. ai-translated; needs-native-review
+msgid "Close discussion..."
+msgstr "إغلاق النقاش..."
+
+#. ai-translated; needs-native-review
+msgid "Collapse"
+msgstr "طي"
+
+#. ai-translated; needs-native-review
+msgid "Coming soon"
+msgstr "قريباً"
+
+#. ai-translated; needs-native-review
+msgid "Comment"
+msgstr "تعليق"
+
+#. ai-translated; needs-native-review
+msgid "Comment Options"
+msgstr "خيارات التعليق"
+
+#. ai-translated; needs-native-review
+msgid "Complete Setup"
+msgstr "إكمال الإعداد"
+
+#. ai-translated; needs-native-review
+msgid "Copy link"
+msgstr "نسخ الرابط"
+
+#. ai-translated; needs-native-review
+msgid "Create"
+msgstr "إنشاء"
+
+#. ai-translated; needs-native-review
+msgid "Create Team"
+msgstr "إنشاء فريق"
+
+#. ai-translated; needs-native-review
+msgid "Created"
+msgstr "تم الإنشاء"
+
+#. ai-translated; needs-native-review
+msgid "Created by me"
+msgstr "التي أنشأتها"
+
+msgid "Ctrl+K"
+msgstr ""
+
+#. ai-translated; needs-native-review
+msgid "Date Created"
+msgstr "تاريخ الإنشاء"
+
+#. ai-translated; needs-native-review
+msgid "Date Updated"
+msgstr "تاريخ التحديث"
+
+#. ai-translated; needs-native-review
+msgid "Delete"
+msgstr "حذف"
+
+#. ai-translated; needs-native-review
+msgid "Delete Page"
+msgstr "حذف الصفحة"
+
+#. ai-translated; needs-native-review
+msgid "Delete comment"
+msgstr "حذف التعليق"
+
+#. ai-translated; needs-native-review
+msgid "Delete poll"
+msgstr "حذف الاستطلاع"
+
+#. ai-translated; needs-native-review
+msgid "Delete task"
+msgstr "حذف المهمة"
+
+#. ai-translated; needs-native-review
+msgid "Description"
+msgstr "الوصف"
+
+#. ai-translated; needs-native-review
+msgid "Discard"
+msgstr "تجاهل"
+
+#. ai-translated; needs-native-review
+msgid "Discard comment"
+msgstr "تجاهل التعليق"
+
+#. ai-translated; needs-native-review
+msgid "Discard post"
+msgstr "تجاهل المنشور"
+
+#. ai-translated; needs-native-review
+msgid "Discussion Options"
+msgstr "خيارات النقاش"
+
+#. ai-translated; needs-native-review
+msgid "Discussions"
+msgstr "النقاشات"
+
+#. ai-translated; needs-native-review
+msgid "Do you want to re-open this discussion? Anyone can comment on it again."
+msgstr "هل تريد إعادة فتح هذا النقاش؟ يمكن لأي شخص التعليق عليه مرة أخرى."
+
+#. ai-translated; needs-native-review
+msgid "Do you want to unpin this discussion?"
+msgstr "هل تريد إلغاء تثبيت هذا النقاش؟"
+
+#. ai-translated; needs-native-review
+msgid "Drag up/down to reposition image"
+msgstr "اسحب لأعلى/لأسفل لإعادة تحديد موضع الصورة"
+
+#. ai-translated; needs-native-review
+msgid "Due Date"
+msgstr "تاريخ الاستحقاق"
+
+#. ai-translated; needs-native-review
+msgid "Due date"
+msgstr "تاريخ الاستحقاق"
+
+#. ai-translated; needs-native-review
+msgid "Edit"
+msgstr "تعديل"
+
+#. ai-translated; needs-native-review
+msgid "Edit Profile"
+msgstr "تعديل الملف الشخصي"
+
+#. ai-translated; needs-native-review
+msgid "Edit Profile Photo"
+msgstr "تعديل صورة الملف الشخصي"
+
+#. ai-translated; needs-native-review
+msgid "Edit Project"
+msgstr "تعديل المشروع"
+
+#. ai-translated; needs-native-review
+msgid "Edited"
+msgstr "تم التعديل"
+
+#. ai-translated; needs-native-review
+msgid "Email"
+msgstr "البريد الإلكتروني"
+
+#. ai-translated; needs-native-review
+msgid "Ended at {0}"
+msgstr "انتهى في {0}"
+
+#. ai-translated; needs-native-review
+msgid "Ended {0}"
+msgstr "انتهى {0}"
+
+#. ai-translated; needs-native-review
+msgid "Error"
+msgstr "خطأ"
+
+#. ai-translated; needs-native-review
+msgid "Error adding new comment"
+msgstr "خطأ في إضافة تعليق جديد"
+
+#. ai-translated; needs-native-review
+msgid "Expand"
+msgstr "توسيع"
+
+#. ai-translated; needs-native-review
+msgid "Expand/Collapse"
+msgstr "توسيع/طي"
+
+#. ai-translated; needs-native-review
+msgid "First Name"
+msgstr "الاسم الأول"
+
+#. ai-translated; needs-native-review
+msgid "First Post: {0}"
+msgstr "أول منشور: {0}"
+
+#. ai-translated; needs-native-review
+msgid "Follow"
+msgstr "متابعة"
+
+#. ai-translated; needs-native-review
+msgid "Follow project"
+msgstr "متابعة المشروع"
+
+#. ai-translated; needs-native-review
+msgid "Following"
+msgstr "متابَع"
+
+msgid "Gameplan"
+msgstr ""
+
+#. ai-translated; needs-native-review
+msgid "Guest"
+msgstr "ضيف"
+
+#. ai-translated; needs-native-review
+msgid "Home"
+msgstr "الرئيسية"
+
+#. ai-translated; needs-native-review
+msgid "Image search powered by"
+msgstr "بحث الصور مدعوم من"
+
+#. ai-translated; needs-native-review
+msgid "Invalid team or not permitted to access"
+msgstr "فريق غير صالح أو غير مسموح بالوصول"
+
+#. ai-translated; needs-native-review
+msgid "Invite"
+msgstr "دعوة"
+
+#. ai-translated; needs-native-review
+msgid "Invite people you work with"
+msgstr "ادعُ الأشخاص الذين تعمل معهم"
+
+#. ai-translated; needs-native-review
+msgid "Keep comment"
+msgstr "الاحتفاظ بالتعليق"
+
+#. ai-translated; needs-native-review
+msgid "Keep post"
+msgstr "الاحتفاظ بالمنشور"
+
+#. ai-translated; needs-native-review
+msgid "Last Name"
+msgstr "اسم العائلة"
+
+#. ai-translated; needs-native-review
+msgid "Last post"
+msgstr "آخر منشور"
+
+#. ai-translated; needs-native-review
+msgid "Last updated"
+msgstr "آخر تحديث"
+
+#. ai-translated; needs-native-review
+msgid "Last updated {0}"
+msgstr "آخر تحديث {0}"
+
+#. ai-translated; needs-native-review
+msgid "Latest Post: {0}"
+msgstr "أحدث منشور: {0}"
+
+#. ai-translated; needs-native-review
+msgid "Load more"
+msgstr "تحميل المزيد"
+
+#. ai-translated; needs-native-review
+msgid "Loading..."
+msgstr "جارٍ التحميل..."
+
+#. ai-translated; needs-native-review
+msgid "Log out"
+msgstr "تسجيل الخروج"
+
+#. ai-translated; needs-native-review
+msgid "Login"
+msgstr "تسجيل الدخول"
+
+#. ai-translated; needs-native-review
+msgid "Login to"
+msgstr "تسجيل الدخول إلى"
+
+#. ai-translated; needs-native-review
+msgid "Login using other methods"
+msgstr "تسجيل الدخول باستخدام طرق أخرى"
+
+#. ai-translated; needs-native-review
+msgid "Login via email"
+msgstr "تسجيل الدخول عبر البريد الإلكتروني"
+
+#. ai-translated; needs-native-review
+msgid "Login via {0}"
+msgstr "تسجيل الدخول عبر {0}"
+
+#. ai-translated; needs-native-review
+msgid "Manage Guests"
+msgstr "إدارة الضيوف"
+
+#. ai-translated; needs-native-review
+msgid "Mark all as read"
+msgstr "تعليم الكل كمقروء"
+
+#. ai-translated; needs-native-review
+msgid "Mark as read"
+msgstr "تعليم كمقروء"
+
+#. ai-translated; needs-native-review
+msgid "Marketing"
+msgstr "التسويق"
+
+#. ai-translated; needs-native-review
+msgid "Members"
+msgstr "الأعضاء"
+
+#. ai-translated; needs-native-review
+msgid "Merge"
+msgstr "دمج"
+
+#. ai-translated; needs-native-review
+msgid "Merge with another project"
+msgstr "دمج مع مشروع آخر"
+
+#. ai-translated; needs-native-review
+msgid "Merge with {0}"
+msgstr "دمج مع {0}"
+
+#. ai-translated; needs-native-review
+msgid "Move"
+msgstr "نقل"
+
+#. ai-translated; needs-native-review
+msgid "Move discussion to another project"
+msgstr "نقل النقاش إلى مشروع آخر"
+
+#. ai-translated; needs-native-review
+msgid "Move project to another team"
+msgstr "نقل المشروع إلى فريق آخر"
+
+#. ai-translated; needs-native-review
+msgid "Move to another team"
+msgstr "نقل إلى فريق آخر"
+
+#. ai-translated; needs-native-review
+msgid "Move to {0}"
+msgstr "نقل إلى {0}"
+
+#. ai-translated; needs-native-review
+msgid "Move to..."
+msgstr "نقل إلى..."
+
+#. ai-translated; needs-native-review
+msgid "Multiple answers"
+msgstr "إجابات متعددة"
+
+#. ai-translated; needs-native-review
+msgid "My Pages"
+msgstr "صفحاتي"
+
+#. ai-translated; needs-native-review
+msgid "My Profile"
+msgstr "ملفي الشخصي"
+
+#. ai-translated; needs-native-review
+msgid "My Tasks"
+msgstr "مهامي"
+
+#. ai-translated; needs-native-review
+msgid "Name"
+msgstr "الاسم"
+
+#. ai-translated; needs-native-review
+msgid "New Discussion"
+msgstr "نقاش جديد"
+
+#. ai-translated; needs-native-review
+msgid "New Task"
+msgstr "مهمة جديدة"
+
+#. ai-translated; needs-native-review
+msgid "New comments"
+msgstr "تعليقات جديدة"
+
+#. ai-translated; needs-native-review
+msgid "Next"
+msgstr "التالي"
+
+#. ai-translated; needs-native-review
+msgid "No Revisions"
+msgstr "لا مراجعات"
+
+#. ai-translated; needs-native-review
+msgid "No discussions"
+msgstr "لا نقاشات"
+
+#. ai-translated; needs-native-review
+msgid "No introduction"
+msgstr "لا مقدمة"
+
+#. ai-translated; needs-native-review
+msgid "No pages"
+msgstr "لا صفحات"
+
+#. ai-translated; needs-native-review
+msgid "No projects"
+msgstr "لا مشاريع"
+
+#. ai-translated; needs-native-review
+msgid "No tasks"
+msgstr "لا مهام"
+
+#. ai-translated; needs-native-review
+msgid "No teams"
+msgstr "لا فرق"
+
+#. ai-translated; needs-native-review
+msgid "Nothing to see here"
+msgstr "لا شيء لعرضه هنا"
+
+#. ai-translated; needs-native-review
+msgid "Notifications"
+msgstr "الإشعارات"
+
+#. ai-translated; needs-native-review
+msgid "Ongoing poll"
+msgstr "استطلاع جارٍ"
+
+#. ai-translated; needs-native-review
+msgid "Only PNG and JPG images are allowed"
+msgstr "يُسمح بصور PNG وJPG فقط"
+
+#. ai-translated; needs-native-review
+msgid "Option {0}"
+msgstr "الخيار {0}"
+
+#. ai-translated; needs-native-review
+msgid "Options"
+msgstr "خيارات"
+
+#. ai-translated; needs-native-review
+msgid "Page Options"
+msgstr "خيارات الصفحة"
+
+#. ai-translated; needs-native-review
+msgid "Page Title"
+msgstr "عنوان الصفحة"
+
+#. ai-translated; needs-native-review
+msgid "Pages"
+msgstr "الصفحات"
+
+#. ai-translated; needs-native-review
+msgid "Password"
+msgstr "كلمة المرور"
+
+#. ai-translated; needs-native-review
+msgid "People"
+msgstr "الأشخاص"
+
+#. ai-translated; needs-native-review
+msgid "Pin"
+msgstr "تثبيت"
+
+#. ai-translated; needs-native-review
+msgid "Pin discussion"
+msgstr "تثبيت النقاش"
+
+#. ai-translated; needs-native-review
+msgid "Pin discussion..."
+msgstr "تثبيت النقاش..."
+
+#. ai-translated; needs-native-review
+msgid "Please enter title before publishing."
+msgstr "يرجى إدخال العنوان قبل النشر."
+
+#. ai-translated; needs-native-review
+msgid "Please select a project"
+msgstr "يرجى اختيار مشروع"
+
+#. ai-translated; needs-native-review
+msgid "Please select a project to merge"
+msgstr "يرجى اختيار مشروع للدمج"
+
+#. ai-translated; needs-native-review
+msgid "Please select a team"
+msgstr "يرجى اختيار فريق"
+
+#. ai-translated; needs-native-review
+msgid "Poll"
+msgstr "استطلاع"
+
+#. ai-translated; needs-native-review
+msgid "Poll Options"
+msgstr "خيارات الاستطلاع"
+
+#. ai-translated; needs-native-review
+msgid "Poll results"
+msgstr "نتائج الاستطلاع"
+
+#. ai-translated; needs-native-review
+msgid "Posts"
+msgstr "المنشورات"
+
+#. ai-translated; needs-native-review
+msgid "Previous"
+msgstr "السابق"
+
+#. ai-translated; needs-native-review
+msgid "Priority"
+msgstr "الأولوية"
+
+#. ai-translated; needs-native-review
+msgid "Private"
+msgstr "خاص"
+
+#. ai-translated; needs-native-review
+msgid "Product Launch"
+msgstr "إطلاق منتج"
+
+#. ai-translated; needs-native-review
+msgid "Profile"
+msgstr "الملف الشخصي"
+
+#. ai-translated; needs-native-review
+msgid "Profile Photo"
+msgstr "صورة الملف الشخصي"
+
+#. ai-translated; needs-native-review
+msgid "Project"
+msgstr "مشروع"
+
+#. ai-translated; needs-native-review
+msgid "Project Name"
+msgstr "اسم المشروع"
+
+#. ai-translated; needs-native-review
+msgid "Project title"
+msgstr "عنوان المشروع"
+
+#. ai-translated; needs-native-review
+msgid "Projects"
+msgstr "المشاريع"
+
+#. ai-translated; needs-native-review
+msgid "Publish"
+msgstr "نشر"
+
+#. ai-translated; needs-native-review
+msgid "Question"
+msgstr "سؤال"
+
+#. ai-translated; needs-native-review
+msgid "Re-open"
+msgstr "إعادة فتح"
+
+#. ai-translated; needs-native-review
+msgid "Re-open discussion"
+msgstr "إعادة فتح النقاش"
+
+#. ai-translated; needs-native-review
+msgid "Re-open discussion..."
+msgstr "إعادة فتح النقاش..."
+
+#. ai-translated; needs-native-review
+msgid "Reactions"
+msgstr "التفاعلات"
+
+#. ai-translated; needs-native-review
+msgid "Recent"
+msgstr "الأحدث"
+
+#. ai-translated; needs-native-review
+msgid "Remove"
+msgstr "إزالة"
+
+#. ai-translated; needs-native-review
+msgid "Remove Bookmark"
+msgstr "إزالة الإشارة المرجعية"
+
+#. ai-translated; needs-native-review
+msgid "Replies"
+msgstr "الردود"
+
+#. ai-translated; needs-native-review
+msgid "Reposition"
+msgstr "إعادة التموضع"
+
+#. ai-translated; needs-native-review
+msgid "Retract vote"
+msgstr "سحب التصويت"
+
+#. ai-translated; needs-native-review
+msgid "Revert To Original"
+msgstr "الرجوع إلى الأصل"
+
+#. ai-translated; needs-native-review
+msgid "Revisions"
+msgstr "المراجعات"
+
+#. ai-translated; needs-native-review
+msgid "Save"
+msgstr "حفظ"
+
+#. ai-translated; needs-native-review
+msgid "Save position"
+msgstr "حفظ الموضع"
+
+#. ai-translated; needs-native-review
+msgid "Saving..."
+msgstr "جارٍ الحفظ..."
+
+#. ai-translated; needs-native-review
+msgid "Search"
+msgstr "بحث"
+
+#. ai-translated; needs-native-review
+msgid "Select a project"
+msgstr "اختر مشروعاً"
+
+#. ai-translated; needs-native-review
+msgid "Select a project to start a new discussion"
+msgstr "اختر مشروعاً لبدء نقاش جديد"
+
+#. ai-translated; needs-native-review
+msgid "Select a team"
+msgstr "اختر فريقاً"
+
+#. ai-translated; needs-native-review
+msgid "Select project"
+msgstr "اختر المشروع"
+
+#. ai-translated; needs-native-review
+msgid "Select projects to follow"
+msgstr "اختر المشاريع للمتابعة"
+
+#. ai-translated; needs-native-review
+msgid "Sending..."
+msgstr "جارٍ الإرسال..."
+
+#. ai-translated; needs-native-review
+msgid "Set Colored Background"
+msgstr "تعيين خلفية ملونة"
+
+#. ai-translated; needs-native-review
+msgid "Set cover image"
+msgstr "تعيين صورة الغلاف"
+
+#. ai-translated; needs-native-review
+msgid "Set due date"
+msgstr "تعيين تاريخ الاستحقاق"
+
+#. ai-translated; needs-native-review
+msgid "Set priority"
+msgstr "تعيين الأولوية"
+
+#. ai-translated; needs-native-review
+msgid "Set status"
+msgstr "تعيين الحالة"
+
+#. ai-translated; needs-native-review
+msgid "Setting up your team and project"
+msgstr "جارٍ إعداد فريقك ومشروعك"
+
+#. ai-translated; needs-native-review
+msgid "Settings & Members"
+msgstr "الإعدادات والأعضاء"
+
+#. ai-translated; needs-native-review
+msgid "Show results"
+msgstr "عرض النتائج"
+
+#. ai-translated; needs-native-review
+msgid "Sort"
+msgstr "ترتيب"
+
+#. ai-translated; needs-native-review
+msgid "Sort by"
+msgstr "ترتيب حسب"
+
+#. ai-translated; needs-native-review
+msgid "Start writing here..."
+msgstr "ابدأ الكتابة هنا..."
+
+#. ai-translated; needs-native-review
+msgid "Status"
+msgstr "الحالة"
+
+#. ai-translated; needs-native-review
+msgid "Step {0} of {1}"
+msgstr "الخطوة {0} من {1}"
+
+#. ai-translated; needs-native-review
+msgid "Stop"
+msgstr "إيقاف"
+
+#. ai-translated; needs-native-review
+msgid "Stop Poll"
+msgstr "إيقاف الاستطلاع"
+
+#. ai-translated; needs-native-review
+msgid "Stop poll"
+msgstr "إيقاف الاستطلاع"
+
+#. ai-translated; needs-native-review
+msgid "Submit"
+msgstr "إرسال"
+
+#. ai-translated; needs-native-review
+msgid "Subscription"
+msgstr "الاشتراك"
+
+#. ai-translated; needs-native-review
+msgid "Tabs"
+msgstr "علامات التبويب"
+
+#. ai-translated; needs-native-review
+msgid "Task #{0}"
+msgstr "المهمة #{0}"
+
+#. ai-translated; needs-native-review
+msgid "Task Update Error"
+msgstr "خطأ في تحديث المهمة"
+
+#. ai-translated; needs-native-review
+msgid "Task title is required"
+msgstr "عنوان المهمة مطلوب"
+
+#. ai-translated; needs-native-review
+msgid "Tasks"
+msgstr "المهام"
+
+#. ai-translated; needs-native-review
+msgid "Team Name"
+msgstr "اسم الفريق"
+
+#. ai-translated; needs-native-review
+msgid "Team is required to move this project"
+msgstr "الفريق مطلوب لنقل هذا المشروع"
+
+#. ai-translated; needs-native-review
+msgid "Teams"
+msgstr "الفرق"
+
+#. ai-translated; needs-native-review
+msgid "This discussion is closed"
+msgstr "هذا النقاش مغلق"
+
+#. ai-translated; needs-native-review
+msgid "This discussion is pinned"
+msgstr "هذا النقاش مثبّت"
+
+#. ai-translated; needs-native-review
+msgid "This is a poll"
+msgstr "هذا استطلاع"
+
+#. ai-translated; needs-native-review
+msgid "This message is deleted"
+msgstr "تم حذف هذه الرسالة"
+
+#. ai-translated; needs-native-review
+msgid "This poll is anonymous. Once you vote, you cannot retract your vote. You are voting for \"{0}\". Continue?"
+msgstr "هذا الاستطلاع مجهول. بمجرد التصويت، لا يمكنك سحب تصويتك. أنت تصوّت لـ \"{0}\". هل تريد المتابعة؟"
+
+#. ai-translated; needs-native-review
+msgid "This project is only visible to team members"
+msgstr "هذا المشروع مرئي لأعضاء الفريق فقط"
+
+#. ai-translated; needs-native-review
+msgid "This site is running in read-only mode. Full functionality will be restored soon."
+msgstr "يعمل هذا الموقع في وضع القراءة فقط. ستتم استعادة الوظائف الكاملة قريباً."
+
+#. ai-translated; needs-native-review
+msgid "This will move all discussions, tasks, and pages from the"
+msgstr "سيؤدي هذا إلى نقل جميع النقاشات والمهام والصفحات من"
+
+#. ai-translated; needs-native-review
+msgid "Title"
+msgstr "العنوان"
+
+#. ai-translated; needs-native-review
+msgid "Toggle theme"
+msgstr "تبديل المظهر"
+
+#. ai-translated; needs-native-review
+msgid "Type a keyword and hit enter to search"
+msgstr "اكتب كلمة مفتاحية واضغط إدخال للبحث"
+
+#. ai-translated; needs-native-review
+msgid "Unarchive"
+msgstr "إلغاء الأرشفة"
+
+#. ai-translated; needs-native-review
+msgid "Unarchive Project"
+msgstr "إلغاء أرشفة المشروع"
+
+#. ai-translated; needs-native-review
+msgid "Unarchive this project"
+msgstr "إلغاء أرشفة هذا المشروع"
+
+#. ai-translated; needs-native-review
+msgid "Unfollow project"
+msgstr "إلغاء متابعة المشروع"
+
+#. ai-translated; needs-native-review
+msgid "Unpin"
+msgstr "إلغاء التثبيت"
+
+#. ai-translated; needs-native-review
+msgid "Unpin discussion"
+msgstr "إلغاء تثبيت النقاش"
+
+#. ai-translated; needs-native-review
+msgid "Unpin discussion..."
+msgstr "إلغاء تثبيت النقاش..."
+
+#. ai-translated; needs-native-review
+msgid "Unread"
+msgstr "غير مقروء"
+
+#. ai-translated; needs-native-review
+msgid "Untitled"
+msgstr "بدون عنوان"
+
+#. ai-translated; needs-native-review
+msgid "Updated {0}"
+msgstr "تم التحديث {0}"
+
+#. ai-translated; needs-native-review
+msgid "Upload Image"
+msgstr "رفع صورة"
+
+#. ai-translated; needs-native-review
+msgid "Uploading {0}%"
+msgstr "جارٍ الرفع {0}%"
+
+#. ai-translated; needs-native-review
+msgid "View Discussion"
+msgstr "عرض النقاش"
+
+#. ai-translated; needs-native-review
+msgid "View Task"
+msgstr "عرض المهمة"
+
+#. ai-translated; needs-native-review
+msgid "View all"
+msgstr "عرض الكل"
+
+#. ai-translated; needs-native-review
+msgid "Visibility"
+msgstr "الظهور"
+
+#. ai-translated; needs-native-review
+msgid "Visible to everyone"
+msgstr "مرئي للجميع"
+
+#. ai-translated; needs-native-review
+msgid "Visible to team members (Private)"
+msgstr "مرئي لأعضاء الفريق (خاص)"
+
+#. ai-translated; needs-native-review
+msgid "Vote for \"{0}\""
+msgstr "التصويت لـ \"{0}\""
+
+#. ai-translated; needs-native-review
+msgid "When a discussion is closed, commenting is disabled. Anyone can re-open the discussion later. Do you want to close this discussion?"
+msgstr "عند إغلاق النقاش، يتم تعطيل التعليق. يمكن لأي شخص إعادة فتح النقاش لاحقاً. هل تريد إغلاق هذا النقاش؟"
+
+#. ai-translated; needs-native-review
+msgid "When a discussion is pinned, it shows up on top of the discussion list in {0}. Do you want to pin this discussion?"
+msgstr "عند تثبيت النقاش، يظهر في أعلى قائمة النقاشات في {0}. هل تريد تثبيت هذا النقاش؟"
+
+#. ai-translated; needs-native-review
+msgid "Which project are you working on?"
+msgstr "ما المشروع الذي تعمل عليه؟"
+
+#. ai-translated; needs-native-review
+msgid "Which team are you a part of?"
+msgstr "ما الفريق الذي أنت جزء منه؟"
+
+#. ai-translated; needs-native-review
+msgid "Write a brief introduction of yourself..."
+msgstr "اكتب مقدمة موجزة عن نفسك..."
+
+#. ai-translated; needs-native-review
+msgid "Write something..."
+msgstr "اكتب شيئاً..."
+
+#. ai-translated; needs-native-review
+msgid "assigned this to"
+msgstr "عيّن هذا إلى"
+
+#. ai-translated; needs-native-review
+msgid "changed project"
+msgstr "غيّر المشروع"
+
+#. ai-translated; needs-native-review
+msgid "changed the title from \"{0}\" to \"{1}\""
+msgstr "غيّر العنوان من \"{0}\" إلى \"{1}\""
+
+#. ai-translated; needs-native-review
+msgid "changed {0}"
+msgstr "غيّر {0}"
+
+#. ai-translated; needs-native-review
+msgid "closed this discussion"
+msgstr "أغلق هذا النقاش"
+
+#. ai-translated; needs-native-review
+msgid "from"
+msgstr "من"
+
+#. ai-translated; needs-native-review
+msgid "in"
+msgstr "في"
+
+msgid "jane@example.com"
+msgstr ""
+
+#. ai-translated; needs-native-review
+msgid "pinned this discussion"
+msgstr "ثبّت هذا النقاش"
+
+#. ai-translated; needs-native-review
+msgid "project to the selected project. This change is irreversible!"
+msgstr "المشروع إلى المشروع المحدد. هذا التغيير لا يمكن التراجع عنه!"
+
+#. ai-translated; needs-native-review
+msgid "reopened this discussion"
+msgstr "أعاد فتح هذا النقاش"
+
+#. ai-translated; needs-native-review
+msgid "search by keyword"
+msgstr "البحث بالكلمة المفتاحية"
+
+#. ai-translated; needs-native-review
+msgid "to"
+msgstr "إلى"
+
+#. ai-translated; needs-native-review
+msgid "unpinned this discussion"
+msgstr "ألغى تثبيت هذا النقاش"
+
+#. ai-translated; needs-native-review
+msgid "updated the description"
+msgstr "حدّث الوصف"
+
+#. ai-translated; needs-native-review
+msgid "vote"
+msgstr "صوت"
+
+#. ai-translated; needs-native-review
+msgid "votes"
+msgstr "أصوات"
+
+#. ai-translated; needs-native-review
+msgid "{0} Revisions"
+msgstr "{0} مراجعة"
+
+#. ai-translated; needs-native-review
+msgid "{0} members"
+msgstr "{0} عضو"
+
+#. ai-translated; needs-native-review
+msgid "{0} participants"
+msgstr "{0} مشارك"
+
+#. ai-translated; needs-native-review
+msgid "{0} posts"
+msgstr "{0} منشور"
+
+#. ai-translated; needs-native-review
+msgid "{0} replies"
+msgstr "{0} رد"
+
+#. ai-translated; needs-native-review
+msgid "{0} unread posts"
+msgstr "{0} منشور غير مقروء"

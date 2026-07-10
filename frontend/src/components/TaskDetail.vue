@@ -3,13 +3,13 @@
     <div class="w-full flex-1">
       <div class="relative p-6">
         <div class="absolute right-0 top-0 p-6" v-show="$resources.task.setValueDebounced.loading">
-          <LoadingText v-if="!$resources.task.setValueDebounced.error" text="Saving..." />
+          <LoadingText v-if="!$resources.task.setValueDebounced.error" :text="__('Saving...')" />
           <ErrorMessage :message="$resources.task.setValueDebounced.error" />
         </div>
         <div class="mb-2 flex items-center justify-between space-x-2">
           <input
             type="text"
-            placeholder="Title"
+            :placeholder="__('Title')"
             class="-ml-0.5 w-full rounded-sm border-none p-0.5 text-2xl bg-surface-white font-semibold text-ink-gray-9 focus:outline-none focus:ring-2 focus:ring-outline-gray-3"
             @change="
               $resources.task.setValueDebounced.submit({
@@ -22,14 +22,14 @@
           <Dropdown
             :options="[
               {
-                label: 'Delete',
+                label: __('Delete'),
                 onClick: () => {
                   $dialog({
-                    title: 'Delete task',
-                    message: 'Are you sure you want to delete this task?',
+                    title: __('Delete task'),
+                    message: __('Are you sure you want to delete this task?'),
                     actions: [
                       {
-                        label: 'Delete',
+                        label: __('Delete'),
                         theme: 'red',
                         variant: 'solid',
                         onClick(close) {
@@ -55,7 +55,7 @@
         <TextEditor
           ref="description"
           editor-class="prose-sm max-w-none focus-within:ring-2 focus-within:ring-outline-gray-3 rounded-sm p-0.5 -ml-0.5 min-h-[4rem]"
-          placeholder="Description"
+          :placeholder="__('Description')"
           :content="$resources.task.doc.description"
           :bubbleMenu="true"
           :floatingMenu="true"
@@ -69,7 +69,7 @@
         />
         <div class="mt-8 flex flex-wrap items-center gap-2 sm:hidden">
           <Autocomplete
-            placeholder="Assign a user"
+            :placeholder="__('Assign a user')"
             :options="assignableUsers"
             v-model="$resources.task.doc.assigned_to"
             @update:modelValue="changeAssignee"
@@ -77,7 +77,7 @@
           <DatePicker
             v-model="$resources.task.doc.due_date"
             variant="subtle"
-            placeholder="Due date"
+            :placeholder="__('Due date')"
             :disabled="false"
             @update:modelValue="
               $resources.task.setValue.submit({
@@ -90,7 +90,7 @@
               <template #prefix>
                 <TaskStatusIcon :status="$resources.task.doc.status" />
               </template>
-              {{ $resources.task.doc.status || 'Set status' }}
+              {{ $resources.task.doc.status || __('Set status') }}
             </Button>
           </Dropdown>
           <Dropdown :options="priorityOptions">
@@ -98,11 +98,11 @@
               <template v-if="$resources.task.doc.priority" #prefix>
                 <TaskPriorityIcon :priority="$resources.task.doc.priority" />
               </template>
-              {{ $resources.task.doc.priority || 'Set priority' }}
+              {{ $resources.task.doc.priority || __('Set priority') }}
             </Button>
           </Dropdown>
           <Autocomplete
-            placeholder="Select project"
+            :placeholder="__('Select project')"
             :options="projectOptions"
             v-model="$resources.task.doc.project"
             @update:modelValue="changeProject"
@@ -113,21 +113,21 @@
     </div>
     <div class="hidden w-[20rem] shrink-0 border-l sm:block">
       <div class="grid grid-cols-2 items-center gap-y-6 p-6 text-base text-ink-gray-7">
-        <div>Assignee</div>
+        <div>{{ __('Assignee') }}</div>
         <div>
           <Autocomplete
-            placeholder="Assign a user"
+            :placeholder="__('Assign a user')"
             :options="assignableUsers"
             v-model="$resources.task.doc.assigned_to"
             @update:modelValue="changeAssignee"
           />
         </div>
-        <div>Due Date</div>
+        <div>{{ __('Due Date') }}</div>
         <div>
           <DatePicker
             v-model="$resources.task.doc.due_date"
             variant="subtle"
-            placeholder="Due date"
+            :placeholder="__('Due date')"
             :disabled="false"
             @update:modelValue="
               $resources.task.setValue.submit({
@@ -136,34 +136,34 @@
             "
           />
         </div>
-        <div>Project</div>
+        <div>{{ __('Project') }}</div>
         <div>
           <Autocomplete
-            placeholder="Select project"
+            :placeholder="__('Select project')"
             :options="projectOptions"
             v-model="$resources.task.doc.project"
             @update:modelValue="changeProject"
           />
         </div>
-        <div>Status</div>
+        <div>{{ __('Status') }}</div>
         <div>
           <Dropdown :options="statusOptions">
             <Button>
               <template #prefix>
                 <TaskStatusIcon :status="$resources.task.doc.status" />
               </template>
-              {{ $resources.task.doc.status || 'Set status' }}
+              {{ $resources.task.doc.status || __('Set status') }}
             </Button>
           </Dropdown>
         </div>
-        <div>Priority</div>
+        <div>{{ __('Priority') }}</div>
         <div>
           <Dropdown :options="priorityOptions">
             <Button>
               <template v-if="$resources.task.doc.priority" #prefix>
                 <TaskPriorityIcon :priority="$resources.task.doc.priority" />
               </template>
-              {{ $resources.task.doc.priority || 'Set priority' }}
+              {{ $resources.task.doc.priority || __('Set priority') }}
             </Button>
           </Dropdown>
         </div>
@@ -202,7 +202,7 @@ export default {
           onError(e) {
             let message = e.messages ? e.messages.join('\n') : e.message
             this.$toast({
-              title: 'Task Update Error',
+              title: __('Task Update Error'),
               text: message,
               icon: 'alert-circle',
               iconClasses: 'text-ink-red-4',

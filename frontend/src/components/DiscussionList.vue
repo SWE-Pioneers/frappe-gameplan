@@ -23,9 +23,9 @@
                 class="flex"
                 v-bind="
                   d.closed_at
-                    ? { text: 'This discussion is closed' }
+                    ? { text: __('This discussion is closed') }
                     : d.pinned_at
-                      ? { text: 'This discussion is pinned' }
+                      ? { text: __('This discussion is pinned') }
                       : null
                 "
               >
@@ -70,7 +70,7 @@
                     {{ user.full_name }}
                   </span>
                   <template v-if="!filters || !filters.project">
-                    <span> in </span>
+                    <span> {{ __('in') }} </span>
                     <span>
                       {{ d.team_title }}
                       <span class="text-ink-gray-4"> &mdash; </span>
@@ -88,7 +88,7 @@
                 {{ discussionTimestamp(d) }}
               </div>
               <div class="mt-1.5 flex items-center justify-end space-x-3">
-                <Tooltip text="Ongoing poll" v-if="d.ongoing_polls?.length">
+                <Tooltip :text="__('Ongoing poll')" v-if="d.ongoing_polls?.length">
                   <LucideBarChart2 class="h-4 w-4 -rotate-90" />
                 </Tooltip>
                 <Badge>{{ d.comments_count + 1 }}</Badge>
@@ -108,7 +108,7 @@
         class="flex flex-col items-center rounded-lg border-2 border-dashed py-8 text-base text-ink-gray-5"
       >
         <LucideCoffee class="h-7 w-7 text-ink-gray-4" />
-        No discussions
+        {{ __('No discussions') }}
       </div>
       <div
         class="flex items-center justify-center p-3"
@@ -118,7 +118,7 @@
           <template #prefix>
             <LucideRefreshCw class="h-4 w-4" />
           </template>
-          {{ $resources.discussions.loading ? 'Loading...' : 'Load more' }}
+          {{ $resources.discussions.loading ? __('Loading...') : __('Load more') }}
         </Button>
       </div>
     </div>
@@ -180,8 +180,8 @@ export default {
     },
     discussionTimestampDescription(d) {
       return [
-        `First Post: ${this.$dayjs(d.creation)}`,
-        `Latest Post: ${this.$dayjs(d.last_post_at)}`,
+        __('First Post: {0}', [this.$dayjs(d.creation)]),
+        __('Latest Post: {0}', [this.$dayjs(d.last_post_at)]),
       ].join('\n')
     },
   },

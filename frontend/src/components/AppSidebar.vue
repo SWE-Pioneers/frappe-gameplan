@@ -53,17 +53,17 @@
             <span class="grid h-5 w-6 place-items-center">
               <LucideSearch class="h-4 w-4 text-ink-gray-7" />
             </span>
-            <span class="ml-2 text-sm">Search</span>
+            <span class="ml-2 text-sm">{{ __('Search') }}</span>
             <span class="ml-auto text-sm text-ink-gray-4">
               <template v-if="$platform === 'mac'">⌘K</template>
-              <template v-else>Ctrl+K</template>
+              <template v-else>{{ __('Ctrl+K') }}</template>
             </span>
           </div>
         </button>
       </nav>
       <div class="mt-6 flex items-center justify-between px-3">
-        <h3 class="text-sm font-medium text-ink-gray-5">Teams</h3>
-        <Button label="Create Team" variant="ghost" @click="showAddTeamDialog = true">
+        <h3 class="text-sm font-medium text-ink-gray-5">{{ __('Teams') }}</h3>
+        <Button :label="__('Create Team')" variant="ghost" @click="showAddTeamDialog = true">
           <template #icon><LucidePlus class="h-4 w-4" /></template>
         </Button>
       </div>
@@ -90,7 +90,7 @@
               <span class="ml-2 text-sm">{{ team.title }}</span>
               <LucideLock v-if="team.is_private" class="ml-2 h-3 w-3" />
               <div class="ml-auto">
-                <Tooltip v-if="team.unread" :text="`${team.unread} unread posts`">
+                <Tooltip v-if="team.unread" :text="__('{0} unread posts', [team.unread])">
                   <span class="text-xs text-ink-gray-5">{{ team.unread }}</span>
                 </Tooltip>
               </div>
@@ -117,13 +117,13 @@
               class="flex h-7 items-center px-2 text-sm text-ink-gray-5"
               v-if="teamProjects(team.name).length === 0"
             >
-              No projects
+              {{ __('No projects') }}
             </div>
           </div>
         </div>
       </nav>
       <div v-if="teams.fetched && !activeTeams.length" class="px-3 py-2 text-sm text-ink-gray-4">
-        No teams
+        {{ __('No teams') }}
       </div>
     </div>
     <AddTeamDialog
@@ -185,14 +185,14 @@ export default {
     navigation() {
       return [
         {
-          name: 'Discussions',
+          name: __('Discussions'),
           icon: LucideNewspaper,
           route: {
             name: 'Discussions',
           },
         },
         {
-          name: 'My Tasks',
+          name: __('My Tasks'),
           icon: LucideListTodo,
           route: {
             name: 'MyTasks',
@@ -200,7 +200,7 @@ export default {
           isActive: /MyTasks|Task/g.test(this.$route.name),
         },
         {
-          name: 'My Pages',
+          name: __('My Pages'),
           icon: LucideFiles,
           route: {
             name: 'MyPages',
@@ -208,7 +208,7 @@ export default {
           isActive: /MyPages|Page/g.test(this.$route.name),
         },
         {
-          name: 'People',
+          name: __('People'),
           icon: LucideUsers2,
           route: {
             name: 'People',
@@ -217,7 +217,7 @@ export default {
           condition: () => this.$user().isNotGuest,
         },
         {
-          name: 'Notifications',
+          name: __('Notifications'),
           icon: LucideInbox,
           route: {
             name: 'Notifications',

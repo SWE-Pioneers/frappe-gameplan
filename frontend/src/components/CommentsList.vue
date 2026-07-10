@@ -30,7 +30,7 @@
           <span
             class="absolute -top-2 left-1/2 -translate-x-1/2 bg-surface-white px-2 text-sm font-medium text-ink-blue-3"
           >
-            New comments
+            {{ __('New comments') }}
           </span>
         </div>
         <Comment
@@ -64,13 +64,13 @@
             class="flex w-full items-center rounded-md border px-2 py-2 text-left text-base text-ink-gray-5 hover:border-outline-gray-3"
             @click="showCommentBox = true"
           >
-            Add a comment
+            {{ __('Add a comment') }}
           </button>
           <div class="absolute inset-y-0 right-0 flex items-center pr-1">
-            <Tooltip text="Add a poll">
+            <Tooltip :text="__('Add a poll')">
               <Button
                 variant="ghost"
-                label="Add a poll"
+                :label="__('Add a poll')"
                 @click="
                   () => {
                     newCommentType = 'Poll'
@@ -112,7 +112,7 @@
               onClick: discardComment,
             }"
             :editable="showCommentBox"
-            placeholder="Add a comment"
+            :placeholder="__('Add a comment')"
           />
           <PollEditor
             v-show="newCommentType == 'Poll'"
@@ -324,7 +324,7 @@ export default {
               return data
             })
             this.$toast({
-              title: 'Error adding new comment',
+              title: __('Error adding new comment'),
               text: error.messages.join(', '),
               position: 'bottom-center',
               icon: 'alert-circle',
@@ -360,11 +360,11 @@ export default {
     discardComment() {
       if (!this.editorObject.isEmpty) {
         this.$dialog({
-          title: 'Discard comment',
-          message: 'Are you sure you want to discard your comment?',
+          title: __('Discard comment'),
+          message: __('Are you sure you want to discard your comment?'),
           actions: [
             {
-              label: 'Discard comment',
+              label: __('Discard comment'),
               onClick: (close) => {
                 this.resetCommentState()
                 close()
@@ -372,7 +372,7 @@ export default {
               variant: 'solid',
             },
             {
-              label: 'Keep comment',
+              label: __('Keep comment'),
             },
           ],
         })

@@ -5,7 +5,7 @@
   >
     <span class="font-medium text-ink-gray-8"> {{ item.title }}&nbsp; </span>
     <span v-if="item.team" class="inline-flex space-x-1 text-ink-gray-5">
-      <span>in</span>
+      <span>{{ __('in') }}</span>
       <span> {{ item.team }} </span>
     </span>
     <span class="ml-auto text-ink-gray-5">

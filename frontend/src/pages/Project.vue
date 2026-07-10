@@ -15,16 +15,16 @@
         <div v-if="$route.name === 'ProjectOverview'" class="flex items-center space-x-2">
           <Tooltip
             v-if="project.doc.is_private"
-            text="This project is only visible to team members"
+            :text="__('This project is only visible to team members')"
           >
             <Badge size="lg">
               <template #prefix><LucideLock class="w-3" /></template>
-              Private
+              {{ __('Private') }}
             </Badge>
           </Tooltip>
           <Badge size="lg" v-if="project.doc.archived_at">
             <template #prefix><LucideArchive class="w-3" /></template>
-            Archived
+            {{ __('Archived') }}
           </Badge>
           <template v-if="!isMobile">
             <Button
@@ -33,11 +33,11 @@
               :loading="project.unfollow.loading"
             >
               <template #prefix><LucideBell class="w-4" /></template>
-              Following
+              {{ __('Following') }}
             </Button>
             <Button v-else @click="project.follow.submit()" :loading="project.follow.loading">
               <template #prefix><LucideBellPlus class="w-4" /></template>
-              Follow
+              {{ __('Follow') }}
             </Button>
           </template>
           <Dropdown
@@ -46,52 +46,52 @@
             :button="{
               icon: 'more-horizontal',
               variant: 'ghost',
-              label: 'Options',
+              label: __('Options'),
             }"
             :options="[
               {
-                label: 'Edit',
+                label: __('Edit'),
                 icon: 'edit',
                 onClick: () => (projectEditDialog.show = true),
                 condition: () => !project.doc.archived_at,
               },
               {
-                label: 'Follow',
+                label: __('Follow'),
                 icon: 'plus',
                 onClick: () => project.follow.submit(),
                 condition: () => isMobile && !project.doc.is_followed,
               },
               {
-                label: 'Following',
+                label: __('Following'),
                 icon: 'check',
                 onClick: () => project.unfollow.submit(),
                 condition: () => isMobile && project.doc.is_followed,
               },
               {
-                label: 'Manage Guests',
+                label: __('Manage Guests'),
                 icon: 'user-plus',
                 onClick: () => (inviteGuestDialog.show = true),
                 condition: () => !project.doc.archived_at,
               },
               {
-                label: 'Move to another team',
+                label: __('Move to another team'),
                 icon: 'log-out',
                 onClick: () => (projectMoveDialog.show = true),
                 condition: () => !project.doc.archived_at,
               },
               {
-                label: 'Merge with another project',
+                label: __('Merge with another project'),
                 icon: LucideMerge,
                 onClick: () => (projectMergeDialog.show = true),
               },
               {
-                label: 'Archive this project',
+                label: __('Archive this project'),
                 icon: 'trash-2',
                 onClick: archiveProject,
                 condition: () => !project.doc.archived_at,
               },
               {
-                label: 'Unarchive this project',
+                label: __('Unarchive this project'),
                 icon: 'trash-2',
                 onClick: unarchiveProject,
                 condition: () => project.doc.archived_at,
@@ -101,10 +101,10 @@
         </div>
         <Dialog
           :options="{
-            title: 'Edit Project',
+            title: __('Edit Project'),
             actions: [
               {
-                label: 'Save',
+                label: __('Save'),
                 variant: 'solid',
                 onClick({ close }) {
                   return project.setValue
@@ -122,17 +122,17 @@
           <template #body-content>
             <FormControl
               class="mb-2"
-              label="Title"
+              :label="__('Title')"
               v-model="project.doc.title"
-              placeholder="Project title"
+              :placeholder="__('Project title')"
             />
             <FormControl
               v-if="!team.doc.is_private"
-              label="Visibility"
+              :label="__('Visibility')"
               type="select"
               :options="[
-                { label: 'Visible to everyone', value: 0 },
-                { label: 'Visible to team members (Private)', value: 1 },
+                { label: __('Visible to everyone'), value: 0 },
+                { label: __('Visible to team members (Private)'), value: 1 },
               ]"
               v-model="project.doc.is_private"
             />
@@ -141,7 +141,7 @@
         </Dialog>
         <Dialog
           :options="{
-            title: 'Move project to another team',
+            title: __('Move project to another team'),
           }"
           @close="
             () => {
@@ -155,7 +155,7 @@
             <Autocomplete
               :options="moveToTeamsList"
               v-model="projectMoveDialog.team"
-              placeholder="Select a team"
+              :placeholder="__('Select a team')"
             >
               <template #item-prefix="{ option }">
                 <span class="mr-2">{{ option.icon }}</span>
@@ -175,7 +175,7 @@
                     {
                       validate() {
                         if (!projectMoveDialog.team?.value) {
-                          return 'Team is required to move this project'
+                          return __('Team is required to move this project')
                         }
                       },
                       onSuccess() {
@@ -186,13 +186,17 @@
                 }
               "
             >
-              {{ projectMoveDialog.team ? `Move to ${projectMoveDialog.team.label}` : 'Move' }}
+              {{
+                projectMoveDialog.team
+                  ? __('Move to {0}', [projectMoveDialog.team.label])
+                  : __('Move')
+              }}
             </Button>
           </template>
         </Dialog>
         <Dialog
           :options="{
-            title: 'Merge with another project',
+            title: __('Merge with another project'),
           }"
           @close="
             () => {
@@ -204,15 +208,15 @@
         >
           <template #body-content>
             <p class="text-p-base text-ink-gray-8 mb-4">
-              This will move all discussions, tasks, and pages from the
-              <span class="whitespace-nowrap font-semibold">{{ project.doc.title }}</span> project
-              to the selected project. This change is irreversible!
+              {{ __('This will move all discussions, tasks, and pages from the') }}
+              <span class="whitespace-nowrap font-semibold">{{ project.doc.title }}</span>
+              {{ __('project to the selected project. This change is irreversible!') }}
             </p>
             {{ projectMergeDialog.project }}
             <Autocomplete
               :options="mergeProjectsList"
               v-model="projectMergeDialog.project"
-              placeholder="Select a project"
+              :placeholder="__('Select a project')"
             >
               <template #item-prefix="{ option }">
                 <span class="mr-2">{{ option.icon }}</span>
@@ -232,7 +236,7 @@
                     {
                       validate() {
                         if (!projectMergeDialog.project?.value) {
-                          return 'Please select a project to merge'
+                          return __('Please select a project to merge')
                         }
                       },
                       onSuccess() {
@@ -251,8 +255,8 @@
             >
               {{
                 projectMergeDialog.project
-                  ? `Merge with ${projectMergeDialog.project.label}`
-                  : 'Merge'
+                  ? __('Merge with {0}', [projectMergeDialog.project.label])
+                  : __('Merge')
               }}
             </Button>
           </template>
@@ -383,7 +387,7 @@ export default {
         )
       ) {
         items.push({
-          label: 'Discussions',
+          label: __('Discussions'),
           route: {
             name: 'ProjectDiscussions',
             params: {
@@ -409,7 +413,7 @@ export default {
       }
       if (this.$route.name === 'ProjectDiscussionNew') {
         items.push({
-          label: 'New Discussion',
+          label: __('New Discussion'),
           route: {
             name: 'ProjectDiscussionNew',
             params: {
@@ -422,7 +426,7 @@ export default {
 
       if (['ProjectTasks', 'ProjectTaskDetail'].includes(this.$route.name)) {
         items.push({
-          label: 'Tasks',
+          label: __('Tasks'),
           route: {
             name: 'ProjectTasks',
             params: {
@@ -450,7 +454,7 @@ export default {
 
       if (['ProjectPages', 'ProjectPage'].includes(this.$route.name)) {
         items.push({
-          label: 'Pages',
+          label: __('Pages'),
           route: {
             name: 'ProjectPages',
             params: {
@@ -482,11 +486,11 @@ export default {
   methods: {
     archiveProject() {
       this.$dialog({
-        title: 'Archive project',
-        message: 'Are you sure you want to archive this project?',
+        title: __('Archive project'),
+        message: __('Are you sure you want to archive this project?'),
         actions: [
           {
-            label: 'Archive',
+            label: __('Archive'),
             variant: 'solid',
             onClick: (close) => {
               return this.project.archive.submit(null, {
@@ -499,11 +503,11 @@ export default {
     },
     unarchiveProject() {
       this.$dialog({
-        title: 'Unarchive Project',
-        message: 'Are you sure you want to unarchive this project?',
+        title: __('Unarchive Project'),
+        message: __('Are you sure you want to unarchive this project?'),
         actions: [
           {
-            label: 'Unarchive',
+            label: __('Unarchive'),
             variant: 'solid',
             onClick: (close) => {
               return this.project.unarchive.submit(null, {
@@ -512,7 +516,7 @@ export default {
             },
           },
           {
-            label: 'Cancel',
+            label: __('Cancel'),
           },
         ],
       })
