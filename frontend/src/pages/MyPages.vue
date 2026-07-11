@@ -2,25 +2,25 @@
   <header
     class="sticky top-0 z-10 flex items-center justify-between border-b bg-surface-white px-5 py-2.5"
   >
-    <Breadcrumbs class="h-7" :items="[{ label: 'My Pages', route: { name: 'MyPages' } }]" />
+    <Breadcrumbs class="h-7" :items="[{ label: __('My Pages'), route: { name: 'MyPages' } }]" />
     <div class="flex items-center space-x-2">
       <Select
         :options="[
           {
-            label: 'Sort by',
+            label: __('Sort by'),
             value: '',
             disabled: true,
           },
           {
-            label: 'Page Title',
+            label: __('Page Title'),
             value: 'title asc',
           },
           {
-            label: 'Date Updated',
+            label: __('Date Updated'),
             value: 'modified desc',
           },
           {
-            label: 'Date Created',
+            label: __('Date Created'),
             value: 'creation desc',
           },
         ]"
@@ -31,7 +31,7 @@
         <template #prefix>
           <LucidePlus class="h-4 w-4" />
         </template>
-        Add new
+        {{ __('Add new') }}
       </Button>
     </div>
   </header>
@@ -66,7 +66,7 @@ export default {
         params: {
           doc: {
             doctype: 'GP Page',
-            title: 'Untitled',
+            title: __('Untitled'),
             content: '',
           },
         },
@@ -81,7 +81,7 @@ export default {
   },
   pageMeta() {
     return {
-      title: 'My Pages',
+      title: __('My Pages'),
     }
   },
 }

@@ -32,7 +32,7 @@ const user = getUser()
 const dropdownItems = computed(() => [
   {
     icon: 'user',
-    label: 'My Profile',
+    label: __('My Profile'),
     route: {
       name: 'PersonProfile',
       params: { personId: user.user_profile },
@@ -40,18 +40,18 @@ const dropdownItems = computed(() => [
   },
   {
     icon: 'settings',
-    label: 'Settings & Members',
+    label: __('Settings & Members'),
     onClick: () => showSettingsDialog(),
     condition: () => user.isNotGuest,
   },
   {
     icon: LucideMoon,
-    label: 'Toggle theme',
+    label: __('Toggle theme'),
     onClick: toggleTheme,
   },
   {
     icon: () => h(LucideCreditCard),
-    label: 'Subscription',
+    label: __('Subscription'),
     condition: () => user.isNotGuest && window.frappecloud_host && window.site_name,
     onClick: () => {
       window.open(`${window.frappecloud_host}/dashboard/subscription/${window.site_name}`, '_blank')
@@ -59,7 +59,7 @@ const dropdownItems = computed(() => [
   },
   {
     icon: 'log-out',
-    label: 'Log out',
+    label: __('Log out'),
     onClick: () => session.logout.submit(),
   },
 ])

@@ -4,18 +4,20 @@
       <div class="w-full">
         <header class="sticky top-0 z-10 border-b bg-surface-white px-4 py-2.5 sm:px-5">
           <div class="flex items-center justify-between">
-            <Breadcrumbs :items="[{ label: 'People', route: { name: 'People' } }]" />
+            <Breadcrumbs :items="[{ label: __('People'), route: { name: 'People' } }]" />
             <div class="h-7"></div>
           </div>
         </header>
         <div class="mx-auto w-full max-w-4xl px-5 pt-6">
           <div class="flex items-center justify-between">
-            <h2 class="text-xl font-semibold text-ink-gray-8">{{ people.length }} members</h2>
+            <h2 class="text-xl font-semibold text-ink-gray-8">
+              {{ __('{0} members', [people.length]) }}
+            </h2>
             <div class="flex items-center gap-2">
               <TextInput
                 class="hidden sm:block"
                 type="text"
-                placeholder="Search"
+                :placeholder="__('Search')"
                 v-model="search"
                 :debounce="500"
               >
@@ -26,10 +28,10 @@
               <Select
                 class="w-44 pl-7 pr-7"
                 :options="[
-                  { label: 'Name', value: 'full_name asc' },
-                  { label: 'Last updated', value: 'modified desc' },
-                  { label: 'Posts', value: 'posts' },
-                  { label: 'Replies', value: 'replies' },
+                  { label: __('Name'), value: 'full_name asc' },
+                  { label: __('Last updated'), value: 'modified desc' },
+                  { label: __('Posts'), value: 'posts' },
+                  { label: __('Replies'), value: 'replies' },
                 ]"
                 v-model="orderBy"
               >
@@ -39,7 +41,7 @@
               </Select>
               <Button variant="solid" @click="showSettingsDialog('Invites')">
                 <template #prefix><LucideUserPlus2 class="w-4" /></template>
-                Invite
+                {{ __('Invite') }}
               </Button>
             </div>
           </div>
@@ -47,7 +49,7 @@
             <TextInput
               class="w-full"
               type="text"
-              placeholder="Search"
+              :placeholder="__('Search')"
               v-model="search"
               :debounce="500"
             >
@@ -75,7 +77,7 @@
                       <div class="text-base font-medium text-ink-gray-9">
                         {{ $user(user.user).full_name }}
                       </div>
-                      <Badge v-if="$user(user.user).isGuest">Guest</Badge>
+                      <Badge v-if="$user(user.user).isGuest">{{ __('Guest') }}</Badge>
                     </div>
                     <div
                       v-if="user.bio"
@@ -94,7 +96,7 @@
                     }"
                     @click.prevent
                   >
-                    {{ user.discussions_count }} posts
+                    {{ __('{0} posts', [user.discussions_count]) }}
                   </router-link>
                 </div>
                 <div
@@ -108,7 +110,7 @@
                     }"
                     @click.prevent
                   >
-                    {{ user.comments_count }} replies
+                    {{ __('{0} replies', [user.comments_count]) }}
                   </router-link>
                 </div>
               </router-link>
@@ -119,7 +121,7 @@
                 @click="$resources.profiles.next()"
                 :loading="$resources.profiles.list.loading"
               >
-                Load more
+                {{ __('Load more') }}
               </Button>
             </div>
           </div>
@@ -209,7 +211,7 @@ export default {
   },
   pageMeta() {
     return {
-      title: 'People',
+      title: __('People'),
     }
   },
 }

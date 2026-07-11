@@ -2,30 +2,30 @@
   <div class="space-y-4">
     <FormControl
       type="text"
-      label="Question"
+      :label="__('Question')"
       v-model="poll.title"
       @change="$emit('update:poll', poll)"
       autocomplete="off"
     />
     <div class="space-y-2">
-      <div class="text-sm leading-4 text-ink-gray-7">Options</div>
+      <div class="text-sm leading-4 text-ink-gray-7">{{ __('Options') }}</div>
       <TextInput
         v-for="option in poll.options"
         :key="option.idx"
-        :placeholder="`Option ${option.idx}`"
+        :placeholder="__('Option {0}', [option.idx])"
         v-model="option.title"
         @update:modelValue="(val) => onOptionChange(option, val)"
       />
     </div>
     <FormControl
       type="checkbox"
-      label="Anonymous"
+      :label="__('Anonymous')"
       v-model="poll.anonymous"
       @change="$emit('update:poll', poll)"
     />
     <div class="flex justify-end space-x-2">
-      <Button v-bind="discardButtonProps">Discard</Button>
-      <Button v-bind="submitButtonProps" variant="solid">Submit</Button>
+      <Button v-bind="discardButtonProps">{{ __('Discard') }}</Button>
+      <Button v-bind="submitButtonProps" variant="solid">{{ __('Submit') }}</Button>
     </div>
   </div>
 </template>

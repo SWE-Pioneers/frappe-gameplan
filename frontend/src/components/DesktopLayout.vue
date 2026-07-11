@@ -12,7 +12,7 @@
             class="right-0 top-0 mb-3 bg-surface-gray-2 py-3 text-sm text-ink-gray-5"
           >
             <div class="mx-auto px-10">
-              This site is running in read-only mode. Full functionality will be restored soon.
+              {{ __('This site is running in read-only mode. Full functionality will be restored soon.') }}
             </div>
           </div>
           <slot />

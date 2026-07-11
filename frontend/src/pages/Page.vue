@@ -12,7 +12,7 @@
       </Breadcrumbs>
       <div class="flex items-center space-x-2">
         <span class="hidden text-sm text-ink-gray-5 sm:block" v-if="page.doc">
-          Last updated {{ $dayjs(page.doc.modified).format('LLL') }}
+          {{ __('Last updated {0}', [$dayjs(page.doc.modified).format('LLL')]) }}
         </span>
         <Button
           v-show="page.doc && page.isDirty"
@@ -20,14 +20,14 @@
           @click="save"
           :loading="page.save.loading"
         >
-          Save
+          {{ __('Save') }}
         </Button>
       </div>
     </header>
     <div class="mx-auto w-full max-w-4xl px-5">
       <div class="py-6" v-if="page.doc">
         <span class="text-sm text-ink-gray-5 sm:hidden">
-          Last updated {{ $dayjs(page.doc.modified).format('LLL') }}
+          {{ __('Last updated {0}', [$dayjs(page.doc.modified).format('LLL')]) }}
         </span>
         <div class="mb-3 md:px-[70px]">
           <input
@@ -43,7 +43,7 @@
           editor-class="rounded-b-lg max-w-[unset] prose-sm pb-[50vh] md:px-[70px]"
           :content="page.doc.content"
           @change="page.doc.content = $event"
-          placeholder="Start writing here..."
+          :placeholder="__('Start writing here...')"
           :bubbleMenu="true"
           ref="content"
         />
@@ -120,7 +120,7 @@ export default {
       if (!this.page.doc) return []
       if (!this.page.doc.project) {
         return [
-          { label: 'My Pages', route: { name: 'MyPages' } },
+          { label: __('My Pages'), route: { name: 'MyPages' } },
           {
             label: this.pageTitle,
             route: {
@@ -151,7 +151,7 @@ export default {
           },
         },
         {
-          label: 'Pages',
+          label: __('Pages'),
           route: {
             name: 'ProjectPages',
             params: {

@@ -1,7 +1,7 @@
 <template>
   <FormControl
-    label="Project Name"
-    placeholder="Product Launch"
+    :label="__('Project Name')"
+    :placeholder="__('Product Launch')"
     @update:modelValue="(project) => $emit('update:modelValue', { ...modelValue, project })"
     v-model="modelValue.project"
   />

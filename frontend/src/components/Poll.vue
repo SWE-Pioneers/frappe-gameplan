@@ -24,9 +24,9 @@
       <div class="ml-auto flex items-center space-x-2">
         <Button v-if="!isStopped && $isSessionUser(_poll.owner)" variant="ghost" @click="stopPoll">
           <template #prefix><LucideMinusCircle class="w-4" /></template>
-          Stop Poll
+          {{ __('Stop Poll') }}
         </Button>
-        <Tooltip v-else text="This is a poll">
+        <Tooltip v-else :text="__('This is a poll')">
           <LucideBarChart2 class="h-4 w-4 -rotate-90" />
         </Tooltip>
         <Dropdown
@@ -34,7 +34,7 @@
           :button="{
             icon: 'more-horizontal',
             variant: 'ghost',
-            label: 'Poll Options',
+            label: __('Poll Options'),
           }"
           :options="dropdownOptions"
         />
@@ -42,9 +42,9 @@
     </div>
     <div class="text-base font-semibold">{{ _poll.title }}</div>
     <div class="mt-1 text-sm text-ink-gray-5">
-      <span v-if="_poll.multiple_answers"> Multiple answers &middot; </span>
-      <span v-if="_poll.anonymous"> Anonymous &middot; </span>
-      <span> {{ _poll.total_votes }} {{ _poll.total_votes === 1 ? 'vote' : 'votes' }} </span>
+      <span v-if="_poll.multiple_answers"> {{ __('Multiple answers') }} &middot; </span>
+      <span v-if="_poll.anonymous"> {{ __('Anonymous') }} &middot; </span>
+      <span> {{ _poll.total_votes }} {{ _poll.total_votes === 1 ? __('vote') : __('votes') }} </span>
       <span v-if="_poll.stopped_at"> &middot; {{ stopTime }} </span>
     </div>
     <div class="my-4 space-y-2">
@@ -82,7 +82,7 @@
     <div class="mt-3">
       <Reactions doctype="GP Poll" :name="poll.name" :reactions="_poll.reactions" />
     </div>
-    <Dialog :options="{ title: 'Poll results' }" v-model="showDialog" v-if="pollResults">
+    <Dialog :options="{ title: __('Poll results') }" v-model="showDialog" v-if="pollResults">
       <template #body-content>
         <h2 class="text-lg font-semibold">{{ _poll.title }}</h2>
         <div class="mt-2 space-y-4">
@@ -92,7 +92,7 @@
 
               <div class="mx-2 flex-1 border-b"></div>
               <div class="text-base text-ink-gray-5">
-                {{ option.votes }} {{ option.votes === 1 ? 'vote' : 'votes' }}
+                {{ option.votes }} {{ option.votes === 1 ? __('vote') : __('votes') }}
               </div>
               <div class="ml-1 text-base text-ink-gray-5">({{ option.percentage }}%)</div>
             </div>
@@ -165,11 +165,14 @@ export default {
     submitVote(option) {
       if (this._poll.anonymous) {
         this.$dialog({
-          title: 'Anonymous poll',
-          message: `This poll is anonymous. Once you vote, you cannot retract your vote. You are voting for "${option.title}". Continue?`,
+          title: __('Anonymous poll'),
+          message: __(
+            'This poll is anonymous. Once you vote, you cannot retract your vote. You are voting for "{0}". Continue?',
+            [option.title],
+          ),
           actions: [
             {
-              label: `Vote for "${option.title}"`,
+              label: __('Vote for "{0}"', [option.title]),
               variant: 'solid',
               onClick: (close) => {
                 this.$resources.poll.submitVote.submit({ option: option.title }).then(close)
@@ -189,11 +192,11 @@ export default {
     },
     stopPoll() {
       this.$dialog({
-        title: 'Stop poll',
-        message: 'After the poll is stopped, no one will be able to vote on it. Continue?',
+        title: __('Stop poll'),
+        message: __('After the poll is stopped, no one will be able to vote on it. Continue?'),
         actions: [
           {
-            label: 'Stop',
+            label: __('Stop'),
             variant: 'solid',
             theme: 'red',
             onClick: (close) => this.$resources.poll.stopPoll.submit().then(close),
@@ -232,7 +235,7 @@ export default {
     dropdownOptions() {
       return [
         {
-          label: 'Show results',
+          label: __('Show results'),
           icon: 'bar-chart-2',
           condition: () => this.pollResults,
           onClick: () => {
@@ -240,7 +243,7 @@ export default {
           },
         },
         {
-          label: 'Retract vote',
+          label: __('Retract vote'),
           icon: 'corner-up-left',
           condition: () =>
             !this._poll.anonymous &&
@@ -248,11 +251,11 @@ export default {
             (!this._poll.stopped_at || this.$dayjs().isBefore(this._poll.stopped_at)),
           onClick: () => {
             this.$dialog({
-              title: 'Retract vote',
-              message: 'Are you sure you want to retract your vote?',
+              title: __('Retract vote'),
+              message: __('Are you sure you want to retract your vote?'),
               actions: [
                 {
-                  label: 'Retract vote',
+                  label: __('Retract vote'),
                   variant: 'solid',
                   theme: 'red',
                   onClick: (close) => this.$resources.poll.retractVote.submit().then(close),
@@ -262,21 +265,21 @@ export default {
           },
         },
         {
-          label: 'Copy link',
+          label: __('Copy link'),
           icon: 'link',
           onClick: this.copyLink,
         },
         {
-          label: 'Delete',
+          label: __('Delete'),
           icon: 'trash',
           condition: () => this.$isSessionUser(this._poll.owner),
           onClick: () => {
             this.$dialog({
-              title: 'Delete poll',
-              message: 'Are you sure you want to delete this poll?',
+              title: __('Delete poll'),
+              message: __('Are you sure you want to delete this poll?'),
               actions: [
                 {
-                  label: 'Delete',
+                  label: __('Delete'),
                   variant: 'solid',
                   theme: 'red',
                   onClick: (close) => this.$resources.poll.delete.submit().then(close),
@@ -293,12 +296,12 @@ export default {
     stopTime() {
       let timestamp = this._poll.stopped_at
       if (this.$dayjs().diff(timestamp, 'day') < 7) {
-        return `Ended ${this.$dayjs(timestamp).fromNow()}`
+        return __('Ended {0}', [this.$dayjs(timestamp).fromNow()])
       }
       if (this.$dayjs().diff(timestamp, 'year') < 1) {
-        return `Ended at ${this.$dayjs(timestamp).format('D MMM, h:mm A')}`
+        return __('Ended at {0}', [this.$dayjs(timestamp).format('D MMM, h:mm A')])
       }
-      return `Ended at ${this.$dayjs(timestamp).format('D MMM YYYY, h:mm A')}`
+      return __('Ended at {0}', [this.$dayjs(timestamp).format('D MMM YYYY, h:mm A')])
     },
     _poll() {
       return this.$resources.poll.doc || this.poll

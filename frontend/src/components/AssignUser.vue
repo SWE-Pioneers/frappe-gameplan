@@ -2,7 +2,7 @@
   <Listbox as="div" v-model="selectedUser">
     <ListboxButton class="w-full h-full text-left" :class="$attrs.class">
       {{ selectedUser?.email || '' }}
-      <span v-if="!selectedUser" class="text-sm text-ink-gray-4"> Assign this task </span>
+      <span v-if="!selectedUser" class="text-sm text-ink-gray-4"> {{ __('Assign this task') }} </span>
     </ListboxButton>
     <div class="relative">
       <transition

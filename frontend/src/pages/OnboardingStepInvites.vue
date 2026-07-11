@@ -3,8 +3,8 @@
     <FormControl
       v-for="(email, index) in modelValue.emails"
       :key="index"
-      label="Email"
-      placeholder="jane@example.com"
+      :label="__('Email')"
+      :placeholder="__('jane@example.com')"
       :modelValue="email"
       @update:modelValue="
         (email) =>
@@ -24,7 +24,7 @@
         })
       "
     >
-      Add another email
+      {{ __('Add another email') }}
     </Button>
   </div>
 </template>

@@ -4,15 +4,15 @@
       <UserProfileLink class="hover:text-ink-blue-3" :user="discussion.owner">
         {{ $user(discussion.owner).full_name }}
       </UserProfileLink>
-      in
+      {{ __('in') }}
       <DiscussionBreadcrumbs :discussion="discussion" />
     </span>
     <span> &middot; </span>
     <span class="text-base text-ink-gray-5">
       {{
         discussion.participants_count == 1
-          ? `1 participant`
-          : `${discussion.participants_count} participants`
+          ? __('1 participant')
+          : __('{0} participants', [discussion.participants_count])
       }}
     </span>
   </div>

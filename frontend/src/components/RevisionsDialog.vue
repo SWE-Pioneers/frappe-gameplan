@@ -32,9 +32,9 @@
     <template v-if="currentRevision && (hasNext || hasPrevious)" #actions>
       <div class="flex w-full justify-between">
         <div>
-          <Button @click="previous" v-if="hasPrevious"> Previous </Button>
+          <Button @click="previous" v-if="hasPrevious"> {{ __('Previous') }} </Button>
         </div>
-        <Button @click="next" v-if="hasNext">Next</Button>
+        <Button @click="next" v-if="hasNext">{{ __('Next') }}</Button>
       </div>
     </template>
   </Dialog>
@@ -121,11 +121,11 @@ export default {
   computed: {
     title() {
       if (this.$resources.revisions.data) {
-        if (this.$resources.revisions.data.length === 0) return 'No Revisions'
-        if (this.$resources.revisions.data.length === 1) return '1 Revision'
-        return `${this.$resources.revisions.data.length} Revisions`
+        if (this.$resources.revisions.data.length === 0) return __('No Revisions')
+        if (this.$resources.revisions.data.length === 1) return __('1 Revision')
+        return __('{0} Revisions', [this.$resources.revisions.data.length])
       } else {
-        return 'Loading...'
+        return __('Loading...')
       }
     },
     hasPrevious() {

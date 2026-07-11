@@ -3,7 +3,7 @@
     <header class="sticky top-0 z-10 flex border-b bg-surface-white px-4 py-2.5 sm:px-5">
       <Breadcrumbs
         :items="[
-          { label: 'People', route: { name: 'People' } },
+          { label: __('People'), route: { name: 'People' } },
           {
             label: profile?.full_name,
             route: { name: 'PersonProfile', params: { personId } },
@@ -53,7 +53,7 @@
             :class="{ 'hover:bg-surface-gray-4': $isSessionUser(profile.user) }"
             :disabled="!$isSessionUser(profile.user)"
           >
-            <span v-if="$isSessionUser(profile.user)"> Upload Image </span>
+            <span v-if="$isSessionUser(profile.user)"> {{ __('Upload Image') }} </span>
           </button>
         </div>
         <div class="ml-6">
@@ -66,7 +66,7 @@
         </div>
         <Button v-if="$isSessionUser(profile.user)" @click="editDialog.show = true" class="ml-auto">
           <template #prefix><LucideEdit class="w-4" /></template>
-          Edit Profile
+          {{ __('Edit Profile') }}
         </Button>
       </div>
 
@@ -87,7 +87,7 @@
     </div>
     <Dialog
       v-if="$isSessionUser(profile.user)"
-      :options="{ title: 'Edit Profile' }"
+      :options="{ title: __('Edit Profile') }"
       v-model="editDialog.show"
       @after-leave="discard"
     >
@@ -97,11 +97,13 @@
           <template v-else>
             <div class="flex items-center gap-4">
               <UserAvatar size="lg" :user="profile.user" />
-              <Button @click="editDialog.editingProfilePhoto = true"> Edit Profile Photo </Button>
+              <Button @click="editDialog.editingProfilePhoto = true">
+                {{ __('Edit Profile Photo') }}
+              </Button>
             </div>
-            <FormControl label="First Name" v-model="user.first_name" />
-            <FormControl label="Last Name" v-model="user.last_name" />
-            <FormControl label="Bio" v-model="profile.bio" type="textarea" maxlength="280" />
+            <FormControl :label="__('First Name')" v-model="user.first_name" />
+            <FormControl :label="__('Last Name')" v-model="user.last_name" />
+            <FormControl :label="__('Bio')" v-model="profile.bio" type="textarea" maxlength="280" />
           </template>
         </div>
       </template>
@@ -112,7 +114,7 @@
           @click="save"
           :loading="$resources.user.setValue.loading || $resources.profile.setValue.loading"
         >
-          Save
+          {{ __('Save') }}
         </Button>
       </template>
     </Dialog>
@@ -232,7 +234,7 @@ export default {
   },
   pageMeta() {
     return {
-      title: [this.profile?.full_name || '', 'Profile'].join(' | '),
+      title: [this.profile?.full_name || '', __('Profile')].join(' | '),
     }
   },
 }

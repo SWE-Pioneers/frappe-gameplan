@@ -34,19 +34,19 @@
             placement="left"
             :options="[
               {
-                label: 'Set cover image',
+                label: __('Set cover image'),
                 icon: 'image',
                 condition: () => !team.doc.cover_image,
                 onClick: () => (showCoverImage = true),
               },
               {
-                label: 'Archive',
+                label: __('Archive'),
                 icon: 'trash-2',
                 onClick: () => archiveTeam(),
               },
             ]"
             :button="{
-              label: 'Options',
+              label: __('Options'),
               variant: 'ghost',
               icon: 'more-horizontal',
             }"
@@ -98,11 +98,11 @@ export default {
     },
     archiveTeam() {
       this.$dialog({
-        title: 'Archive Team',
-        message: 'Are you sure you want to archive the team?',
+        title: __('Archive Team'),
+        message: __('Are you sure you want to archive the team?'),
         actions: [
           {
-            label: 'Archive',
+            label: __('Archive'),
             variant: 'solid',
             onClick: (close) => {
               return this.team.archive.submit(null, {

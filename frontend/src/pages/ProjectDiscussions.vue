@@ -2,7 +2,7 @@
   <div class="flex">
     <div class="h-full w-full py-6">
       <div class="mb-4.5 flex items-center justify-between">
-        <h2 class="text-xl font-semibold">Discussions</h2>
+        <h2 class="text-xl font-semibold">{{ __('Discussions') }}</h2>
         <Button
           variant="solid"
           v-if="!$readOnlyMode && !project.doc.archived_at"
@@ -11,7 +11,7 @@
           <template #prefix>
             <LucidePlus class="h-4 w-4" />
           </template>
-          Add new
+          {{ __('Add new') }}
         </Button>
       </div>
       <DiscussionList

@@ -1,5 +1,5 @@
 <template>
-  <Dialog :options="{ title: 'Add members' }" @close="resetValues" v-model="open">
+  <Dialog :options="{ title: __('Add members') }" @close="resetValues" v-model="open">
     <template #body-content>
       <ul v-if="membersToAdd.length" class="flex flex-wrap gap-2 py-2">
         <li
@@ -24,7 +24,7 @@
         <Autocomplete
           :options="invitableUsers"
           v-model="selectedUser"
-          placeholder="Add member by name"
+          :placeholder="__('Add member by name')"
         >
           <template #item-prefix="{ option }">
             <UserAvatar :user="option.email" size="sm" />
@@ -33,7 +33,7 @@
         <ErrorMessage class="mt-2" :message="resource.addMembers.error" />
       </div>
       <div class="mt-4" v-show="!addMembersIntent">
-        <h4 class="text-base font-medium">Members</h4>
+        <h4 class="text-base font-medium">{{ __('Members') }}</h4>
         <ul role="list" class="mt-2 divide-y">
           <li class="flex w-full items-center py-2" v-for="member in members" :key="member.name">
             <UserAvatar :user="member.user" />
@@ -65,7 +65,7 @@
         @click="sendInvites"
         :loading="resource.addMembers.loading"
       >
-        Add
+        {{ __('Add') }}
       </Button>
     </template>
   </Dialog>

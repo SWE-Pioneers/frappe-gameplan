@@ -3,7 +3,7 @@
     <div class="flex items-center rounded-xl">
       <Button v-if="!team.doc.members.length" @click="inviteMemberDialog = true">
         <template #prefix><LucideUserPlus class="w-4" /></template>
-        Add Members
+        {{ __('Add Members') }}
       </Button>
       <template v-else>
         <button class="ml-4 flex items-center rounded-full" @click="inviteMemberDialog = true">
